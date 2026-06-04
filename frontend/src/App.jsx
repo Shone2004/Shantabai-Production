@@ -1,0 +1,34 @@
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+
+// Public pages
+import HomePage from "./pages/public/HomePage.jsx";
+import SearchProviders from "./pages/public/SearchProviders.jsx";
+import ProviderProfile from "./pages/public/ProviderProfile.jsx";
+import FoodPage from "./pages/public/FoodPage.jsx";
+import FoodDetail from "./pages/public/FoodDetail.jsx";
+
+// Main layouts
+import PublicLayout from "./layouts/PublicLayout.jsx";
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        {/* Public Pages */}
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/search" element={<SearchProviders />} />
+          <Route path="/provider/:id" element={<ProviderProfile />} />
+          <Route path="/food" element={<FoodPage />} />
+          <Route path="/food/:id" element={<FoodDetail />} />
+        </Route>
+        
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
