@@ -8,7 +8,7 @@ import SearchProviders from "./pages/public/SearchProviders.jsx";
 import ProviderProfile from "./pages/public/ProviderProfile.jsx";
 import FoodPage from "./pages/public/FoodPage.jsx";
 import FoodDetail from "./pages/public/FoodDetail.jsx";
-
+import Login from "./pages/public/AuthPage.jsx"
 // Main layouts
 import PublicLayout from "./layouts/PublicLayout.jsx";
 
@@ -20,6 +20,7 @@ function App() {
         {/* Public Pages */}
         <Route element={<PublicLayout />}>
           <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/search" element={<SearchProviders />} />
           <Route path="/provider/:id" element={<ProviderProfile />} />
           <Route path="/food" element={<FoodPage />} />
