@@ -1,16 +1,32 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap');
 
 @theme {
-  --color-brand-green: #0A4D2B;  /* Primary dark green from mockup */
-  --color-brand-light: #E8F5E9;  /* Light green surface */
-  --color-brand-orange: #F59E0B; /* Accent orange for stars/discounts */
-  --color-brand-brown: #111827;  /* Text primary dark */
-  --color-brand-cream: #FFFFFF;  /* Background white/cream */
-  --color-brand-beige: #F3F4F6;  /* Soft gray backgrounds */
-  --font-sans: "Poppins", "Inter", "sans-serif";
+  --color-brand-green: #0A4D2B;
+  --color-brand-light: #E8F5E9;
+  --color-brand-orange: #F59E0B;
+  --color-brand-brown: #111827;
+  --color-brand-cream: #FFFFFF;
+  --color-brand-beige: #F3F4F6;
+  --font-sans: "Poppins", "Inter", sans-serif;
 }
 
 body {
   background-color: var(--color-brand-cream);
   color: var(--color-brand-brown);
+  font-family: var(--font-sans);
+}
+
+/* Hide scrollbar but keep scroll functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
 }
