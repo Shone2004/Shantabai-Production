@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext.jsx";
 
 // Public pages
 import HomePage from "./pages/public/HomePage.jsx";
@@ -13,7 +14,8 @@ import PublicLayout from "./layouts/PublicLayout.jsx";
 
 function App() {
   return (
-    <Router>
+    <AuthProvider>
+      <Router>
       <Routes>
         {/* Public Pages */}
         <Route element={<PublicLayout />}>
@@ -27,7 +29,8 @@ function App() {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </Router>
+      </Router>
+    </AuthProvider>
   );
 }
 
