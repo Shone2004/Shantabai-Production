@@ -45,7 +45,7 @@ const FoodDetail = () => {
       {/* Top Header / Breadcrumbs */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link to="/food" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-brand-orange transition-colors">
+          <Link to="/food" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-brand-green transition-colors">
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             Back to Food
           </Link>
@@ -75,17 +75,17 @@ const FoodDetail = () => {
                     <h1 className="text-3xl font-extrabold text-gray-900 mb-2">{food.name}</h1>
                     <div className="flex items-center text-gray-500 gap-4 text-sm">
                       <div className="flex items-center">
-                        <svg className="w-4 h-4 mr-1 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <svg className="w-4 h-4 mr-1 text-brand-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         {food.availabilityTime}
                       </div>
                       <div className="flex items-center">
-                        <svg className="w-4 h-4 mr-1 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                        <svg className="w-4 h-4 mr-1 text-brand-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
                         {food.quantityAvailable} left
                       </div>
                     </div>
                   </div>
                   <div className="text-right hidden md:block">
-                    <div className="text-3xl font-black text-brand-orange">${food.price.toFixed(2)}</div>
+                    <div className="text-3xl font-black text-brand-green">${food.price.toFixed(2)}</div>
                     <div className="text-sm text-gray-500">per portion</div>
                   </div>
                 </div>
@@ -138,8 +138,8 @@ const FoodDetail = () => {
           {/* Right Column */}
           <div className="w-full lg:w-1/3 space-y-6 relative">
             {/* Desktop Action Panel */}
-            <div className="hidden md:block bg-white rounded-3xl shadow-sm border border-brand-orange/20 p-6 sticky top-24">
-              <div className="text-3xl font-black text-brand-orange mb-1">${food.price.toFixed(2)} <span className="text-sm font-medium text-gray-500">per portion</span></div>
+            <div className="hidden md:block bg-white rounded-3xl shadow-sm border border-brand-green/20 p-6 sticky top-24">
+              <div className="text-3xl font-black text-brand-green mb-1">${food.price.toFixed(2)} <span className="text-sm font-medium text-gray-500">per portion</span></div>
               <div className="text-sm text-gray-500 mb-6">Total: ${(food.price * quantity).toFixed(2)}</div>
               
               <div className="mb-6">
@@ -175,7 +175,7 @@ const FoodDetail = () => {
               <p className="text-gray-600 text-sm mb-4 leading-relaxed">{food.provider.bio}</p>
               <div className="text-sm text-gray-500 mb-6">Joined {food.provider.joined}</div>
               
-              <Link to={`/provider/${food.provider.name.toLowerCase().replace(' ', '-')}`} className="block w-full py-2.5 px-4 text-center rounded-xl font-bold text-brand-orange border-2 border-brand-orange/20 hover:bg-brand-orange/5 transition-colors">
+              <Link to={`/provider/${food.provider.name.toLowerCase().replace(' ', '-')}`} className="block w-full py-2.5 px-4 text-center rounded-xl font-bold text-brand-green border-2 border-brand-green/20 hover:bg-brand-green/5 transition-colors">
                 View Profile
               </Link>
             </div>
@@ -188,14 +188,14 @@ const FoodDetail = () => {
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] z-50 flex items-center justify-between gap-4">
         <div className="flex flex-col">
           <div className="text-sm font-bold text-gray-500">Total</div>
-          <div className="text-xl font-black text-brand-orange">${(food.price * quantity).toFixed(2)}</div>
+          <div className="text-xl font-black text-brand-green">${(food.price * quantity).toFixed(2)}</div>
         </div>
         <div className="flex items-center gap-3">
           <QuantitySelector quantity={quantity} setQuantity={setQuantity} max={food.quantityAvailable} />
           <button 
             onClick={handleReserve}
             disabled={isReserved || food.quantityAvailable === 0}
-            className="bg-brand-orange text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-brand-orange/30 disabled:opacity-50 min-w[100px]"
+            className="bg-brand-green text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-brand-green/30 disabled:opacity-50 min-w[100px]"
           >
             {isReserved ? 'Reserved' : 'Reserve'}
           </button>

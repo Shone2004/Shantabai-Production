@@ -267,7 +267,7 @@ export default function ProviderProfile() {
                         transition={{ delay: idx * 0.08 }}
                         className="flex justify-center"
                       >
-                        <FoodCard food={food} />
+                        <FoodCard food={food} hideProviderInfo={true} />
                       </motion.div>
                     ))}
                   </div>

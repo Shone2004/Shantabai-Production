@@ -262,7 +262,7 @@ const FOOTER_LINKS = {
   Explore: [
     { label: 'Browse Food', to: '/food' },
     { label: 'Find Cooks', to: '/search' },
-    { label: 'Become a Cook', to: '/provider' },
+    { label: 'Become a Cook', to: '/chef-signup' },
     { label: 'How it Works', to: '/how-it-works' },
   ],
 };

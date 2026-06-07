@@ -56,7 +56,7 @@ const ProviderCTA = () => {
           </p>
 
           <Link
-            to="/provider/register"
+            to="/chef-signup"
             className="inline-flex items-center gap-2 bg-brand-green text-white px-6 py-3.5 rounded-xl font-bold text-sm hover:bg-brand-green/90 active:scale-95 transition-all shadow-lg shadow-brand-green/25 w-fit"
           >
             Start Selling Today

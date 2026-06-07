@@ -99,7 +99,7 @@ const PublicNavbar = () => {
 
               {/* Become a Cook — lg+ */}
               <Link
-                to="/provider"
+                to="/chef-signup"
                 className="hidden lg:flex items-center gap-1.5 text-sm font-semibold text-brand-green border border-brand-green/30 hover:bg-brand-light px-4 py-2 rounded-full transition-all duration-200"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,7 +181,7 @@ const PublicNavbar = () => {
 
                 <div className="mt-2 pt-3 border-t border-gray-100">
                   <Link
-                    to="/provider"
+                    to="/chef-signup"
                     className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-brand-green/30 text-brand-green font-semibold text-sm hover:bg-brand-light transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

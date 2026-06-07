@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
-const FoodCard = ({ food }) => {
+const FoodCard = ({ food, hideProviderInfo = false }) => {
   const [liked, setLiked] = useState(false);
 
   const {
@@ -182,36 +182,40 @@ const FoodCard = ({ food }) => {
 
           {/* ── Provider row (compact) ── */}
           <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <img
-                src={provider.avatar}
-                alt={provider.name}
-                className="w-8 h-8 rounded-full object-cover border border-white shadow-sm shrink-0"
-              />
-              <div className="min-w-0">
-                <div className="flex items-center gap-1">
-                  <span className="text-xs font-bold text-gray-900 truncate max-w-[100px]">{provider.name}</span>
-                  {provider.isVerified && (
-                    <svg className="w-3 h-3 text-brand-green shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            {!hideProviderInfo && (
+              <div className="flex items-center gap-2 min-w-0">
+                <img
+                  src={provider.avatar}
+                  alt={provider.name}
+                  className="w-8 h-8 rounded-full object-cover border border-white shadow-sm shrink-0"
+                />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-bold text-gray-900 truncate max-w-[90px]">{provider.name}</span>
+                    {provider.isVerified && (
+                      <svg className="w-3 h-3 text-brand-green shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <svg className="w-3 h-3 text-amber-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
-                  <svg className="w-3 h-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                  <span className="text-[11px] font-bold text-gray-800">{provider.rating}</span>
-                  <span className="text-[11px] text-gray-400 font-medium">· {provider.ordersCount} orders</span>
+                    <span className="text-[11px] font-bold text-gray-800">{provider.rating}</span>
+                    <span className="text-[11px] text-gray-400 font-medium truncate">· {provider.ordersCount} orders</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Reserve button — compact */}
             <button
               onClick={(e) => e.preventDefault()}
               disabled={!isAvailable}
-              className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 ${
+              className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 ${
+                hideProviderInfo ? 'w-full' : ''
+              } ${
                 isAvailable
                   ? 'bg-brand-green text-white hover:bg-brand-green/90 shadow-sm shadow-brand-green/20'
                   : 'bg-gray-100 text-gray-400 cursor-not-allowed'

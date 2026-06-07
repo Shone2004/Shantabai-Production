@@ -9,6 +9,7 @@ import ProviderProfile from "./pages/public/ProviderProfile.jsx";
 import FoodPage from "./pages/public/FoodPage.jsx";
 import FoodDetail from "./pages/public/FoodDetail.jsx";
 import Login from "./pages/public/AuthPage.jsx"
+import ChefSignup from "./pages/ChefSignup.jsx";
 // Main layouts
 import PublicLayout from "./layouts/PublicLayout.jsx";
 
@@ -25,6 +26,7 @@ function App() {
           <Route path="/provider/:id" element={<ProviderProfile />} />
           <Route path="/food" element={<FoodPage />} />
           <Route path="/food/:id" element={<FoodDetail />} />
+          <Route path="/chef-signup" element={<ChefSignup />} />
         </Route>
         
         {/* Fallback */}
