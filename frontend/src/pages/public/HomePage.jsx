@@ -1,14 +1,18 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import Hero from '../../components/home/Hero.jsx';
 import Categories from '../../components/home/Categories.jsx';
 import SectionHeader from '../../components/home/SectionHeader.jsx';
 import FoodCard from '../../components/food/FoodCard.jsx';
 import CookCard from '../../components/home/CookCard.jsx';
 import ProviderCTA from '../../components/home/ProviderCTA.jsx';
+import { Link, useNavigate } from 'react-router-dom';
 
-// ─── Mock Data ───────────────────────────────────────────────────────────────
+// ─── New components ───────────────────────────────────────────────────────────
+import ChefSection from '../../components/chef/ChefSection.jsx';
+import AIConsultant from '../../components/ai/AIConsultant.jsx';
+
+// ─── Mock Data ────────────────────────────────────────────────────────────────
 
 const mockFoods = [
   {
@@ -26,9 +30,7 @@ const mockFoods = [
     provider: {
       name: "Sunita's Kitchen",
       avatar: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150',
-      rating: 4.8,
-      ordersCount: '120+',
-      isVerified: true,
+      rating: 4.8, ordersCount: '120+', isVerified: true,
       badges: [
         { icon: 'shield', title: 'Hygienic', subtitle: 'Kitchen' },
         { icon: 'users', title: '100+', subtitle: 'Happy Customers' },
@@ -51,9 +53,7 @@ const mockFoods = [
     provider: {
       name: "Aai's Kitchen",
       avatar: 'https://images.unsplash.com/photo-1581299894007-aaa50297cf16?w=150',
-      rating: 4.9,
-      ordersCount: '500+',
-      isVerified: true,
+      rating: 4.9, ordersCount: '500+', isVerified: true,
       badges: [
         { icon: 'shield', title: 'Hygienic', subtitle: 'Kitchen' },
         { icon: 'users', title: '400+', subtitle: 'Happy Customers' },
@@ -76,9 +76,7 @@ const mockFoods = [
     provider: {
       name: "Ramesh's Misal",
       avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=150',
-      rating: 4.8,
-      ordersCount: '300+',
-      isVerified: true,
+      rating: 4.8, ordersCount: '300+', isVerified: true,
       badges: [
         { icon: 'shield', title: 'Hygienic', subtitle: 'Kitchen' },
         { icon: 'users', title: '150+', subtitle: 'Happy Customers' },
@@ -101,9 +99,7 @@ const mockFoods = [
     provider: {
       name: "Smita's Fasting Foods",
       avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-      rating: 4.6,
-      ordersCount: '90+',
-      isVerified: true,
+      rating: 4.6, ordersCount: '90+', isVerified: true,
       badges: [
         { icon: 'shield', title: 'Clean', subtitle: 'Kitchen' },
         { icon: 'users', title: '80+', subtitle: 'Happy Customers' },
@@ -129,9 +125,7 @@ const trendingFoods = [
     provider: {
       name: 'Zaika Ghar Ka',
       avatar: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=150',
-      rating: 4.7,
-      ordersCount: '80+',
-      isVerified: true,
+      rating: 4.7, ordersCount: '80+', isVerified: true,
       badges: [
         { icon: 'shield', title: 'Hygienic', subtitle: 'Kitchen' },
         { icon: 'users', title: '50+', subtitle: 'Happy Customers' },
@@ -154,9 +148,7 @@ const trendingFoods = [
     provider: {
       name: "Asha's Kitchen",
       avatar: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150',
-      rating: 4.9,
-      ordersCount: '250+',
-      isVerified: true,
+      rating: 4.9, ordersCount: '250+', isVerified: true,
       badges: [
         { icon: 'shield', title: 'Hygienic', subtitle: 'Kitchen' },
         { icon: 'users', title: '200+', subtitle: 'Happy Customers' },
@@ -179,9 +171,7 @@ const trendingFoods = [
     provider: {
       name: 'Konkani Katta',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
-      rating: 4.7,
-      ordersCount: '110+',
-      isVerified: true,
+      rating: 4.7, ordersCount: '110+', isVerified: true,
       badges: [
         { icon: 'shield', title: 'Hygienic', subtitle: 'Kitchen' },
         { icon: 'users', title: '90+', subtitle: 'Happy Customers' },
@@ -204,9 +194,7 @@ const trendingFoods = [
     provider: {
       name: 'Punjabi Tadka',
       avatar: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150',
-      rating: 4.5,
-      ordersCount: '180+',
-      isVerified: false,
+      rating: 4.5, ordersCount: '180+', isVerified: false,
       badges: [
         { icon: 'shield', title: 'Clean', subtitle: 'Kitchen' },
         { icon: 'users', title: '120+', subtitle: 'Happy Customers' },
@@ -218,58 +206,51 @@ const trendingFoods = [
 
 const mockCooks = [
   { id: 'c1', name: 'Sunita Kitchen', rating: '4.9', orders: '120', distance: '1.2 km', image: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=400' },
-  { id: 'c2', name: 'Asha Meals', rating: '4.8', orders: '98', distance: '1.4 km', image: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400' },
-  { id: 'c3', name: 'Maa Ka Swad', rating: '4.7', orders: '110', distance: '1.6 km', image: 'https://images.unsplash.com/photo-1581299894007-aaa50297cf16?w=400' },
-  { id: 'c4', name: 'Homely Bites', rating: '4.8', orders: '75', distance: '1.7 km', image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400' },
+  { id: 'c2', name: 'Asha Meals',     rating: '4.8', orders: '98',  distance: '1.4 km', image: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400' },
+  { id: 'c3', name: 'Maa Ka Swad',    rating: '4.7', orders: '110', distance: '1.6 km', image: 'https://images.unsplash.com/photo-1581299894007-aaa50297cf16?w=400' },
+  { id: 'c4', name: 'Homely Bites',   rating: '4.8', orders: '75',  distance: '1.7 km', image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400' },
 ];
 
-// ─── Shared card animation ────────────────────────────────────────────────────
-
 const cardVariants = {
-  hidden: { opacity: 0, y: 40, scale: 0.94 },
+  hidden:  { opacity: 0, y: 40, scale: 0.94 },
   visible: (i) => ({
-    opacity: 1,
-    y: 0,
-    scale: 1,
+    opacity: 1, y: 0, scale: 1,
     transition: { type: 'spring', bounce: 0.4, duration: 0.7, delay: i * 0.08 },
   }),
 };
 
-// ─── Stats Strip ─────────────────────────────────────────────────────────────
-
 const STATS = [
-  { emoji: '🏠', value: '500+', label: 'Home Cooks' },
-  { emoji: '🍱', value: '10,000+', label: 'Meals Served' },
-  { emoji: '📍', value: '12+', label: 'Neighbourhoods' },
-  { emoji: '⭐', value: '4.8', label: 'Avg Rating' },
+  { emoji: '🏠', value: '500+',    label: 'Home Cooks'      },
+  { emoji: '🍱', value: '10,000+', label: 'Meals Served'    },
+  { emoji: '📍', value: '12+',     label: 'Neighbourhoods'  },
+  { emoji: '⭐', value: '4.8',     label: 'Avg Rating'      },
 ];
-
-// ─── Footer links ─────────────────────────────────────────────────────────────
 
 const FOOTER_LINKS = {
   Company: [
-    { label: 'About Us', to: '/about' },
-    { label: 'Careers', to: '/careers' },
-    { label: 'Contact', to: '/contact' },
-    { label: 'Blog', to: '/blog' },
+    { label: 'About Us',  to: '/about'        },
+    { label: 'Careers',   to: '/careers'      },
+    { label: 'Contact',   to: '/contact'      },
+    { label: 'Blog',      to: '/blog'         },
   ],
   Legal: [
-    { label: 'Privacy Policy', to: '/privacy' },
-    { label: 'Terms of Service', to: '/terms' },
-    { label: 'FAQ', to: '/faq' },
-    { label: 'Cookie Policy', to: '/cookies' },
+    { label: 'Privacy Policy',   to: '/privacy'  },
+    { label: 'Terms of Service', to: '/terms'    },
+    { label: 'FAQ',              to: '/faq'      },
+    { label: 'Cookie Policy',    to: '/cookies'  },
   ],
-  Explore: [
-    { label: 'Browse Food', to: '/food' },
-    { label: 'Find Cooks', to: '/search' },
-    { label: 'Become a Cook', to: '/chef-signup' },
-    { label: 'How it Works', to: '/how-it-works' },
-  ],
+Explore: [
+  { label: 'Browse Food', to: '/food' },
+  { label: 'Find Cooks', to: '/search' },
+  { label: 'Become a Cook', to: '/chef-signup' },
+  { label: 'How it Works', to: '/how-it-works' },
+],
 };
-
-// ─── Component ───────────────────────────────────────────────────────────────
-
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function HomePage() {
+  const navigate = useNavigate();   // ← add this line
+  const [showAI, setShowAI] = React.useState(false);
+  // ...
   return (
     <div className="bg-white min-h-screen overflow-x-hidden">
 
@@ -302,20 +283,12 @@ export default function HomePage() {
           <SectionHeader
             title="Popular Near You"
             subtitle="Fresh picks from local kitchens this morning"
-            showSeeAll
-            link="/food"
+            showSeeAll link="/food"
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-14 px-4 sm:px-6 lg:px-8 mt-6 pb-6">
             {mockFoods.map((food, idx) => (
-              <motion.div
-                key={food.id}
-                custom={idx}
-                variants={cardVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: '-40px' }}
-                className="flex justify-center w-full"
-              >
+              <motion.div key={food.id} custom={idx} variants={cardVariants} initial="hidden"
+                whileInView="visible" viewport={{ once: true, margin: '-40px' }} className="flex justify-center w-full">
                 <FoodCard food={food} />
               </motion.div>
             ))}
@@ -324,23 +297,11 @@ export default function HomePage() {
 
         {/* ── Trending Today ── */}
         <div className="mt-6 bg-gray-50 py-10 rounded-[2.5rem] mx-2 sm:mx-6 lg:mx-8 mb-8 border border-gray-100">
-          <SectionHeader
-            title="Trending Today 🔥"
-            subtitle="Most ordered in the last 24 hours"
-            showSeeAll
-            link="/food"
-          />
+          <SectionHeader title="Trending Today 🔥" subtitle="Most ordered in the last 24 hours" showSeeAll link="/food" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-14 px-4 sm:px-6 lg:px-8 mt-6 pb-6">
             {trendingFoods.map((food, idx) => (
-              <motion.div
-                key={food.id}
-                custom={idx}
-                variants={cardVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: '-40px' }}
-                className="flex justify-center w-full"
-              >
+              <motion.div key={food.id} custom={idx} variants={cardVariants} initial="hidden"
+                whileInView="visible" viewport={{ once: true, margin: '-40px' }} className="flex justify-center w-full">
                 <FoodCard food={food} />
               </motion.div>
             ))}
@@ -349,25 +310,23 @@ export default function HomePage() {
 
         {/* ── Nearby Home Cooks ── */}
         <div className="mt-10">
-          <SectionHeader
-            title="Nearby Home Cooks"
-            subtitle="Trusted kitchens just around the corner"
-            showSeeAll
-            link="/search"
-          />
+          <SectionHeader title="Nearby Home Cooks" subtitle="Trusted kitchens just around the corner" showSeeAll link="/search" />
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 px-4 sm:px-6 lg:px-8 mt-2">
             {mockCooks.map((cook, idx) => (
-              <motion.div
-                key={cook.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.45, delay: idx * 0.09 }}
-              >
+              <motion.div key={cook.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }} transition={{ duration: 0.45, delay: idx * 0.09 }}>
                 <CookCard cook={cook} />
               </motion.div>
             ))}
           </div>
+        </div>
+
+        {/* ── Chef Section ── */}
+        <div className="mt-14">
+          <ChefSection
+            onConsultAI={() => setShowAI(true)}
+            onViewProfile={(chef) => navigate(`/provider/${chef.id}`)}
+          />
         </div>
 
         {/* ── Provider CTA ── */}
@@ -375,20 +334,25 @@ export default function HomePage() {
 
       </div>
 
+      {/* ── AI Consultant Modal ── */}
+      {showAI && (
+        <AIConsultant
+          onClose={() => setShowAI(false)}
+          onBookChef={(chef) => {
+  setShowAI(false);
+  navigate(`/provider/${chef.id}`);
+}}
+        />
+      )}
+
       {/* ── Footer ── */}
       <motion.footer
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.7 }}
+        initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}
+        viewport={{ once: true }} transition={{ duration: 0.7 }}
         className="bg-gray-950 text-white mt-10"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-8">
-
-          {/* Top row */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-10 border-b border-white/8 pb-10 mb-8">
-
-            {/* Brand col */}
             <div className="md:col-span-2 space-y-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 bg-brand-green rounded-xl flex items-center justify-center">
@@ -401,18 +365,13 @@ export default function HomePage() {
               <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
                 Empowering home chefs and bringing fresh, healthy, affordable meals to your doorstep. Ghar ka khana, pyar ka swaad.
               </p>
-              {/* Social icons */}
               <div className="flex gap-3 pt-1">
                 {[
-                  { label: 'Twitter', path: 'M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z' },
+                  { label: 'Twitter',   path: 'M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z' },
                   { label: 'Instagram', path: 'M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z' },
                 ].map((social) => (
-                  <a
-                    key={social.label}
-                    href="#"
-                    aria-label={social.label}
-                    className="w-9 h-9 rounded-full bg-white/8 hover:bg-brand-green flex items-center justify-center transition-colors duration-200"
-                  >
+                  <a key={social.label} href="#" aria-label={social.label}
+                    className="w-9 h-9 rounded-full bg-white/8 hover:bg-brand-green flex items-center justify-center transition-colors duration-200">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                       <path d={social.path} />
                     </svg>
@@ -420,18 +379,13 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
-
-            {/* Link columns */}
             {Object.entries(FOOTER_LINKS).map(([group, links]) => (
               <div key={group}>
                 <h4 className="font-bold text-sm text-white mb-4 tracking-wide">{group}</h4>
                 <ul className="space-y-2.5">
                   {links.map((l) => (
                     <li key={l.label}>
-                      <Link
-                        to={l.to}
-                        className="text-gray-400 text-sm hover:text-white transition-colors duration-150 font-medium"
-                      >
+                      <Link to={l.to} className="text-gray-400 text-sm hover:text-white transition-colors duration-150 font-medium">
                         {l.label}
                       </Link>
                     </li>
@@ -440,8 +394,6 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-
-          {/* Bottom bar */}
           <div className="flex flex-col sm:flex-row justify-between items-center gap-3 text-gray-500 text-xs">
             <p>© 2026 Shantabai. All rights reserved. Made with ❤️ by UNEXPECTED SOLUTIONS</p>
             <p className="font-medium">🇮🇳 Proudly Indian</p>

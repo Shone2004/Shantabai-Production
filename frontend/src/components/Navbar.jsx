@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import { useAuth } from '../context/AuthContext.jsx';
 
 export default function Navbar() {
   const handleLogout = async () => {
