@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import FoodPreviewCard from "./FoodPreviewCard";
+import api from "../../services/api";
 
 // ─── Categories ───────────────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -85,12 +86,36 @@ export default function AddFood({ onBack }) {
     const errs = validate(form, images);
     setErrors(errs);
     if (Object.keys(errs).length) return;
+    
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1800));
-    setLoading(false);
-    setToast({ type: "success", msg: "🎉 Food item added successfully!" });
-    setTimeout(() => setToast(null), 3500);
-    setForm(INITIAL); setImages([]); setErrors({}); setTouched({});
+    try {
+      const payload = {
+        ...form,
+        price: Number(form.price),
+        prepTime: Number(form.prepTime),
+        quantity: Number(form.quantity),
+        totalQuantity: Number(form.quantity),
+        images
+      };
+      
+      const response = await api.post("/foods", payload);
+      if (response.data.success) {
+        setToast({ type: "success", msg: "🎉 Food item added successfully!" });
+        setForm(INITIAL); 
+        setImages([]); 
+        setErrors({}); 
+        setTouched({});
+        if (onBack) {
+          setTimeout(() => onBack(), 1500);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to add food:", err);
+      setToast({ type: "error", msg: err.response?.data?.message || "Failed to add food item" });
+    } finally {
+      setLoading(false);
+      setTimeout(() => setToast(null), 3500);
+    }
   };
 
   const fld = (field) => ({

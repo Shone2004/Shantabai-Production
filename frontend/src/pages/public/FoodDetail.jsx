@@ -1,44 +1,108 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import QuantitySelector from '../../components/food/QuantitySelector';
 import ReserveButton from '../../components/food/ReserveButton';
-
-// Mock data to simulate fetching food by ID
-const getMockFood = (id) => ({
-  id,
-  name: 'Home-cooked Lasagna',
-  description: 'Authentic Italian lasagna made with love, fresh tomatoes, and three types of cheese. Our family recipe has been passed down for generations. It features layers of handmade pasta, a rich and slow-cooked bolognese sauce, creamy béchamel, and a blend of Parmigiano-Reggiano and mozzarella cheese. Perfect for a hearty family dinner or a special weekend treat.',
-  price: 12.50,
-  imageUrl: 'https://images.unsplash.com/photo-1574894709920-11b28e7367e3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-  category: 'Meals',
-  availabilityTime: 'Today, 6:00 PM',
-  quantityAvailable: 5,
-  ingredients: ['Pasta', 'Beef', 'Tomato Sauce', 'Mozzarella', 'Parmesan', 'Onion', 'Garlic', 'Herbs'],
-  provider: { 
-    name: 'Maria Rossi', 
-    rating: 4.8, 
-    reviewsCount: 124,
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80',
-    joined: '2023',
-    bio: 'Passionate about sharing authentic Italian home cooking with my local community.'
-  },
-  reviews: [
-    { id: 1, user: 'John D.', rating: 5, comment: 'Absolutely delicious! Tastes just like the lasagna I had in Rome.', date: '2 days ago' },
-    { id: 2, user: 'Sarah M.', rating: 4, comment: 'Very rich and flavorful. Will definitely order again.', date: '1 week ago' }
-  ]
-});
+import api from '../../services/api';
 
 const FoodDetail = () => {
   const { id } = useParams();
   const [quantity, setQuantity] = useState(1);
   const [isReserved, setIsReserved] = useState(false);
-  
-  const food = getMockFood(id);
+  const [food, setFood] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchFoodDetail = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await api.get(`/foods/${id}`);
+        if (response.data.success) {
+          const item = response.data.foodItem;
+          const providerInfo = item.provider || {};
+          
+          setFood({
+            id: item._id,
+            name: item.name,
+            description: item.description,
+            price: item.price,
+            imageUrl: item.images?.[0] || 'https://images.unsplash.com/photo-1574894709920-11b28e7367e3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+            category: item.category,
+            availabilityTime: item.timeWindow || 'Today, 12:30 - 2:00 PM',
+            quantityAvailable: item.quantity,
+            ingredients: item.tags && item.tags.length > 0 ? item.tags : ['Homemade', 'Freshly Prepared', 'Healthy Spices'],
+            provider: {
+              id: providerInfo._id,
+              name: providerInfo.kitchenName || 'Home Cook',
+              rating: providerInfo.rating || 5.0,
+              reviewsCount: providerInfo.totalReviews || 24,
+              avatar: providerInfo.avatar || 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=256',
+              joined: providerInfo.createdAt ? new Date(providerInfo.createdAt).getFullYear() : '2025',
+              bio: providerInfo.bio || 'Passionate about sharing home cooking with the community.'
+            },
+            reviews: [
+              { id: 1, user: 'John D.', rating: 5, comment: 'Absolutely delicious! Tastes just like home.', date: '2 days ago' },
+              { id: 2, user: 'Sarah M.', rating: 4, comment: 'Very rich and flavorful. Will definitely order again.', date: '1 week ago' }
+            ]
+          });
+        } else {
+          throw new Error('Dish details could not be loaded.');
+        }
+      } catch (err) {
+        console.error('Error fetching food detail:', err);
+        setError(err.message || 'Failed to load dish details.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFoodDetail();
+  }, [id]);
 
   const handleReserve = () => {
     setIsReserved(true);
     setTimeout(() => alert(`Reserved ${quantity}x ${food.name}!`), 500);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-28 md:pb-10 pt-16 md:pt-20 animate-pulse">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col lg:flex-row gap-10">
+            <div className="w-full lg:w-2/3">
+              <div className="rounded-3xl h-96 bg-gray-200 animate-pulse mb-8" />
+              <div className="bg-white rounded-3xl p-6 md:p-8 space-y-4">
+                <div className="h-6 bg-gray-200 rounded w-1/3 animate-pulse" />
+                <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse" />
+              </div>
+            </div>
+            <div className="w-full lg:w-1/3 space-y-6">
+              <div className="bg-white rounded-3xl p-6 h-48 animate-pulse" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !food) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-3xl border border-gray-100 shadow-md p-8 text-center">
+          <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-500 text-3xl">
+            ⚠️
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Error Loading Dish</h2>
+          <p className="text-gray-500 mb-6 text-sm">{error || 'Dish not found'}</p>
+          <div className="flex gap-3 justify-center">
+            <Link to="/food" className="px-5 py-2.5 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-gray-800 transition-colors">
+              Back to Food
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-28 md:pb-10 pt-16 md:pt-20">
@@ -85,7 +149,7 @@ const FoodDetail = () => {
                     </div>
                   </div>
                   <div className="text-right hidden md:block">
-                    <div className="text-3xl font-black text-brand-green">${food.price.toFixed(2)}</div>
+                    <div className="text-3xl font-black text-brand-green">₹{food.price}</div>
                     <div className="text-sm text-gray-500">per portion</div>
                   </div>
                 </div>
@@ -97,7 +161,7 @@ const FoodDetail = () => {
 
                 {food.ingredients && (
                   <div className="mb-8">
-                    <h3 className="text-lg font-bold text-gray-900 mb-3">Ingredients</h3>
+                    <h3 className="text-lg font-bold text-gray-900 mb-3">Tags & Properties</h3>
                     <div className="flex flex-wrap gap-2">
                       {food.ingredients.map((ingredient, idx) => (
                         <span key={idx} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
@@ -139,8 +203,8 @@ const FoodDetail = () => {
           <div className="w-full lg:w-1/3 space-y-6 relative">
             {/* Desktop Action Panel */}
             <div className="hidden md:block bg-white rounded-3xl shadow-sm border border-brand-green/20 p-6 sticky top-24">
-              <div className="text-3xl font-black text-brand-green mb-1">${food.price.toFixed(2)} <span className="text-sm font-medium text-gray-500">per portion</span></div>
-              <div className="text-sm text-gray-500 mb-6">Total: ${(food.price * quantity).toFixed(2)}</div>
+              <div className="text-3xl font-black text-brand-green mb-1">₹{food.price} <span className="text-sm font-medium text-gray-500">per portion</span></div>
+              <div className="text-sm text-gray-500 mb-6">Total: ₹{(food.price * quantity)}</div>
               
               <div className="mb-6">
                 <label className="block text-sm font-bold text-gray-700 mb-2">Quantity</label>
@@ -175,7 +239,7 @@ const FoodDetail = () => {
               <p className="text-gray-600 text-sm mb-4 leading-relaxed">{food.provider.bio}</p>
               <div className="text-sm text-gray-500 mb-6">Joined {food.provider.joined}</div>
               
-              <Link to={`/provider/${food.provider.name.toLowerCase().replace(' ', '-')}`} className="block w-full py-2.5 px-4 text-center rounded-xl font-bold text-brand-green border-2 border-brand-green/20 hover:bg-brand-green/5 transition-colors">
+              <Link to={`/provider/${food.provider.id}`} className="block w-full py-2.5 px-4 text-center rounded-xl font-bold text-brand-green border-2 border-brand-green/20 hover:bg-brand-green/5 transition-colors">
                 View Profile
               </Link>
             </div>
@@ -188,14 +252,14 @@ const FoodDetail = () => {
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] z-50 flex items-center justify-between gap-4">
         <div className="flex flex-col">
           <div className="text-sm font-bold text-gray-500">Total</div>
-          <div className="text-xl font-black text-brand-green">${(food.price * quantity).toFixed(2)}</div>
+          <div className="text-xl font-black text-brand-green">₹{(food.price * quantity)}</div>
         </div>
         <div className="flex items-center gap-3">
           <QuantitySelector quantity={quantity} setQuantity={setQuantity} max={food.quantityAvailable} />
           <button 
             onClick={handleReserve}
             disabled={isReserved || food.quantityAvailable === 0}
-            className="bg-brand-green text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-brand-green/30 disabled:opacity-50 min-w[100px]"
+            className="bg-brand-green text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-brand-green/30 disabled:opacity-50 min-w-[100px]"
           >
             {isReserved ? 'Reserved' : 'Reserve'}
           </button>

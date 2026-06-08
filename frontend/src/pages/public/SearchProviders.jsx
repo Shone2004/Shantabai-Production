@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import CookFilter from '../../components/search/CookFilter.jsx';
+import api from '../../services/api';
 
 export default function SearchProviders() {
   const [searchParams] = useSearchParams();
@@ -22,77 +23,59 @@ export default function SearchProviders() {
     services: []
   });
 
-  const fallbackChefs = [
-    {
-      id: 'mock-uuid-chef-1',
-      name: 'Sunita Home Chef',
-      specialty: 'North Indian, Mughlai',
-      cuisines: ['North Indian', 'Mughlai', 'Punjabi'],
-      dietary: ['Veg', 'Healthy'],
-      availability: 'Dinner',
-      services: ['Delivery', 'Event Catering'],
-      experience: '10+ Years Exp',
-      rating: 4.9,
-      reviews: 120,
-      price: 150,
-      avatar: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=400',
-      locality: 'Connaught Place, New Delhi',
-      description: 'Specialist in authentic Punjabi cuisine and Slow-Cooked Mughlai gravies. Custom home catering for family meals.'
-    },
-    {
-      id: 'mock-uuid-chef-2',
-      name: "Meena's Tiffin Service",
-      specialty: 'Maharashtrian, Konkani',
-      cuisines: ['Maharashtrian', 'Healthy/Diet'],
-      dietary: ['Veg', 'Vegan', 'Healthy'],
-      availability: 'Anytime',
-      services: ['Delivery', 'Daily Tiffin'],
-      experience: '5+ Years Exp',
-      rating: 4.8,
-      reviews: 95,
-      price: 120,
-      avatar: 'https://images.unsplash.com/photo-1581299894007-aaa50297cf16?w=400',
-      locality: 'Andheri West, Mumbai',
-      description: 'Providing healthy daily tiffin deliveries. Low oil, balanced home-style nutrition customized to your diet plan.'
-    },
-    {
-      id: 'mock-uuid-chef-3',
-      name: 'Latha Cook',
-      specialty: 'South Indian, Seafood specialties',
-      cuisines: ['South Indian', 'Seafood', 'Traditional'],
-      dietary: ['Non-Veg'],
-      availability: 'Lunch',
-      services: ['Pickup', 'Event Catering'],
-      experience: '8+ Years Exp',
-      rating: 4.7,
-      reviews: 88,
-      price: 140,
-      avatar: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400',
-      locality: 'Panaji, Goa',
-      description: 'Expert in South Indian breakfasts, traditional curries, and Goan seafood preparations. Highly rated for parties.'
-    },
-    {
-      id: 'mock-uuid-chef-4',
-      name: 'Rahul Baker',
-      specialty: 'Cakes, Pastries, Desserts',
-      cuisines: ['Baking', 'Desserts', 'Vegan'],
-      dietary: ['Veg', 'Vegan'],
-      availability: 'Available Now',
-      services: ['Delivery', 'Pickup'],
-      experience: '3+ Years Exp',
-      rating: 4.5,
-      reviews: 45,
-      price: 250,
-      avatar: 'https://images.unsplash.com/photo-1595273611495-6d52a2656910?w=400',
-      locality: 'Koramangala, Bangalore',
-      description: 'Freshly baked artisanal breads, eggless cakes, and vegan desserts made to order.'
-    }
-  ];
 
-  const [chefs, setChefs] = useState(fallbackChefs);
-  const [filteredChefs, setFilteredChefs] = useState(fallbackChefs);
+
+
+  const [chefs, setChefs] = useState([]);
+  const [filteredChefs, setFilteredChefs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
+    const fetchChefs = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await api.get('/providers');
+        if (response.data.success) {
+          const mappedChefs = response.data.providers.map(p => ({
+            id: p._id,
+            name: p.kitchenName || 'Home Cook',
+            specialty: p.specialities?.join(', ') || 'Home Cooked Meals',
+            cuisines: p.specialities || [],
+            // Use actual dietaryType from ProviderProfile — not a hardcoded fallback
+            dietary: Array.isArray(p.dietaryType) && p.dietaryType.length > 0
+              ? p.dietaryType
+              : [],
+            availability: p.isAvailable ? 'Anytime' : 'Unavailable',
+            // Use actual serviceTypes from ProviderProfile
+            services: Array.isArray(p.serviceTypes) && p.serviceTypes.length > 0
+              ? p.serviceTypes
+              : [],
+            experience: `${p.experience || 0}+ Years Exp`,
+            rating: p.rating || 5.0,
+            reviews: p.totalReviews || 0,
+            price: p.startingPrice || 0,
+            avatar: p.avatar || 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=400',
+            locality: `${p.area || ''}, ${p.city || ''}`.replace(/^, |, $/, ''),
+            description: p.bio || ''
+          }));
+          setChefs(mappedChefs);
+          setFilteredChefs(mappedChefs);
+        }
+      } catch (err) {
+        console.error('Error fetching chefs:', err);
+        setError('Failed to load home cooks. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchChefs();
+  }, []);
+
+
+  useEffect(() => {
+    if (loading) return;
     let result = chefs;
     
     // 1. Text Search
@@ -151,7 +134,7 @@ export default function SearchProviders() {
     }
 
     setFilteredChefs(result);
-  }, [chefs, searchQuery, filters]);
+  }, [chefs, searchQuery, filters, loading]);
 
   return (
     <div className="min-h-screen bg-slate-50/30 text-slate-800 font-sans selection:bg-brand-green selection:text-white pb-24">
@@ -210,7 +193,17 @@ export default function SearchProviders() {
 
           {/* Grid Area */}
           <div className="flex-1 w-full">
-            {filteredChefs.length > 0 ? (
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-8">
+                {[1, 2, 3].map(n => (
+                  <div key={n} className="bg-slate-50 border border-slate-100 rounded-[2rem] h-72 animate-pulse w-full" />
+                ))}
+              </div>
+            ) : error ? (
+              <div className="text-center py-12 text-rose-500 font-bold text-sm bg-white rounded-[2rem] border border-gray-100 shadow-sm">
+                ⚠️ {error}
+              </div>
+            ) : filteredChefs.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-8">
                 <AnimatePresence>
                   {filteredChefs.map((chef, idx) => (

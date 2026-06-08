@@ -14,6 +14,8 @@ import FoodDetail from "./pages/public/FoodDetail.jsx";
 import Login from "./pages/public/AuthPage.jsx";
 import ChefSignup from "./pages/ChefSignup.jsx";
 import CustomerDash from "./pages/CustomerDash.jsx";
+import AdminDash from "./pages/AdminDash.jsx";
+import VerificationStatus from "./pages/VerificationStatus.jsx";
 
 import PublicLayout from "./layouts/PublicLayout.jsx";
 
@@ -33,12 +35,30 @@ function App() {
             <Route path="/chef-signup" element={<ChefSignup />} />
           </Route>
 
-          {/* Chef Dashboard */}
           <Route
             path="/chef/dashboard"
             element={
               <PrivateRoute requiredRole="chef">
                 <ProviderDashboard />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/chef/verification-status"
+            element={
+              <PrivateRoute requiredRole="chef" bypassApprovalCheck={true}>
+                <VerificationStatus />
+              </PrivateRoute>
+            }
+          />
+
+          {/* Admin Dashboard */}
+          <Route
+            path="/admin/dashboard"
+            element={
+              <PrivateRoute requiredRole="ADMIN">
+                <AdminDash />
               </PrivateRoute>
             }
           />
@@ -52,10 +72,14 @@ function App() {
             }
           />
 
-          {/* Customer Dashboard - No Login Required For Testing */}
+          {/* Customer Dashboard */}
           <Route
             path="/customer/dashboard"
-            element={<CustomerDash />}
+            element={
+              <PrivateRoute requiredRole="CUSTOMER">
+                <CustomerDash />
+              </PrivateRoute>
+            }
           />
 
           {/* Fallback */}

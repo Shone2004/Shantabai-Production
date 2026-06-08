@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const ProviderProfile = require("../models/ProviderProfile");
 
 // Register User
 const registerUser = async (req, res) => {
@@ -81,10 +82,23 @@ const loginUser = async (req, res) => {
       }
     );
 
+    let userObj = user.toObject();
+    if (user.role === "PROVIDER") {
+      const profile = await ProviderProfile.findOne({ user: user._id });
+      if (profile) {
+        userObj.verificationStatus = profile.verificationStatus;
+        userObj.isVerified = profile.isVerified;
+        userObj.kitchenName = profile.kitchenName;
+      } else {
+        userObj.verificationStatus = "PENDING";
+        userObj.isVerified = false;
+      }
+    }
+
     res.status(200).json({
       success: true,
       token,
-      user,
+      user: userObj,
     });
 
   } catch (error) {
@@ -95,7 +109,39 @@ const loginUser = async (req, res) => {
   }
 };
 
+// Get current user
+const getMe = async (req, res) => {
+  try {
+    // req.user is set in authenticateUser middleware
+    let userObj = req.user.toObject();
+
+    if (req.user.role === "PROVIDER") {
+      const profile = await ProviderProfile.findOne({ user: req.user._id });
+      if (profile) {
+        userObj.verificationStatus = profile.verificationStatus;
+        userObj.isVerified = profile.isVerified;
+        userObj.kitchenName = profile.kitchenName;
+      } else {
+        userObj.verificationStatus = "PENDING";
+        userObj.isVerified = false;
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      user: userObj,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
+  getMe,
 };

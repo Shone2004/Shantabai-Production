@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Hero from '../../components/home/Hero.jsx';
 import Categories from '../../components/home/Categories.jsx';
@@ -7,209 +7,48 @@ import FoodCard from '../../components/food/FoodCard.jsx';
 import CookCard from '../../components/home/CookCard.jsx';
 import ProviderCTA from '../../components/home/ProviderCTA.jsx';
 import { Link, useNavigate } from 'react-router-dom';
+import api from '../../services/api';
 
 // ─── New components ───────────────────────────────────────────────────────────
 import ChefSection from '../../components/chef/ChefSection.jsx';
 import AIConsultant from '../../components/ai/AIConsultant.jsx';
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const mockFoods = [
-  {
-    id: 'f4',
-    name: 'Poha',
-    price: 40,
-    pricePer: 'per plate',
-    image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800',
-    description: 'Soft and light poha with peanuts, curry leaves, lemon and mild spices.',
-    availabilityDetails: { isAvailable: true, ordersToday: 7, left: 7, total: 15 },
-    timeWindow: '9:00 - 10:00 AM',
-    location: 'Baner, Pune',
-    distance: '1.2 km away',
-    tags: ['Veg', 'Healthy', 'Homemade'],
-    provider: {
-      name: "Sunita's Kitchen",
-      avatar: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150',
-      rating: 4.8, ordersCount: '120+', isVerified: true,
-      badges: [
-        { icon: 'shield', title: 'Hygienic', subtitle: 'Kitchen' },
-        { icon: 'users', title: '100+', subtitle: 'Happy Customers' },
-        { icon: 'medal', title: 'Top Rated', subtitle: 'Home Cook' },
-      ],
+// ─── Backend Food Mapper ──────────────────────────────────────────────────────
+const mapBackendFoodToCard = (backendFood) => {
+  const isAvailable = backendFood.status === "available" && backendFood.quantity > 0;
+  return {
+    id: backendFood._id,
+    name: backendFood.name,
+    price: backendFood.price,
+    pricePer: backendFood.pricePer || 'per plate',
+    image: backendFood.images?.[0] || 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800',
+    description: backendFood.description,
+    availabilityDetails: {
+      isAvailable: isAvailable,
+      ordersToday: backendFood.ordersToday || 0,
+      left: backendFood.quantity || 0,
+      total: backendFood.totalQuantity || backendFood.quantity || 0
     },
-  },
-  {
-    id: 'f1',
-    name: "Aai's Veg Thali",
-    price: 99,
-    pricePer: 'per plate',
-    image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=800',
-    description: 'Authentic Maharashtrian vegetarian thali with 2 sabzis, dal, rice, and chapatis.',
-    availabilityDetails: { isAvailable: true, ordersToday: 12, left: 3, total: 20 },
-    timeWindow: '12:30 - 2:00 PM',
-    location: 'Kothrud, Pune',
-    distance: '2.5 km away',
-    tags: ['Veg', 'Authentic', 'Homemade'],
-    provider: {
-      name: "Aai's Kitchen",
-      avatar: 'https://images.unsplash.com/photo-1581299894007-aaa50297cf16?w=150',
-      rating: 4.9, ordersCount: '500+', isVerified: true,
-      badges: [
-        { icon: 'shield', title: 'Hygienic', subtitle: 'Kitchen' },
-        { icon: 'users', title: '400+', subtitle: 'Happy Customers' },
-        { icon: 'medal', title: 'Top Rated', subtitle: 'Home Cook' },
-      ],
-    },
-  },
-  {
-    id: 'f9',
-    name: 'Misal Pav',
-    price: 60,
-    pricePer: 'per plate',
-    image: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=800',
-    description: 'Spicy sprouted moth bean curry served with fresh pav, topped with farsan and chopped onions.',
-    availabilityDetails: { isAvailable: true, ordersToday: 24, left: 2, total: 30 },
-    timeWindow: '8:30 - 11:00 AM',
-    location: 'Katraj, Pune',
-    distance: '4.2 km away',
-    tags: ['Veg', 'Spicy', 'Street Food'],
-    provider: {
-      name: "Ramesh's Misal",
-      avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=150',
-      rating: 4.8, ordersCount: '300+', isVerified: true,
-      badges: [
-        { icon: 'shield', title: 'Hygienic', subtitle: 'Kitchen' },
-        { icon: 'users', title: '150+', subtitle: 'Happy Customers' },
-        { icon: 'medal', title: 'Top Rated', subtitle: 'Local Legend' },
-      ],
-    },
-  },
-  {
-    id: 'f10',
-    name: 'Sabudana Khichdi',
-    price: 50,
-    pricePer: 'per plate',
-    image: 'https://images.unsplash.com/photo-1626074964464-f6df4149dc8c?w=800',
-    description: 'Soft tapioca pearls cooked with crushed peanuts, potatoes, and cumin. Perfect for fasting.',
-    availabilityDetails: { isAvailable: true, ordersToday: 18, left: 5, total: 25 },
-    timeWindow: '9:00 - 12:00 PM',
-    location: 'Deccan, Pune',
-    distance: '2.1 km away',
-    tags: ['Veg', 'Fasting', 'Healthy'],
-    provider: {
-      name: "Smita's Fasting Foods",
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-      rating: 4.6, ordersCount: '90+', isVerified: true,
-      badges: [
-        { icon: 'shield', title: 'Clean', subtitle: 'Kitchen' },
-        { icon: 'users', title: '80+', subtitle: 'Happy Customers' },
-        { icon: 'medal', title: 'Specialist', subtitle: 'Home Cook' },
-      ],
-    },
-  },
-];
-
-const trendingFoods = [
-  {
-    id: 'f2',
-    name: 'Chicken Curry & Rice',
-    price: 129,
-    pricePer: 'per plate',
-    image: 'https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?w=800',
-    description: 'Spicy and flavorful chicken curry served with steamed basmati rice.',
-    availabilityDetails: { isAvailable: true, ordersToday: 5, left: 5, total: 10 },
-    timeWindow: '1:00 - 3:00 PM',
-    location: 'Baner, Pune',
+    timeWindow: backendFood.timeWindow || '12:00 - 2:00 PM',
+    location: backendFood.provider ? `${backendFood.provider.area}, ${backendFood.provider.city}` : 'Pune',
     distance: '1.5 km away',
-    tags: ['Non-Veg', 'Spicy', 'Homemade'],
+    tags: [
+      backendFood.isVeg ? 'Veg' : 'Non-Veg',
+      ...(backendFood.tags || [])
+    ],
     provider: {
-      name: 'Zaika Ghar Ka',
-      avatar: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=150',
-      rating: 4.7, ordersCount: '80+', isVerified: true,
-      badges: [
-        { icon: 'shield', title: 'Hygienic', subtitle: 'Kitchen' },
-        { icon: 'users', title: '50+', subtitle: 'Happy Customers' },
-        { icon: 'medal', title: 'Rising Star', subtitle: 'Home Cook' },
-      ],
-    },
-  },
-  {
-    id: 'f3',
-    name: 'Puran Poli (2 Pcs)',
-    price: 79,
-    pricePer: 'per pair',
-    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800',
-    description: 'Sweet, melt-in-mouth puran polis stuffed with chana dal and jaggery.',
-    availabilityDetails: { isAvailable: false, ordersToday: 15, left: 0, total: 15 },
-    timeWindow: '4:00 - 6:00 PM',
-    location: 'Shivajinagar, Pune',
-    distance: '3.1 km away',
-    tags: ['Veg', 'Sweet', 'Festival'],
-    provider: {
-      name: "Asha's Kitchen",
-      avatar: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150',
-      rating: 4.9, ordersCount: '250+', isVerified: true,
-      badges: [
-        { icon: 'shield', title: 'Hygienic', subtitle: 'Kitchen' },
-        { icon: 'users', title: '200+', subtitle: 'Happy Customers' },
-        { icon: 'medal', title: 'Top Rated', subtitle: 'Home Cook' },
-      ],
-    },
-  },
-  {
-    id: 'f11',
-    name: 'Fish Fry Thali',
-    price: 180,
-    pricePer: 'per thali',
-    image: 'https://images.unsplash.com/photo-1626200419109-383842cb36a0?w=800',
-    description: 'Crispy rava fried fish served with solkadhi, rice, and bhakri.',
-    availabilityDetails: { isAvailable: true, ordersToday: 4, left: 6, total: 10 },
-    timeWindow: '1:00 - 3:30 PM',
-    location: 'Kothrud, Pune',
-    distance: '3.5 km away',
-    tags: ['Non-Veg', 'Seafood', 'Authentic'],
-    provider: {
-      name: 'Konkani Katta',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
-      rating: 4.7, ordersCount: '110+', isVerified: true,
-      badges: [
-        { icon: 'shield', title: 'Hygienic', subtitle: 'Kitchen' },
-        { icon: 'users', title: '90+', subtitle: 'Happy Customers' },
-        { icon: 'medal', title: 'Top Rated', subtitle: 'Seafood Cook' },
-      ],
-    },
-  },
-  {
-    id: 'f12',
-    name: 'Paneer Tikka Masala',
-    price: 140,
-    pricePer: 'per portion',
-    image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=800',
-    description: 'Charcoal grilled paneer chunks in a rich, creamy tomato gravy.',
-    availabilityDetails: { isAvailable: true, ordersToday: 8, left: 12, total: 20 },
-    timeWindow: '7:00 - 10:00 PM',
-    location: 'Wakad, Pune',
-    distance: '5.0 km away',
-    tags: ['Veg', 'Rich', 'North Indian'],
-    provider: {
-      name: 'Punjabi Tadka',
-      avatar: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150',
-      rating: 4.5, ordersCount: '180+', isVerified: false,
-      badges: [
-        { icon: 'shield', title: 'Clean', subtitle: 'Kitchen' },
-        { icon: 'users', title: '120+', subtitle: 'Happy Customers' },
-        { icon: 'medal', title: 'Rising Star', subtitle: 'Home Cook' },
-      ],
-    },
-  },
-];
+      name: backendFood.provider?.kitchenName || 'Home Cook',
+      avatar: backendFood.provider?.avatar || 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150',
+      rating: backendFood.provider?.rating || 4.8,
+      ordersCount: '100+',
+      isVerified: true,
+      badges: []
+    }
+  };
+};
 
-const mockCooks = [
-  { id: 'c1', name: 'Sunita Kitchen', rating: '4.9', orders: '120', distance: '1.2 km', image: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=400' },
-  { id: 'c2', name: 'Asha Meals',     rating: '4.8', orders: '98',  distance: '1.4 km', image: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400' },
-  { id: 'c3', name: 'Maa Ka Swad',    rating: '4.7', orders: '110', distance: '1.6 km', image: 'https://images.unsplash.com/photo-1581299894007-aaa50297cf16?w=400' },
-  { id: 'c4', name: 'Homely Bites',   rating: '4.8', orders: '75',  distance: '1.7 km', image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400' },
-];
+// (mockCooks removed — now loaded live from /api/providers)
+
 
 const cardVariants = {
   hidden:  { opacity: 0, y: 40, scale: 0.94 },
@@ -248,8 +87,54 @@ Explore: [
 };
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function HomePage() {
-  const navigate = useNavigate();   // ← add this line
-  const [showAI, setShowAI] = React.useState(false);
+  const navigate = useNavigate();
+  const [showAI, setShowAI] = useState(false);
+  const [foods, setFoods] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [cooks, setCooks] = useState([]);
+  const [cooksLoading, setCooksLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFoods = async () => {
+      try {
+        const response = await api.get('/foods');
+        if (response.data.success) {
+          setFoods(response.data.foodItems);
+        } else {
+          setError('Failed to fetch food items');
+        }
+      } catch (err) {
+        console.error('Error fetching foods:', err);
+        setError('Could not connect to service. Please verify server state.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFoods();
+
+    // Fetch approved providers for the Nearby Home Cooks section
+    const fetchCooks = async () => {
+      try {
+        const res = await api.get('/providers');
+        if (res.data.success) {
+          setCooks(res.data.providers.slice(0, 4).map(p => ({
+            id: p._id,
+            name: p.kitchenName || 'Home Cook',
+            rating: (p.rating || 5.0).toFixed(1),
+            orders: p.totalReviews > 0 ? `${p.totalReviews}+` : '10+',
+            distance: '—',
+            image: p.avatar || 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=400'
+          })));
+        }
+      } catch (err) {
+        console.error('Error fetching cooks:', err);
+      } finally {
+        setCooksLoading(false);
+      }
+    };
+    fetchCooks();
+  }, []);
   // ...
   return (
     <div className="bg-white min-h-screen overflow-x-hidden">
@@ -285,40 +170,84 @@ export default function HomePage() {
             subtitle="Fresh picks from local kitchens this morning"
             showSeeAll link="/food"
           />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-14 px-4 sm:px-6 lg:px-8 mt-6 pb-6">
-            {mockFoods.map((food, idx) => (
-              <motion.div key={food.id} custom={idx} variants={cardVariants} initial="hidden"
-                whileInView="visible" viewport={{ once: true, margin: '-40px' }} className="flex justify-center w-full">
-                <FoodCard food={food} />
-              </motion.div>
-            ))}
-          </div>
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-4 sm:px-6 lg:px-8 mt-6">
+              {[1, 2, 3, 4].map(n => (
+                <div key={n} className="bg-slate-50 border border-slate-100 rounded-2xl h-72 animate-pulse w-full max-w-[340px] mx-auto" />
+              ))}
+            </div>
+          ) : error ? (
+            <div className="text-center py-12 text-rose-500 font-bold text-sm">
+              ⚠️ {error}
+            </div>
+          ) : foods.length === 0 ? (
+            <div className="text-center py-16 text-slate-400 font-bold text-sm bg-slate-50/50 rounded-2xl mx-4">
+              🍲 No fresh local thalis or food items live right now.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-14 px-4 sm:px-6 lg:px-8 mt-6 pb-6">
+              {foods.slice(0, 4).map((food, idx) => (
+                <motion.div key={food._id} custom={idx} variants={cardVariants} initial="hidden"
+                  whileInView="visible" viewport={{ once: true, margin: '-40px' }} className="flex justify-center w-full">
+                  <FoodCard food={mapBackendFoodToCard(food)} />
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
-
+ 
         {/* ── Trending Today ── */}
         <div className="mt-6 bg-gray-50 py-10 rounded-[2.5rem] mx-2 sm:mx-6 lg:mx-8 mb-8 border border-gray-100">
           <SectionHeader title="Trending Today 🔥" subtitle="Most ordered in the last 24 hours" showSeeAll link="/food" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-14 px-4 sm:px-6 lg:px-8 mt-6 pb-6">
-            {trendingFoods.map((food, idx) => (
-              <motion.div key={food.id} custom={idx} variants={cardVariants} initial="hidden"
-                whileInView="visible" viewport={{ once: true, margin: '-40px' }} className="flex justify-center w-full">
-                <FoodCard food={food} />
-              </motion.div>
-            ))}
-          </div>
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-4 sm:px-6 lg:px-8 mt-6">
+              {[1, 2, 3, 4].map(n => (
+                <div key={n} className="bg-white border border-slate-100 rounded-2xl h-72 animate-pulse w-full max-w-[340px] mx-auto" />
+              ))}
+            </div>
+          ) : error ? (
+            <div className="text-center py-12 text-rose-500 font-bold text-sm">
+              ⚠️ {error}
+            </div>
+          ) : foods.length === 0 ? (
+            <div className="text-center py-16 text-slate-400 font-bold text-sm bg-white rounded-2xl mx-4">
+              🍲 No trending items right now. Check back soon!
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-14 px-4 sm:px-6 lg:px-8 mt-6 pb-6">
+              {foods.slice(4, 8).concat(foods.slice(0, Math.max(0, 4 - foods.length + 4))).slice(0, 4).map((food, idx) => (
+                <motion.div key={food._id} custom={idx} variants={cardVariants} initial="hidden"
+                  whileInView="visible" viewport={{ once: true, margin: '-40px' }} className="flex justify-center w-full">
+                  <FoodCard food={mapBackendFoodToCard(food)} />
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── Nearby Home Cooks ── */}
         <div className="mt-10">
           <SectionHeader title="Nearby Home Cooks" subtitle="Trusted kitchens just around the corner" showSeeAll link="/search" />
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 px-4 sm:px-6 lg:px-8 mt-2">
-            {mockCooks.map((cook, idx) => (
-              <motion.div key={cook.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }} transition={{ duration: 0.45, delay: idx * 0.09 }}>
-                <CookCard cook={cook} />
-              </motion.div>
-            ))}
-          </div>
+          {cooksLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 px-4 sm:px-6 lg:px-8 mt-2">
+              {[1,2,3,4].map(n => (
+                <div key={n} className="bg-slate-50 border border-slate-100 rounded-3xl h-48 animate-pulse" />
+              ))}
+            </div>
+          ) : cooks.length === 0 ? (
+            <div className="text-center py-12 text-slate-400 font-medium text-sm mx-4">
+              🍳 No verified home cooks registered yet. Check back soon!
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 px-4 sm:px-6 lg:px-8 mt-2">
+              {cooks.map((cook, idx) => (
+                <motion.div key={cook.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }} transition={{ duration: 0.45, delay: idx * 0.09 }}>
+                  <CookCard cook={cook} />
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── Chef Section ── */}

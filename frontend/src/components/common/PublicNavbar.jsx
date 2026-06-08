@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 const NAV_LINKS = [
   { label: 'Home', to: '/' },
   { label: 'Browse Food', to: '/food' },
   { label: 'Find Cooks', to: '/search' },
-  { label: 'Dashboard', to: '/customer/dashboard' },
 ];
 
 const PublicNavbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -22,7 +25,30 @@ const PublicNavbar = () => {
 
   useEffect(() => {
     setMenuOpen(false);
+    setUserMenuOpen(false);
   }, [location.pathname]);
+
+  const handleLogout = () => {
+    logout();
+    setUserMenuOpen(false);
+    navigate('/');
+  };
+
+  const getDashboardLink = () => {
+    if (!user) return '/login';
+    if (user.role === 'PROVIDER') return '/chef/dashboard';
+    if (user.role === 'ADMIN') return '/admin/dashboard';
+    return '/customer/dashboard';
+  };
+
+  const getDashboardLabel = () => {
+    if (!user) return 'Dashboard';
+    if (user.role === 'PROVIDER') return 'Chef Dashboard';
+    if (user.role === 'ADMIN') return 'Admin Dashboard';
+    return 'My Account';
+  };
+
+  const userInitial = user?.name?.charAt(0)?.toUpperCase() || '?';
 
   return (
     <>
@@ -73,6 +99,19 @@ const PublicNavbar = () => {
                   </Link>
                 );
               })}
+              {/* Show Dashboard link for logged-in users */}
+              {user && (
+                <Link
+                  to={getDashboardLink()}
+                  className={`relative px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200 ${
+                    location.pathname.includes('dashboard')
+                      ? 'text-brand-green bg-brand-light'
+                      : 'text-gray-600 hover:text-brand-green hover:bg-gray-50'
+                  }`}
+                >
+                  {getDashboardLabel()}
+                </Link>
+              )}
             </div>
 
             {/* ── Right Actions ── */}
@@ -98,24 +137,88 @@ const PublicNavbar = () => {
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
               </button>
 
-              {/* Become a Cook — lg+ */}
-              <Link
-                to="/chef-signup"
-                className="hidden lg:flex items-center gap-1.5 text-sm font-semibold text-brand-green border border-brand-green/30 hover:bg-brand-light px-4 py-2 rounded-full transition-all duration-200"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Become a Cook
-              </Link>
+              {user ? (
+                /* ── Logged-in User Menu ── */
+                <div className="relative">
+                  <button
+                    id="user-menu-btn"
+                    onClick={() => setUserMenuOpen(v => !v)}
+                    className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-full border border-gray-200 transition-colors cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-brand-green flex items-center justify-center text-white text-xs font-black">
+                      {userInitial}
+                    </div>
+                    <span className="hidden sm:block text-sm font-semibold text-gray-800 max-w-[100px] truncate">
+                      {user.name?.split(' ')[0]}
+                    </span>
+                    <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
 
-              {/* Sign In */}
-              <Link
-                to="/login"
-                className="bg-brand-green text-white px-4 sm:px-5 py-2 rounded-full text-sm font-bold hover:bg-brand-green/90 active:scale-95 transition-all duration-200 shadow-sm shadow-brand-green/20"
-              >
-                Sign In
-              </Link>
+                  <AnimatePresence>
+                    {userMenuOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 6, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-full mt-2 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl shadow-black/5 overflow-hidden z-50"
+                      >
+                        <div className="px-4 py-3 border-b border-gray-100">
+                          <p className="text-sm font-bold text-gray-900 truncate">{user.name}</p>
+                          <p className="text-xs text-gray-400 capitalize">{user.role?.toLowerCase()}</p>
+                        </div>
+                        <div className="py-1">
+                          <Link
+                            to={getDashboardLink()}
+                            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                            </svg>
+                            {getDashboardLabel()}
+                          </Link>
+                        </div>
+                        <div className="py-1 border-t border-gray-100">
+                          <button
+                            id="navbar-logout-btn"
+                            onClick={handleLogout}
+                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            Sign Out
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <>
+                  {/* Become a Cook — lg+ */}
+                  <Link
+                    to="/chef-signup"
+                    className="hidden lg:flex items-center gap-1.5 text-sm font-semibold text-brand-green border border-brand-green/30 hover:bg-brand-light px-4 py-2 rounded-full transition-all duration-200"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Become a Cook
+                  </Link>
+
+                  {/* Sign In */}
+                  <Link
+                    to="/login"
+                    id="navbar-signin-btn"
+                    className="bg-brand-green text-white px-4 sm:px-5 py-2 rounded-full text-sm font-bold hover:bg-brand-green/90 active:scale-95 transition-all duration-200 shadow-sm shadow-brand-green/20"
+                  >
+                    Sign In
+                  </Link>
+                </>
+              )}
 
               {/* Mobile Hamburger */}
               <button
@@ -170,6 +273,15 @@ const PublicNavbar = () => {
                   );
                 })}
 
+                {user && (
+                  <Link
+                    to={getDashboardLink()}
+                    className="px-4 py-3 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    {getDashboardLabel()}
+                  </Link>
+                )}
+
                 {/* Location pill in mobile menu */}
                 <div className="flex items-center gap-2 px-4 py-3 text-sm text-gray-600">
                   <svg className="w-4 h-4 text-brand-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -180,16 +292,33 @@ const PublicNavbar = () => {
                   <span className="text-gray-400">— change location</span>
                 </div>
 
-                <div className="mt-2 pt-3 border-t border-gray-100">
-                  <Link
-                    to="/chef-signup"
-                    className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-brand-green/30 text-brand-green font-semibold text-sm hover:bg-brand-light transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Become a Cook
-                  </Link>
+                <div className="mt-2 pt-3 border-t border-gray-100 flex flex-col gap-2">
+                  {user ? (
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-red-200 text-red-600 font-semibold text-sm hover:bg-red-50 transition-colors"
+                    >
+                      Sign Out
+                    </button>
+                  ) : (
+                    <>
+                      <Link
+                        to="/chef-signup"
+                        className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-brand-green/30 text-brand-green font-semibold text-sm hover:bg-brand-light transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Become a Cook
+                      </Link>
+                      <Link
+                        to="/login"
+                        className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-brand-green text-white font-semibold text-sm hover:bg-brand-green/90 transition-colors"
+                      >
+                        Sign In
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </motion.div>

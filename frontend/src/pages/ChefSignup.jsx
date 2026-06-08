@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const SUGGESTED_CUISINES = [
   'North Indian', 'South Indian', 'Maharashtrian', 'Gujarati', 
@@ -8,7 +11,12 @@ const SUGGESTED_CUISINES = [
   'Punjabi', 'Rajasthani', 'Biryani Special', 'Seafood'
 ];
 
+const DIETARY_TYPES = ['Veg', 'Non-Veg', 'Vegan'];
+const SERVICE_TYPES = ['Home Delivery', 'Pickup', 'Event Catering', 'Daily Tiffin Service'];
+
 export default function ChefSignup() {
+  const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -18,6 +26,8 @@ export default function ChefSignup() {
     pincode: '',
     fullAddress: '',
     cuisines: [],
+    dietaryType: [],
+    serviceTypes: [],
     experience: '',
     bio: '',
     password: '',
@@ -27,6 +37,7 @@ export default function ChefSignup() {
   const [cuisineInput, setCuisineInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null); // Raw File object for FormData upload
   
   // Aadhar specific states
   const [aadharFile, setAadharFile] = useState(null);
@@ -87,9 +98,10 @@ export default function ChefSignup() {
         setErrors(prev => ({ ...prev, photo: 'Image must be less than 5MB' }));
         return;
       }
+      setPhotoFile(file); // Store the raw File object for multipart upload
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPhotoPreview(reader.result);
+        setPhotoPreview(reader.result); // Keep base64 for preview display
         setErrors(prev => ({ ...prev, photo: null }));
       };
       reader.readAsDataURL(file);
@@ -120,6 +132,7 @@ export default function ChefSignup() {
     if (!formData.pincode.trim() || !/^\d{6}$/.test(formData.pincode)) newErrors.pincode = 'Valid 6-digit pincode required';
     if (!formData.fullAddress.trim()) newErrors.fullAddress = 'Full address is required';
     if (formData.cuisines.length === 0) newErrors.cuisines = 'Add at least one cuisine specialization';
+    if (formData.dietaryType.length === 0) newErrors.dietaryType = 'Select at least one dietary type';
     if (!formData.experience || isNaN(formData.experience) || Number(formData.experience) < 0) newErrors.experience = 'Valid years of experience required';
     if (!formData.bio.trim() || formData.bio.length < 20) newErrors.bio = 'Bio must be at least 20 characters';
     if (!formData.password || formData.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
@@ -134,18 +147,59 @@ export default function ChefSignup() {
     setSubmitStatus(null);
     
     if (!validateForm()) {
-      // Scroll to top to show errors if needed
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
     setIsLoading(true);
 
-    // Simulate API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setSubmitStatus('success');
+      // Build multipart/form-data payload so files are actually uploaded
+      const formPayload = new FormData();
+      formPayload.append('name', formData.fullName);
+      formPayload.append('email', formData.email);
+      formPayload.append('phone', formData.phone);
+      formPayload.append('password', formData.password);
+      formPayload.append('kitchenName', `${formData.fullName}'s Kitchen`);
+      formPayload.append('tagline', `Authentic homemade food by ${formData.fullName}`);
+      formPayload.append('bio', formData.bio);
+      formPayload.append('experience', Number(formData.experience));
+      formPayload.append('specialities', JSON.stringify(formData.cuisines));
+      formPayload.append('dietaryType', JSON.stringify(formData.dietaryType));
+      formPayload.append('serviceTypes', JSON.stringify(formData.serviceTypes));
+      formPayload.append('city', formData.city);
+      formPayload.append('area', formData.area);
+      formPayload.append('pincode', formData.pincode);
+      formPayload.append('fullAddress', formData.fullAddress);
+      // Coordinates omitted — will be set during geocoding implementation
+
+      // Attach avatar photo file if available
+      if (photoFile) {
+        formPayload.append('avatar', photoFile);
+      }
+
+      // Attach Aadhaar document if available
+      if (aadharFile) {
+        formPayload.append('aadhar', aadharFile);
+      }
+
+      const response = await api.post('/providers/register', formPayload, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      
+      if (response.data.success) {
+        setSubmitStatus('success');
+        
+        // Log in the user automatically
+        login(response.data.user, response.data.token);
+        
+        // Redirect to chef dashboard after 1.5 seconds
+        setTimeout(() => {
+          navigate('/chef/dashboard');
+        }, 1500);
+      }
     } catch (err) {
+      console.error('Failed chef registration:', err);
       setSubmitStatus('error');
     } finally {
       setIsLoading(false);
@@ -417,6 +471,66 @@ export default function ChefSignup() {
                   {errors.cuisines && formData.cuisines.length === 0 && <p className="text-xs font-bold text-red-500 mt-1">{errors.cuisines}</p>}
                 </div>
 
+                {/* Dietary Type */}
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Dietary Types You Cater To <span className="text-red-500">*</span></label>
+                  <p className="text-xs text-gray-500">Select all that apply. This helps customers filter by diet preference.</p>
+                  <div className="flex flex-wrap gap-3">
+                    {DIETARY_TYPES.map(type => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            dietaryType: prev.dietaryType.includes(type)
+                              ? prev.dietaryType.filter(d => d !== type)
+                              : [...prev.dietaryType, type]
+                          }));
+                          if (errors.dietaryType) setErrors(prev => ({ ...prev, dietaryType: null }));
+                        }}
+                        className={`px-4 py-2 rounded-full text-sm font-bold border transition-all ${
+                          formData.dietaryType.includes(type)
+                            ? 'bg-brand-green text-white border-brand-green shadow-sm'
+                            : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-brand-green/50'
+                        }`}
+                      >
+                        {type === 'Veg' ? '🟢' : type === 'Non-Veg' ? '🔴' : '🌿'} {type}
+                      </button>
+                    ))}
+                  </div>
+                  {errors.dietaryType && <p className="text-xs font-bold text-red-500">{errors.dietaryType}</p>}
+                </div>
+
+                {/* Service Types */}
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Services Offered</label>
+                  <p className="text-xs text-gray-500">Select the services you offer to customers.</p>
+                  <div className="flex flex-wrap gap-3">
+                    {SERVICE_TYPES.map(type => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            serviceTypes: prev.serviceTypes.includes(type)
+                              ? prev.serviceTypes.filter(s => s !== type)
+                              : [...prev.serviceTypes, type]
+                          }));
+                        }}
+                        className={`px-4 py-2 rounded-full text-sm font-bold border transition-all ${
+                          formData.serviceTypes.includes(type)
+                            ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                            : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="space-y-1.5 w-full md:w-1/2">
                   <label className="text-sm font-bold text-gray-700">Years of Experience <span className="text-red-500">*</span></label>
                   <input 
@@ -427,6 +541,7 @@ export default function ChefSignup() {
                   />
                   {errors.experience && <p className="text-xs font-bold text-red-500">{errors.experience}</p>}
                 </div>
+
 
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-gray-700">Short Bio / About Me <span className="text-red-500">*</span></label>

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import FoodCard from '../../components/food/FoodCard.jsx';
+import api from '../../services/api';
 
 export default function FoodPage() {
   const [activeCategory, setActiveCategory] = useState('All Meals');
@@ -9,29 +10,71 @@ export default function FoodPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('relevance');
 
-  // Mock Foods matching HomePage data structure
-  const allFoods = [
-    {
-      id: 'f4', name: 'Authentic Indori Poha', price: 40, pricePer: '', image: 'https://images.unsplash.com/photo-1601050690597-df056fb4ce78?auto=format&fit=crop&q=80&w=600', description: 'Soft and light poha with peanuts, curry leaves, lemon and mild spices.', availabilityDetails: { isAvailable: true, ordersToday: 120, left: 7, total: 15 }, timeWindow: '9:00 - 10:00 AM', location: 'Baner, Pune', distance: '1.2 km away', tags: ['Veg', 'Healthy', 'Homemade'], provider: { name: 'Savitri\'s Kitchen', avatar: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150', rating: 4.9, ordersCount: '120+', isVerified: true, badges: [] }
-    },
-    {
-      id: 'f1', name: 'Homestyle Premium Veg Tiffin', price: 120, pricePer: '', image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=600', description: 'Authentic vegetarian thali with 2 sabzis, dal, rice, and chapatis.', availabilityDetails: { isAvailable: true, ordersToday: 450, left: 14, total: 20 }, timeWindow: '12:30 - 2:00 PM', location: 'Kothrud, Pune', distance: '2.5 km away', tags: ['Veg', 'Authentic'], provider: { name: 'Ghar Ka Swaad Network', avatar: 'https://images.unsplash.com/photo-1581299894007-aaa50297cf16?w=150', rating: 4.8, ordersCount: '450+', isVerified: true, badges: [] }
-    },
-    {
-      id: 'f2', name: 'Kolhapuri Chicken Thali', price: 180, pricePer: '', image: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&q=80&w=600', description: 'Spicy and flavorful chicken curry served with steamed basmati rice.', availabilityDetails: { isAvailable: true, ordersToday: 80, left: 3, total: 10 }, timeWindow: '8:00 - 9:30 PM', location: 'Baner, Pune', distance: '1.5 km away', tags: ['Non-Veg', 'Spicy'], provider: { name: 'Chef Aarav\'s Culinary', avatar: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=150', rating: 4.9, ordersCount: '80+', isVerified: true, badges: [] }
-    },
-    {
-      id: 'f9', name: 'Misal Pav', price: 60, pricePer: 'per plate', image: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=800', description: 'Spicy sprouted moth bean curry served with fresh pav, topped with farsan.', availabilityDetails: { isAvailable: true, ordersToday: 24, left: 2, total: 30 }, timeWindow: '8:30 - 11:00 AM', location: 'Katraj, Pune', distance: '4.2 km away', tags: ['Veg', 'Spicy', 'Street Food'], provider: { name: 'Ramesh\'s Misal', avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=150', rating: 4.8, ordersCount: '300+', isVerified: true, badges: [] }
-    },
-    {
-      id: 'f11', name: 'Fish Fry Thali', price: 180, pricePer: 'per thali', image: 'https://images.unsplash.com/photo-1626200419109-383842cb36a0?w=800', description: 'Crispy rava fried fish served with solkadhi, rice, and bhakri.', availabilityDetails: { isAvailable: true, ordersToday: 4, left: 6, total: 10 }, timeWindow: '1:00 - 3:30 PM', location: 'Kothrud, Pune', distance: '3.5 km away', tags: ['Non-Veg', 'Seafood'], provider: { name: 'Konkani Katta', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', rating: 4.7, ordersCount: '110+', isVerified: true, badges: [] }
-    },
-    {
-      id: 'f12', name: 'Paneer Tikka Masala', price: 140, pricePer: 'per portion', image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=800', description: 'Charcoal grilled paneer chunks in a rich, creamy tomato gravy.', availabilityDetails: { isAvailable: true, ordersToday: 8, left: 12, total: 20 }, timeWindow: '7:00 - 10:00 PM', location: 'Wakad, Pune', distance: '5.0 km away', tags: ['Veg', 'Rich'], provider: { name: 'Punjabi Tadka', avatar: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150', rating: 4.5, ordersCount: '180+', isVerified: false, badges: [] }
-    }
-  ];
+  const [foods, setFoods] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const categories = ['All Meals', 'Breakfast Specials', 'Daily Tiffins', 'Festive / Event Catering', 'Home-baked Goods'];
+  useEffect(() => {
+    const fetchFoods = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await api.get('/foods');
+        if (response.data.success) {
+          const mappedFoods = response.data.foodItems.map(item => {
+            const providerInfo = item.provider || {};
+            return {
+              id: item._id,
+              name: item.name,
+              price: item.price,
+              pricePer: item.pricePer || 'per plate',
+              image: item.images?.[0] || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=600',
+              description: item.description,
+              category: item.category,
+              mealType: item.mealType || '',
+              isVeg: item.isVeg,
+              availabilityDetails: {
+                isAvailable: item.quantity > 0 && item.status === 'available',
+                ordersToday: item.ordersToday || 0,
+                left: item.quantity,
+                total: item.totalQuantity || item.quantity
+              },
+              timeWindow: item.timeWindow || '12:30 - 2:00 PM',
+              location: providerInfo.area ? `${providerInfo.area}, ${providerInfo.city}` : 'Pune',
+              distance: '1.2 km away',
+              tags: [item.isVeg ? 'Veg' : 'Non-Veg', item.category, ...(item.tags || [])].filter(Boolean),
+              provider: {
+                name: providerInfo.kitchenName || 'Home Cook',
+                avatar: providerInfo.avatar || 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150',
+                rating: providerInfo.rating || 5.0,
+                ordersCount: '100+',
+                isVerified: providerInfo.isVerified || false,
+                badges: []
+              }
+            };
+          });
+          setFoods(mappedFoods);
+        }
+      } catch (err) {
+        console.error('Error fetching foods:', err);
+        setError('Failed to load fresh homemade foods. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFoods();
+  }, []);
+
+  const categories = [
+    'All Meals',
+    'Breakfast',
+    'Lunch',
+    'Dinner',
+    'Daily Tiffin',
+    'Snack',
+    'Festive / Event',
+    'Baked Goods'
+  ];
 
   const handleVegToggle = () => {
     setVegOnly(!vegOnly);
@@ -43,10 +86,21 @@ export default function FoodPage() {
     if (!nonVegOnly) setVegOnly(false);
   };
 
-  let displayedFoods = allFoods.filter(food => {
-    if (vegOnly && !food.tags.includes('Veg')) return false;
-    if (nonVegOnly && !food.tags.includes('Non-Veg')) return false;
-    if (searchQuery && !food.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+  let displayedFoods = foods.filter(food => {
+    // Filter by mealType (exact match against enum values)
+    if (activeCategory !== 'All Meals') {
+      if (food.mealType !== activeCategory) return false;
+    }
+    if (vegOnly && food.isVeg !== true) return false;
+    if (nonVegOnly && food.isVeg !== false) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      return (
+        food.name.toLowerCase().includes(q) ||
+        food.description.toLowerCase().includes(q) ||
+        food.provider.name.toLowerCase().includes(q)
+      );
+    }
     return true;
   });
 
@@ -56,6 +110,46 @@ export default function FoodPage() {
     displayedFoods.sort((a, b) => b.price - a.price);
   } else if (sortBy === 'distance') {
     displayedFoods.sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50/30 text-slate-800 font-sans pb-24">
+        <div className="bg-white border-b border-gray-200/60 shadow-sm pt-4 pb-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+            <div className="h-12 bg-gray-200 rounded-2xl animate-pulse max-w-2xl" />
+            <div className="h-10 bg-gray-200 rounded-full animate-pulse max-w-lg" />
+          </div>
+        </div>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-2">
+          <div className="h-6 bg-gray-200 rounded w-1/4 mb-8 animate-pulse" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[1, 2, 3].map(n => (
+              <div key={n} className="bg-white border border-gray-100 rounded-2xl h-72 animate-pulse" />
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-slate-50/30 flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-3xl border border-gray-100 shadow-md p-8 text-center">
+          <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-500 text-3xl">
+            ⚠️
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Error Loading Foods</h2>
+          <p className="text-gray-500 mb-6 text-sm">{error}</p>
+          <div className="flex gap-3 justify-center">
+            <button onClick={() => window.location.reload()} className="px-5 py-2.5 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-gray-800 transition-colors">
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

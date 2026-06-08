@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 export default function CustomerAuthModule() {
+  const navigate = useNavigate();
+  const { login } = useAuth();
   const [currentPath, setCurrentPath] = useState('/login'); 
   
-  // 1. THIS IS YOUR TEMPORARY RAM DATABASE
-  // It stores your registered credentials locally until you refresh the tab.
-  const [mockUserDatabase, setMockUserDatabase] = useState(null);
-
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -81,8 +82,7 @@ export default function CustomerAuthModule() {
     return Object.keys(localErrors).length === 0;
   };
 
-  // 2. UPDATED FORM HANDLER WITH REAL VALIDATION LOGIC
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) {
@@ -92,39 +92,54 @@ export default function CustomerAuthModule() {
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      setIsLoading(false);
-      
-      if (currentPath === '/login') {
-        // --- REAL TIME VERIFICATION LOGIC ---
-        if (!mockUserDatabase) {
-          triggerToast('error', 'No account found. Please sign up first.');
-        } else if (
-          formData.email === mockUserDatabase.email && 
-          formData.password === mockUserDatabase.password
-        ) {
-          triggerToast('success', 'Welcome back! Login successful.');
-          // Clear password input field after login success
-          setFormData(prev => ({ ...prev, password: '' }));
-        } else {
-          triggerToast('error', 'Invalid email or wrong password. Access denied.');
-        }
-        
-      } else {
-        // --- SECURE IN-MEMORY REGISTRATION SAVING ---
-        // We save the details typed during signup right here before clearing the inputs
-        setMockUserDatabase({
+    try {
+      if (currentPath === '/signup') {
+        // --- LIVE REGISTRATION: POST /api/auth/register ---
+        const response = await api.post('/auth/register', {
+          name: formData.fullName,
           email: formData.email,
-          password: formData.password
+          phone: formData.phoneNumber,
+          password: formData.password,
+          role: 'CUSTOMER',
+          city: formData.city,
+          area: formData.locality,
+          pincode: formData.pincode,
         });
 
-        triggerToast('success', 'Account created successfully! Welcome to Shanta Bai.');
-        
-        // Reset inputs and forward user automatically to login route
-        setFormData({ fullName: '', email: '', phoneNumber: '', password: '', confirmPassword: '', city: '', locality: '', pincode: '' });
-        setCurrentPath('/login');
+        if (response.data.success) {
+          triggerToast('success', 'Account created successfully! Welcome to Shanta Bai.');
+          setFormData({ fullName: '', email: '', phoneNumber: '', password: '', confirmPassword: '', city: '', locality: '', pincode: '' });
+          setCurrentPath('/login');
+        }
+      } else {
+        // --- LIVE LOGIN: POST /api/auth/login ---
+        const response = await api.post('/auth/login', {
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (response.data.success) {
+          // Persist token and update AuthContext
+          login(response.data.user, response.data.token);
+          triggerToast('success', 'Welcome back! Login successful.');
+
+          // Role-based redirect
+          const { role } = response.data.user;
+          if (role === 'PROVIDER') {
+            navigate('/chef/dashboard');
+          } else if (role === 'ADMIN') {
+            navigate('/admin/dashboard');
+          } else {
+            navigate('/');
+          }
+        }
       }
-    }, 2000);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Something went wrong. Please try again.';
+      triggerToast('error', msg);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const navigateTo = (path) => {
@@ -192,7 +207,7 @@ export default function CustomerAuthModule() {
                     value={formData.phoneNumber}
                     onChange={handleInputChange}
                     placeholder="98765 43210"
-                    className={`w-full bg-slate-50 border pl-16 pr-4 py-3 ${errors.phoneNumber ? 'border-rose-400 focus:ring-rose-500/10' : 'border-slate-200 focus:border-brand-green'} focus:bg-white focus:ring-4 focus:ring-brand-green/10 rounded-xl px-4 py-3 text-sm font-medium outline-none transition-all`}
+                    className={`w-full bg-slate-50 border pl-16 pr-4 py-3 ${errors.phoneNumber ? 'border-rose-400 focus:ring-rose-500/10' : 'border-slate-200 focus:border-brand-green'} focus:bg-white focus:ring-4 focus:ring-brand-green/10 rounded-xl text-sm font-medium outline-none transition-all`}
                   />
                 </div>
                 {errors.phoneNumber && <span className="text-xs font-bold text-rose-500 px-1">⚠️ {errors.phoneNumber}</span>}
@@ -264,7 +279,7 @@ export default function CustomerAuthModule() {
                 {errors.confirmPassword && <span className="text-xs font-bold text-rose-500 px-1">⚠️ {errors.confirmPassword}</span>}
               </div>
 
-              {/* Spatial Location Metadata Layout Grid (Responsive 2/3 columns layout split) */}
+              {/* Location Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 
                 {/* City Selection */}
