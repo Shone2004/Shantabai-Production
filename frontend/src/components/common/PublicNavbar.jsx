@@ -6,6 +6,7 @@ const NAV_LINKS = [
   { label: 'Home', to: '/' },
   { label: 'Browse Food', to: '/food' },
   { label: 'Find Cooks', to: '/search' },
+  { label: 'Dashboard', to: '/customer/dashboard' },
 ];
 
 const PublicNavbar = () => {

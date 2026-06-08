@@ -13,6 +13,7 @@ import FoodPage from "./pages/public/FoodPage.jsx";
 import FoodDetail from "./pages/public/FoodDetail.jsx";
 import Login from "./pages/public/AuthPage.jsx";
 import ChefSignup from "./pages/ChefSignup.jsx";
+import CustomerDash from "./pages/CustomerDash.jsx";
 
 import PublicLayout from "./layouts/PublicLayout.jsx";
 
@@ -49,6 +50,12 @@ function App() {
                 <AddFood onBack={() => window.history.back()} />
               </PrivateRoute>
             }
+          />
+
+          {/* Customer Dashboard - No Login Required For Testing */}
+          <Route
+            path="/customer/dashboard"
+            element={<CustomerDash />}
           />
 
           {/* Fallback */}
