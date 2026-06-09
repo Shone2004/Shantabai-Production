@@ -11,6 +11,7 @@ const CATEGORIES = [
 const INITIAL = {
   name: "", category: "", price: "", description: "",
   prepTime: "", quantity: "", isVeg: true, spicyLevel: 0, status: "available",
+  bringContainer: false,
 };
 
 const SPICY_OPTS = [
@@ -240,6 +241,22 @@ export default function AddFood({ onBack }) {
                       className={`flex-1 py-2.5 text-xs font-bold rounded-xl border-2 flex items-center justify-center gap-2 transition-all ${!form.isVeg ? "bg-red-50 border-red-500 text-red-700" : "bg-white border-gray-200 text-gray-500"}`}>
                       <span className="w-3 h-3 rounded-sm bg-red-500 border-2 border-red-800 flex-shrink-0" />
                       Non-Vegetarian
+                    </button>
+                  </div>
+                </div>
+
+                {/* Bring Container Toggle */}
+                <div className="mb-5">
+                  <p className="text-xs font-bold text-gray-700 mb-1.5">Bring Container?</p>
+                  <p className="text-[11px] text-gray-400 mb-3">Enable if customers must bring their own container for this dish.</p>
+                  <div className="flex gap-3">
+                    <button type="button" onClick={() => set("bringContainer", false)}
+                      className={`flex-1 py-2.5 text-xs font-bold rounded-xl border-2 flex items-center justify-center gap-2 transition-all ${!form.bringContainer ? "bg-green-50 border-green-500 text-green-700" : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"}`}>
+                      🍱 Container Included
+                    </button>
+                    <button type="button" onClick={() => set("bringContainer", true)}
+                      className={`flex-1 py-2.5 text-xs font-bold rounded-xl border-2 flex items-center justify-center gap-2 transition-all ${form.bringContainer ? "bg-amber-50 border-amber-500 text-amber-700" : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"}`}>
+                      🥡 Bring Container
                     </button>
                   </div>
                 </div>

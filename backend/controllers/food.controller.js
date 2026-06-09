@@ -20,6 +20,7 @@ const createFoodItem = async (req, res) => {
       timeWindow,
       images,
       isVeg,
+      bringContainer,
       spicyLevel,
       tags,
     } = req.body;
@@ -91,6 +92,7 @@ const createFoodItem = async (req, res) => {
       timeWindow: timeWindow || "",
       images: uploadedImages,
       isVeg: isVeg !== undefined ? isVeg : true,
+      bringContainer: bringContainer !== undefined ? bringContainer : false,
       spicyLevel: spicyLevel !== undefined ? spicyLevel : 1,
       tags: tags || [],
       status: quantity > 0 ? "available" : "out",

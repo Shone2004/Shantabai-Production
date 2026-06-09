@@ -31,6 +31,7 @@ const FoodDetail = () => {
             category: item.category,
             availabilityTime: item.timeWindow || 'Today, 12:30 - 2:00 PM',
             quantityAvailable: item.quantity,
+            bringContainer: item.bringContainer ?? false,
             ingredients: item.tags && item.tags.length > 0 ? item.tags : ['Homemade', 'Freshly Prepared', 'Healthy Spices'],
             provider: {
               id: providerInfo._id,
@@ -145,6 +146,13 @@ const FoodDetail = () => {
                       <div className="flex items-center">
                         <svg className="w-4 h-4 mr-1 text-brand-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
                         {food.quantityAvailable} left
+                      </div>
+                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                        food.bringContainer
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {food.bringContainer ? '🥡 Bring Container' : '🍱 Container Included'}
                       </div>
                     </div>
                   </div>

@@ -17,6 +17,7 @@ export default function FoodPreviewCard({ food = {} }) {
     spicyLevel  = 0,
     status      = "available",
     images      = [],
+    bringContainer = false,
   } = food;
 
   const [activeImg, setActiveImg] = useState(0);
@@ -92,6 +93,7 @@ export default function FoodPreviewCard({ food = {} }) {
         <div className="flex justify-around pt-3 border-t border-dashed border-gray-100">
           <MetaChip icon="⏱️" label="Prep" value={`${prepTime} min`} />
           <MetaChip icon="📦" label="Qty" value={`${quantity} left`} />
+          <MetaChip icon={bringContainer ? "🥡" : "🍱"} label="Container" value={bringContainer ? "Bring Own" : "Included"} />
         </div>
       </div>
     </div>

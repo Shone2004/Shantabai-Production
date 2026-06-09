@@ -193,6 +193,7 @@ export default function ProviderDashboard() {
     totalQuantity: "10",
     prepTime: "30",
     isVeg: true,
+    bringContainer: false,
     spicyLevel: 1,
     images: [],
     tags: []
@@ -348,6 +349,7 @@ export default function ProviderDashboard() {
       totalQuantity: (food.totalQuantity || food.quantity).toString(),
       prepTime: food.prepTime.toString(),
       isVeg: food.isVeg,
+      bringContainer: food.bringContainer ?? false,
       spicyLevel: food.spicyLevel,
       images: food.images || [],
       tags: food.tags || []
@@ -423,6 +425,7 @@ export default function ProviderDashboard() {
       totalQuantity: "10",
       prepTime: "30",
       isVeg: true,
+      bringContainer: false,
       spicyLevel: 1,
       images: [],
       tags: []
@@ -1056,9 +1059,16 @@ className="h-12 w-auto object-contain"
                                 </div>
 
                                 {/* Spicy badge */}
-                                <div className="mt-2.5">
+                                <div className="mt-2.5 flex flex-wrap gap-1.5">
                                   <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${SPICY_OPTS[spicyIdx].bg} ${SPICY_OPTS[spicyIdx].border} ${SPICY_OPTS[spicyIdx].color}`}>
                                     {SPICY_OPTS[spicyIdx].emoji} {SPICY_OPTS[spicyIdx].label}
+                                  </span>
+                                  <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${
+                                    food.bringContainer
+                                      ? 'bg-amber-50 border-amber-200 text-amber-700'
+                                      : 'bg-green-50 border-green-200 text-green-700'
+                                  }`}>
+                                    {food.bringContainer ? '🥡 Bring Container' : '🍱 Container Incl.'}
                                   </span>
                                 </div>
                               </div>
@@ -1373,6 +1383,38 @@ className="h-12 w-auto object-contain"
                                   <span>{opt.label}</span>
                                 </button>
                               ))}
+                            </div>
+                          </div>
+
+                          {/* Bring Container Toggle */}
+                          <div className="sm:col-span-2">
+                            <p className="text-xs font-bold text-slate-700 mb-1">Bring Container?</p>
+                            <p className="text-[11px] text-slate-400 mb-2">Enable if customers must bring their own container for this dish.</p>
+                            <div className="grid grid-cols-2 gap-2" role="group" aria-label="Bring container selection">
+                              <button
+                                type="button"
+                                onClick={() => setFoodForm(p => ({ ...p, bringContainer: false }))}
+                                aria-pressed={!foodForm.bringContainer}
+                                className={`py-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 cursor-pointer transition-all touch-target ${
+                                  !foodForm.bringContainer
+                                    ? 'bg-green-50 border-green-400 text-green-700 shadow-sm'
+                                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'
+                                }`}
+                              >
+                                🍱 Container Included
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setFoodForm(p => ({ ...p, bringContainer: true }))}
+                                aria-pressed={foodForm.bringContainer}
+                                className={`py-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 cursor-pointer transition-all touch-target ${
+                                  foodForm.bringContainer
+                                    ? 'bg-amber-50 border-amber-400 text-amber-700 shadow-sm'
+                                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'
+                                }`}
+                              >
+                                🥡 Bring Container
+                              </button>
                             </div>
                           </div>
                         </div>

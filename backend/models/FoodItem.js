@@ -92,6 +92,11 @@ const foodItemSchema = new mongoose.Schema(
       default: true,
     },
 
+    bringContainer: {
+      type: Boolean,
+      default: false, // If true, customers must bring their own container
+    },
+
     spicyLevel: {
       type: Number,
       enum: [0, 1, 2, 3], // 0: Mild, 1: Medium, 2: Hot, 3: Extra Hot

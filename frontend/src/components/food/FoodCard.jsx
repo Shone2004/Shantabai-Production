@@ -17,6 +17,7 @@ const FoodCard = ({ food, hideProviderInfo = false }) => {
     location = 'Pune',
     distance = '1.0 km away',
     tags = [],
+    bringContainer = false,
     provider = {
       name: 'Home Cook',
       avatar: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150',
@@ -148,6 +149,15 @@ const FoodCard = ({ food, hideProviderInfo = false }) => {
 
   </div>
 </div>
+
+          {/* Container Badge */}
+          <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold ${
+            bringContainer
+              ? 'bg-amber-50 text-amber-700'
+              : 'bg-green-50 text-green-700'
+          }`}>
+            {bringContainer ? '🥡 Bring Container' : '🍱 Container Included'}
+          </div>
 
           {/* Tags — max 3, single row, no wrap */}
           {tags.slice(0, 3).map((tag, index) => {
