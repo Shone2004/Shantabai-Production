@@ -168,33 +168,43 @@ const providerProfileSchema = new mongoose.Schema(
 
     // Geospatial Coordinates for proximity searching (near customer)
     // Optional until geocoding is implemented
-    location: {
-      type: {
-        type: String,
-        enum: ["Point"],
-        default: "Point",
+   // Geospatial Coordinates for proximity searching (optional)
+location: {
+  type: {
+    type: String,
+    enum: ["Point"],
+    required: false,
+  },
+  coordinates: {
+    type: [Number], // [longitude, latitude]
+    required: false,
+    validate: {
+      validator: function (coords) {
+        // Allow missing coordinates
+        if (!coords || coords.length === 0) return true;
+
+        if (coords.length !== 2) return false;
+
+        const [lng, lat] = coords;
+
+        return (
+          lng >= -180 &&
+          lng <= 180 &&
+          lat >= -90 &&
+          lat <= 90
+        );
       },
-      coordinates: {
-        type: [Number], // [longitude, latitude] — null means coordinates not yet set
-        default: undefined,
-        validate: {
-          validator: function (coords) {
-            // Allow empty/null array (coordinates not set yet)
-            if (!coords || coords.length === 0) return true;
-            if (coords.length !== 2) return false;
-            const [lng, lat] = coords;
-            return lng >= -180 && lng <= 180 && lat >= -90 && lat <= 90;
-          },
-          message: "Coordinates must be a valid [longitude, latitude] pair.",
-        },
-      },
+      message:
+        "Coordinates must be a valid [longitude, latitude] pair.",
     },
+  },
+},
+
   },
   {
     timestamps: true,
   }
 );
-
 // Indexes
 // Unique index for the 1-to-1 relationship is handled implicitly by user: { unique: true }
 // Single field indexes for filters

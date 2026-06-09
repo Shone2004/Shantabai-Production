@@ -94,13 +94,13 @@ const createFoodItem = async (req, res) => {
       spicyLevel: spicyLevel !== undefined ? spicyLevel : 1,
       tags: tags || [],
       status: quantity > 0 ? "available" : "out",
-      approvalStatus: "PENDING",
-      isApproved: false,
+      approvalStatus: "APPROVED",
+      isApproved: true,
     });
 
     res.status(201).json({
       success: true,
-      message: "Food item created successfully. Pending admin approval.",
+      message: "Food item created successfully.",
       foodItem,
     });
   } catch (error) {
@@ -120,8 +120,7 @@ const getAllFoods = async (req, res) => {
     const { category, mealType, isVeg, providerId, search } = req.query;
     const query = {};
 
-    query.approvalStatus = "APPROVED";
-    query.isApproved = true;
+    // No approval filter — approved chefs' foods are always visible
 
     if (category) {
       query.category = category;
@@ -287,11 +286,6 @@ const updateFoodItem = async (req, res) => {
       updateData.images = [...(updateData.images || foodItem.images), ...uploadedFiles];
     }
 
-    // Reset approval flags if major fields were modified
-    if (updateData.name || updateData.description || updateData.price || updateData.images) {
-      updateData.approvalStatus = "PENDING";
-      updateData.isApproved = false;
-    }
 
     if (updateData.quantity !== undefined && updateData.status === undefined) {
       updateData.status = updateData.quantity > 0 ? "available" : "out";
@@ -304,7 +298,7 @@ const updateFoodItem = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Food item updated successfully. Pending admin approval.",
+      message: "Food item updated successfully.",
       foodItem,
     });
   } catch (error) {

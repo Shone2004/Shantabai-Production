@@ -150,35 +150,39 @@ const FoodCard = ({ food, hideProviderInfo = false }) => {
 </div>
 
           {/* Tags — max 3, single row, no wrap */}
-          {tags && tags.length > 0 && (
-            <div className="flex items-center gap-1.5 overflow-hidden">
-              {tags.slice(0, 3).map((tag) => {
-                const isVeg = tag.toLowerCase() === 'veg';
-                return (
-                  <span
-                    key={tag}
-                    className={`text-[10px] font-bold px-2 py-1 rounded-lg whitespace-nowrap flex items-center gap-1 ${
-                      isVeg
-                        ? 'bg-green-50 text-green-700'
-                        : tag.toLowerCase() === 'non-veg'
-                        ? 'bg-red-50 text-red-700'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}
-                  >
-                    {isVeg && (
-                      <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                    {tag}
-                  </span>
-                );
-              })}
-              {tags.length > 3 && (
-                <span className="text-[10px] font-bold text-gray-400">+{tags.length - 3}</span>
-              )}
-            </div>
-          )}
+          {tags.slice(0, 3).map((tag, index) => {
+  const isVeg = tag.toLowerCase() === 'veg';
+
+  return (
+    <span
+      key={`${tag}-${index}`}
+      className={`text-[10px] font-bold px-2 py-1 rounded-lg whitespace-nowrap flex items-center gap-1 ${
+        isVeg
+          ? 'bg-green-50 text-green-700'
+          : tag.toLowerCase() === 'non-veg'
+          ? 'bg-red-50 text-red-700'
+          : 'bg-gray-100 text-gray-600'
+      }`}
+    >
+      {isVeg && (
+        <svg
+          className="w-2.5 h-2.5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={3}
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+      )}
+      {tag}
+    </span>
+  );
+})}
 
           {/* ── Provider row (compact) ── */}
           <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
