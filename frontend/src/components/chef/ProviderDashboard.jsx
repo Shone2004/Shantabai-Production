@@ -45,6 +45,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import ChefBookings from "./ChefBookings";
 
 // ─── Constants (unchanged) ──────────────────────────────────────────────────
 const CUISINE_TYPES = [
@@ -68,7 +69,7 @@ const SPICY_OPTS = [
 // ─── Navigation Configuration ───────────────────────────────────────────────
 const SIDEBAR_NAV = [
   { id: "dashboard",    label: "Dashboard",    icon: LayoutDashboard, comingSoon: false },
-  { id: "bookings",     label: "Bookings",     icon: CalendarDays,    comingSoon: true  },
+  { id: "bookings",     label: "Bookings",     icon: CalendarDays,    comingSoon: false  },
   { id: "myfoods",      label: "My Foods",     icon: Utensils,        comingSoon: false },
   { id: "addfood",      label: "Add Food",     icon: PlusCircle,      comingSoon: false },
   { id: "earnings",     label: "Earnings",     icon: TrendingUp,      comingSoon: true  },
@@ -86,7 +87,7 @@ const BOTTOM_NAV = [
   { id: "profile",   label: "Profile",  icon: User,            isCenter: false },
 ];
 
-const COMING_SOON_PAGES = ["bookings", "earnings", "reviews", "availability", "support"];
+const COMING_SOON_PAGES = ["earnings", "reviews", "availability", "support"];
 
 // ─── Page Title Helper ───────────────────────────────────────────────────────
 function getPageTitle(activePage, editingFoodId) {
@@ -724,6 +725,10 @@ className="h-12 w-auto object-contain"
               {/* ══════════════════════════════
                   PAGE: DASHBOARD
               ══════════════════════════════ */}
+              {activePage === "bookings" && (
+                <ChefBookings />
+              )}
+
               {activePage === "dashboard" && (
                 <div className="space-y-5 animate-fade-in">
 

@@ -96,8 +96,8 @@ const FoodCard = ({ food, hideProviderInfo = false }) => {
             </div>
           </div>
 
-          {/* Description — capped at 2 lines */}
-          <p className="text-xs text-gray-500 font-medium leading-relaxed line-clamp-2">{description}</p>
+          {/* Description — capped at 2 lines, fixed min height for alignment */}
+          <p className="text-xs text-gray-500 font-medium leading-relaxed line-clamp-2 min-h-[2.5rem]">{description}</p>
 
           {/* Stats — compact single row */}
           {/* Stats Layout */}
@@ -159,40 +159,42 @@ const FoodCard = ({ food, hideProviderInfo = false }) => {
             {bringContainer ? '🥡 Bring Container' : '🍱 Container Included'}
           </div>
 
-          {/* Tags — max 3, single row, no wrap */}
-          {tags.slice(0, 3).map((tag, index) => {
-  const isVeg = tag.toLowerCase() === 'veg';
+          {/* Tags — max 3, single row, flex wrap */}
+          <div className="flex flex-wrap gap-2">
+            {tags.slice(0, 3).map((tag, index) => {
+              const isVeg = tag.toLowerCase() === 'veg';
 
-  return (
-    <span
-      key={`${tag}-${index}`}
-      className={`text-[10px] font-bold px-2 py-1 rounded-lg whitespace-nowrap flex items-center gap-1 ${
-        isVeg
-          ? 'bg-green-50 text-green-700'
-          : tag.toLowerCase() === 'non-veg'
-          ? 'bg-red-50 text-red-700'
-          : 'bg-gray-100 text-gray-600'
-      }`}
-    >
-      {isVeg && (
-        <svg
-          className="w-2.5 h-2.5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={3}
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
-      )}
-      {tag}
-    </span>
-  );
-})}
+              return (
+                <span
+                  key={`${tag}-${index}`}
+                  className={`text-[10px] font-bold px-2 py-1 rounded-lg whitespace-nowrap flex items-center gap-1 ${
+                    isVeg
+                      ? 'bg-green-50 text-green-700'
+                      : tag.toLowerCase() === 'non-veg'
+                      ? 'bg-red-50 text-red-700'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {isVeg && (
+                    <svg
+                      className="w-2.5 h-2.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={3}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                  {tag}
+                </span>
+              );
+            })}
+          </div>
 
           {/* ── Provider row (compact) ── */}
           <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
@@ -225,7 +227,6 @@ const FoodCard = ({ food, hideProviderInfo = false }) => {
 
             {/* Reserve button — compact */}
             <button
-              onClick={(e) => e.preventDefault()}
               disabled={!isAvailable}
               className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 ${
                 hideProviderInfo ? 'w-full' : ''

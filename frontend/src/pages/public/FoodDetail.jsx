@@ -1,16 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import QuantitySelector from '../../components/food/QuantitySelector';
 import ReserveButton from '../../components/food/ReserveButton';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const FoodDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  
   const [quantity, setQuantity] = useState(1);
   const [isReserved, setIsReserved] = useState(false);
   const [food, setFood] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  const [showModal, setShowModal] = useState(false);
+  const [customerNote, setCustomerNote] = useState('');
+  const [reserving, setReserving] = useState(false);
 
   useEffect(() => {
     const fetchFoodDetail = async () => {
@@ -29,7 +37,7 @@ const FoodDetail = () => {
             price: item.price,
             imageUrl: item.images?.[0] || 'https://images.unsplash.com/photo-1574894709920-11b28e7367e3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
             category: item.category,
-            availabilityTime: item.timeWindow || 'Today, 12:30 - 2:00 PM',
+            availabilityTime: item.timeWindow || 'Contact Provider',
             quantityAvailable: item.quantity,
             bringContainer: item.bringContainer ?? false,
             ingredients: item.tags && item.tags.length > 0 ? item.tags : ['Homemade', 'Freshly Prepared', 'Healthy Spices'],
@@ -40,7 +48,8 @@ const FoodDetail = () => {
               reviewsCount: providerInfo.totalReviews || 24,
               avatar: providerInfo.avatar || 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=256',
               joined: providerInfo.createdAt ? new Date(providerInfo.createdAt).getFullYear() : '2025',
-              bio: providerInfo.bio || 'Passionate about sharing home cooking with the community.'
+              bio: providerInfo.bio || 'Passionate about sharing home cooking with the community.',
+              address: providerInfo.fullAddress || 'Contact Provider'
             },
             reviews: [
               { id: 1, user: 'John D.', rating: 5, comment: 'Absolutely delicious! Tastes just like home.', date: '2 days ago' },
@@ -60,9 +69,36 @@ const FoodDetail = () => {
     fetchFoodDetail();
   }, [id]);
 
-  const handleReserve = () => {
-    setIsReserved(true);
-    setTimeout(() => alert(`Reserved ${quantity}x ${food.name}!`), 500);
+  const handleReserveClick = () => {
+    if (!user) {
+      navigate('/login', { state: { from: `/food/${id}` } });
+      return;
+    }
+    setShowModal(true);
+  };
+
+  const confirmReservation = async () => {
+    try {
+      setReserving(true);
+      const response = await api.post('/bookings', {
+        foodItemId: food.id,
+        quantity,
+        customerNote
+      });
+
+      if (response.data.success) {
+        setIsReserved(true);
+        setShowModal(false);
+        alert('Reservation created successfully!');
+        // Refresh quantity
+        setFood(prev => ({ ...prev, quantityAvailable: prev.quantityAvailable - quantity }));
+      }
+    } catch (error) {
+      console.error('Reservation failed:', error);
+      alert(error.response?.data?.message || 'Failed to create reservation');
+    } finally {
+      setReserving(false);
+    }
   };
 
   if (loading) {
@@ -72,13 +108,6 @@ const FoodDetail = () => {
           <div className="flex flex-col lg:flex-row gap-10">
             <div className="w-full lg:w-2/3">
               <div className="rounded-3xl h-96 bg-gray-200 animate-pulse mb-8" />
-              <div className="bg-white rounded-3xl p-6 md:p-8 space-y-4">
-                <div className="h-6 bg-gray-200 rounded w-1/3 animate-pulse" />
-                <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse" />
-              </div>
-            </div>
-            <div className="w-full lg:w-1/3 space-y-6">
-              <div className="bg-white rounded-3xl p-6 h-48 animate-pulse" />
             </div>
           </div>
         </div>
@@ -88,130 +117,41 @@ const FoodDetail = () => {
 
   if (error || !food) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-3xl border border-gray-100 shadow-md p-8 text-center">
-          <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-500 text-3xl">
-            ⚠️
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Error Loading Dish</h2>
-          <p className="text-gray-500 mb-6 text-sm">{error || 'Dish not found'}</p>
-          <div className="flex gap-3 justify-center">
-            <Link to="/food" className="px-5 py-2.5 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-gray-800 transition-colors">
-              Back to Food
-            </Link>
-          </div>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p>{error || 'Not found'}</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-28 md:pb-10 pt-16 md:pt-20">
-      {/* Top Header / Breadcrumbs */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link to="/food" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-brand-green transition-colors">
-            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-            Back to Food
-          </Link>
-        </div>
-      </div>
-
+    <div className="min-h-screen bg-gray-50 pb-28 md:pb-10 pt-16 md:pt-20 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-10">
           
-          {/* Left Column */}
           <div className="w-full lg:w-2/3">
             <div className="rounded-3xl overflow-hidden bg-white shadow-sm border border-gray-100 mb-8">
               <div className="aspect-[16/9] w-full relative">
-                <img 
-                  src={food.imageUrl} 
-                  alt={food.name} 
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-xl text-sm font-bold text-gray-800 shadow-sm">
-                  {food.category}
-                </div>
+                <img src={food.imageUrl} alt={food.name} className="w-full h-full object-cover" />
               </div>
-              
               <div className="p-6 md:p-8">
-                <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
-                  <div>
-                    <h1 className="text-3xl font-extrabold text-gray-900 mb-2">{food.name}</h1>
-                    <div className="flex items-center text-gray-500 gap-4 text-sm">
-                      <div className="flex items-center">
-                        <svg className="w-4 h-4 mr-1 text-brand-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        {food.availabilityTime}
-                      </div>
-                      <div className="flex items-center">
-                        <svg className="w-4 h-4 mr-1 text-brand-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                        {food.quantityAvailable} left
-                      </div>
-                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-                        food.bringContainer
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-green-100 text-green-800'
-                      }`}>
-                        {food.bringContainer ? '🥡 Bring Container' : '🍱 Container Included'}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right hidden md:block">
-                    <div className="text-3xl font-black text-brand-green">₹{food.price}</div>
-                    <div className="text-sm text-gray-500">per portion</div>
+                <h1 className="text-3xl font-extrabold text-gray-900 mb-2">{food.name}</h1>
+                <div className="flex items-center text-gray-500 gap-4 text-sm mb-6">
+                  <div>⏰ {food.availabilityTime}</div>
+                  <div>📦 {food.quantityAvailable} left</div>
+                  <div className={`px-2 py-1 rounded text-xs font-bold ${food.bringContainer ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>
+                    {food.bringContainer ? '🥡 Bring Container' : '🍱 Container Included'}
                   </div>
                 </div>
-
                 <div className="prose max-w-none text-gray-600 mb-8">
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">Description</h3>
                   <p>{food.description}</p>
                 </div>
-
-                {food.ingredients && (
-                  <div className="mb-8">
-                    <h3 className="text-lg font-bold text-gray-900 mb-3">Tags & Properties</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {food.ingredients.map((ingredient, idx) => (
-                        <span key={idx} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
-                          {ingredient}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Reviews Section */}
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8 mb-8 lg:mb-0">
-              <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-                Reviews 
-                <span className="ml-3 px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md text-sm font-medium">{food.reviews.length}</span>
-              </h3>
-              <div className="space-y-6">
-                {food.reviews.map(review => (
-                  <div key={review.id} className="border-b border-gray-100 pb-6 last:border-0 last:pb-0">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="font-bold text-gray-900">{review.user}</div>
-                      <div className="text-sm text-gray-500">{review.date}</div>
-                    </div>
-                    <div className="flex text-amber-400 mb-2">
-                      {[...Array(5)].map((_, i) => (
-                        <svg key={i} className={`w-4 h-4 ${i < review.rating ? 'fill-current' : 'text-gray-200'}`} viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-                      ))}
-                    </div>
-                    <p className="text-gray-600 text-sm leading-relaxed">{review.comment}</p>
-                  </div>
-                ))}
               </div>
             </div>
           </div>
 
-          {/* Right Column */}
           <div className="w-full lg:w-1/3 space-y-6 relative">
-            {/* Desktop Action Panel */}
             <div className="hidden md:block bg-white rounded-3xl shadow-sm border border-brand-green/20 p-6 sticky top-24">
-              <div className="text-3xl font-black text-brand-green mb-1">₹{food.price} <span className="text-sm font-medium text-gray-500">per portion</span></div>
+              <div className="text-3xl font-black text-brand-green mb-1">₹{food.price} <span className="text-sm text-gray-500">per portion</span></div>
               <div className="text-sm text-gray-500 mb-6">Total: ₹{(food.price * quantity)}</div>
               
               <div className="mb-6">
@@ -220,44 +160,17 @@ const FoodDetail = () => {
               </div>
 
               <ReserveButton 
-                onClick={handleReserve} 
+                onClick={handleReserveClick} 
                 price={food.price} 
                 quantity={quantity} 
-                disabled={isReserved || food.quantityAvailable === 0} 
+                disabled={food.quantityAvailable === 0} 
               />
-              
-              {isReserved && (
-                <p className="mt-3 text-sm text-center font-medium text-green-600 bg-green-50 py-2 rounded-lg">Reservation successful!</p>
-              )}
-            </div>
-
-            {/* Provider Info Card */}
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">About the Provider</h3>
-              <div className="flex items-center gap-4 mb-4">
-                <img src={food.provider.avatar} alt={food.provider.name} className="w-16 h-16 rounded-full object-cover shadow-sm" />
-                <div>
-                  <div className="font-bold text-lg text-gray-900">{food.provider.name}</div>
-                  <div className="flex items-center text-sm font-medium text-amber-500">
-                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-                    {food.provider.rating} ({food.provider.reviewsCount} reviews)
-                  </div>
-                </div>
-              </div>
-              <p className="text-gray-600 text-sm mb-4 leading-relaxed">{food.provider.bio}</p>
-              <div className="text-sm text-gray-500 mb-6">Joined {food.provider.joined}</div>
-              
-              <Link to={`/provider/${food.provider.id}`} className="block w-full py-2.5 px-4 text-center rounded-xl font-bold text-brand-green border-2 border-brand-green/20 hover:bg-brand-green/5 transition-colors">
-                View Profile
-              </Link>
             </div>
           </div>
-
         </div>
       </div>
 
-      {/* Mobile Sticky Action Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] z-50 flex items-center justify-between gap-4">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-40 flex items-center justify-between gap-4">
         <div className="flex flex-col">
           <div className="text-sm font-bold text-gray-500">Total</div>
           <div className="text-xl font-black text-brand-green">₹{(food.price * quantity)}</div>
@@ -265,14 +178,79 @@ const FoodDetail = () => {
         <div className="flex items-center gap-3">
           <QuantitySelector quantity={quantity} setQuantity={setQuantity} max={food.quantityAvailable} />
           <button 
-            onClick={handleReserve}
-            disabled={isReserved || food.quantityAvailable === 0}
-            className="bg-brand-green text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-brand-green/30 disabled:opacity-50 min-w-[100px]"
+            onClick={handleReserveClick}
+            disabled={food.quantityAvailable === 0}
+            className="bg-brand-green text-white px-5 py-2.5 rounded-xl font-bold shadow-lg disabled:opacity-50 min-w-[100px]"
           >
-            {isReserved ? 'Reserved' : 'Reserve'}
+            Reserve
           </button>
         </div>
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h2 className="text-xl font-bold text-gray-900">Confirm Reservation</h2>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto">
+              <div className="flex gap-4 mb-6">
+                <img src={food.imageUrl} alt={food.name} className="w-20 h-20 rounded-xl object-cover" />
+                <div>
+                  <h3 className="font-bold text-gray-900">{food.name}</h3>
+                  <p className="text-sm text-gray-500">by {food.provider.name}</p>
+                  <p className="text-brand-green font-bold mt-1">₹{food.price} × {quantity}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4 text-sm mb-6">
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-gray-500">Pickup Location</span>
+                  <span className="font-medium text-right max-w-[200px] truncate">{food.provider.address}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-gray-500">Pickup Time</span>
+                  <span className="font-medium">{food.availabilityTime}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-gray-500">Container</span>
+                  <span className={`font-bold ${food.bringContainer ? 'text-amber-600' : 'text-green-600'}`}>
+                    {food.bringContainer ? '🥡 Bring Your Own' : '🍱 Provided'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-bold text-gray-700 mb-2">Optional Note for Chef</label>
+                <textarea 
+                  value={customerNote}
+                  onChange={(e) => setCustomerNote(e.target.value)}
+                  placeholder="E.g. Please keep it less spicy..."
+                  className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand-green focus:border-brand-green outline-none resize-none h-20"
+                />
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-xl flex justify-between items-center mb-6">
+                <span className="font-bold text-gray-700">Total Amount</span>
+                <span className="text-2xl font-black text-brand-green">₹{food.price * quantity}</span>
+              </div>
+
+              <button 
+                onClick={confirmReservation}
+                disabled={reserving}
+                className="w-full bg-brand-green text-white font-bold text-lg py-4 rounded-xl shadow-lg hover:bg-brand-green/90 transition-all disabled:opacity-70 flex justify-center items-center gap-2"
+              >
+                {reserving ? 'Confirming...' : 'Confirm Reservation'}
+              </button>
+              <p className="text-center text-xs text-gray-400 mt-3">Payment: Cash on Pickup</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
