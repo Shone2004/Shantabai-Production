@@ -4,6 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext.jsx';
 
+const Eye = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>);
+const EyeOff = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>);
+
 const SUGGESTED_CUISINES = [
   'North Indian', 'South Indian', 'Maharashtrian', 'Gujarati', 
   'Bengali', 'Chinese', 'Italian', 'Healthy/Diet', 'Baking', 
@@ -46,6 +49,8 @@ export default function ChefSignup() {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // 'success' or 'error'
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const filteredCuisines = SUGGESTED_CUISINES.filter(c => 
     c.toLowerCase().includes(cuisineInput.toLowerCase()) && 
@@ -53,10 +58,21 @@ export default function ChefSignup() {
   );
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    let hasInvalidChar = false;
+
+    if (name === 'pincode' || name === 'phone') {
+      if (/\D/.test(value)) {
+        hasInvalidChar = true;
+      }
+      value = value.replace(/\D/g, '');
+    }
+
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error when user starts typing
-    if (errors[name]) {
+    
+    if (hasInvalidChar) {
+      setErrors(prev => ({ ...prev, [name]: 'Only numbers are allowed' }));
+    } else if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
   };
@@ -368,6 +384,8 @@ export default function ChefSignup() {
                     type="text" name="pincode" value={formData.pincode} onChange={handleInputChange}
                     placeholder="411045"
                     maxLength={6}
+                    inputMode="numeric"
+                    pattern="\d*"
                     className={`w-full px-4 py-3 rounded-xl border bg-gray-50 focus:bg-white transition-all outline-none ${errors.pincode ? 'border-red-300' : 'border-gray-200 focus:border-brand-green'}`}
                   />
                   {errors.pincode && <p className="text-xs font-bold text-red-500">{errors.pincode}</p>}
@@ -609,21 +627,39 @@ export default function ChefSignup() {
                 
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-gray-700">Password <span className="text-red-500">*</span></label>
-                  <input 
-                    type="password" name="password" value={formData.password} onChange={handleInputChange}
-                    placeholder="••••••••"
-                    className={`w-full px-4 py-3 rounded-xl border bg-gray-50 focus:bg-white transition-all outline-none ${errors.password ? 'border-red-300' : 'border-gray-200 focus:border-brand-green'}`}
-                  />
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleInputChange}
+                      placeholder="••••••••"
+                      className={`w-full px-4 py-3 pr-12 rounded-xl border bg-gray-50 focus:bg-white transition-all outline-none ${errors.password ? 'border-red-300' : 'border-gray-200 focus:border-brand-green'}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none z-10 cursor-pointer p-1"
+                    >
+                      {showPassword ? <Eye /> : <EyeOff />}
+                    </button>
+                  </div>
                   {errors.password && <p className="text-xs font-bold text-red-500">{errors.password}</p>}
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-gray-700">Confirm Password <span className="text-red-500">*</span></label>
-                  <input 
-                    type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange}
-                    placeholder="••••••••"
-                    className={`w-full px-4 py-3 rounded-xl border bg-gray-50 focus:bg-white transition-all outline-none ${errors.confirmPassword ? 'border-red-300' : 'border-gray-200 focus:border-brand-green'}`}
-                  />
+                  <div className="relative">
+                    <input 
+                      type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange}
+                      placeholder="••••••••"
+                      className={`w-full px-4 py-3 pr-12 rounded-xl border bg-gray-50 focus:bg-white transition-all outline-none ${errors.confirmPassword ? 'border-red-300' : 'border-gray-200 focus:border-brand-green'}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none z-10 cursor-pointer p-1"
+                    >
+                      {showConfirmPassword ? <Eye /> : <EyeOff />}
+                    </button>
+                  </div>
                   {errors.confirmPassword && <p className="text-xs font-bold text-red-500">{errors.confirmPassword}</p>}
                 </div>
 
