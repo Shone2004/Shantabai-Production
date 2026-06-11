@@ -268,3 +268,9 @@ input:focus, select:focus, textarea:focus {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* ─── Hide native Edge password reveal icon ─── */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
