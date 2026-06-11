@@ -16,6 +16,9 @@ import ChefSignup from "./pages/ChefSignup.jsx";
 import CustomerDash from "./pages/CustomerDash.jsx";
 import AdminDash from "./pages/AdminDash.jsx";
 import VerificationStatus from "./pages/VerificationStatus.jsx";
+import AboutPage from "./pages/about/AboutPage";
+import BlogPage from "./pages/blog/BlogPage";
+import ContactPage from "./pages/contact/ContactPage";
 
 import PublicLayout from "./layouts/PublicLayout.jsx";
 
@@ -31,6 +34,9 @@ function App() {
           <Route path="/food" element={<FoodPage />} />
           <Route path="/food/:id" element={<FoodDetail />} />
           <Route path="/chef-signup" element={<ChefSignup />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/contact" element={<ContactPage />} />
         </Route>
 
         <Route
@@ -83,4 +89,5 @@ function App() {
     </AuthProvider>
   );
 }
+
 export default App;
