@@ -2,16 +2,14 @@ import {
   Home,
   Search,
   Calendar,
-  MessageCircle,
   Heart,
-  Bell,
   LogOut,
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../supabaseClient";
 
-const Sidebar = () => {
+const Sidebar = ({ activeTab, setActiveTab }) => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -34,39 +32,62 @@ const Sidebar = () => {
       </div>
 
       <div className="space-y-3">
-        <button className="flex items-center gap-3 bg-brand-green text-white w-full p-3 rounded-xl shadow-sm hover:opacity-90 transition">
+        {/* Dashboard */}
+        <button
+          onClick={() => setActiveTab("dashboard")}
+          className={`flex items-center gap-3 w-full p-3 rounded-xl transition ${
+            activeTab === "dashboard"
+              ? "bg-brand-green text-white shadow-sm"
+              : "hover:bg-brand-light text-gray-700"
+          }`}
+        >
           <Home size={20} />
           Dashboard
         </button>
 
-        <button className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-brand-light text-gray-700 transition">
+        {/* Find Services */}
+        <button
+          onClick={() => setActiveTab("find-services")}
+          className={`flex items-center gap-3 w-full p-3 rounded-xl transition ${
+            activeTab === "find-services"
+              ? "bg-brand-green text-white shadow-sm"
+              : "hover:bg-brand-light text-gray-700"
+          }`}
+        >
           <Search size={20} />
           Find Services
         </button>
 
-        <button className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-brand-light text-gray-700 transition">
+        {/* Bookings */}
+        <button
+          onClick={() => setActiveTab("bookings")}
+          className={`flex items-center gap-3 w-full p-3 rounded-xl transition ${
+            activeTab === "bookings"
+              ? "bg-brand-green text-white shadow-sm"
+              : "hover:bg-brand-light text-gray-700"
+          }`}
+        >
           <Calendar size={20} />
           My Bookings
         </button>
 
-        <button className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-brand-light text-gray-700 transition">
-          <MessageCircle size={20} />
-          Messages
-        </button>
-
-        <button className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-brand-light text-gray-700 transition">
+        {/* Favorites */}
+        <button
+          onClick={() => setActiveTab("favorites")}
+          className={`flex items-center gap-3 w-full p-3 rounded-xl transition ${
+            activeTab === "favorites"
+              ? "bg-brand-green text-white shadow-sm"
+              : "hover:bg-brand-light text-gray-700"
+          }`}
+        >
           <Heart size={20} />
           Favorites
         </button>
 
-        <button className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-brand-light text-gray-700 transition">
-          <Bell size={20} />
-          Notifications
-        </button>
-
+        {/* Logout */}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-red-50 text-red-500 transition"
+          className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-red-50 text-red-500 transition mt-6"
         >
           <LogOut size={20} />
           Logout

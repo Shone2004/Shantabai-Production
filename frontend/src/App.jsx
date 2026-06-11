@@ -22,72 +22,65 @@ import PublicLayout from "./layouts/PublicLayout.jsx";
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Public Pages */}
-          <Route element={<PublicLayout />}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/search" element={<SearchProviders />} />
-            <Route path="/provider/:id" element={<ProviderProfile />} />
-            <Route path="/food" element={<FoodPage />} />
-            <Route path="/food/:id" element={<FoodDetail />} />
-            <Route path="/chef-signup" element={<ChefSignup />} />
-          </Route>
+      <Routes>
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/search" element={<SearchProviders />} />
+          <Route path="/provider/:id" element={<ProviderProfile />} />
+          <Route path="/food" element={<FoodPage />} />
+          <Route path="/food/:id" element={<FoodDetail />} />
+          <Route path="/chef-signup" element={<ChefSignup />} />
+        </Route>
 
-          <Route
-            path="/chef/dashboard"
-            element={
-              <PrivateRoute requiredRole="chef">
-                <ProviderDashboard />
-              </PrivateRoute>
-            }
-          />
+        <Route
+          path="/chef/dashboard"
+          element={
+            <PrivateRoute requiredRole="chef">
+              <ProviderDashboard />
+            </PrivateRoute>
+          }
+        />
 
-          <Route
-            path="/chef/verification-status"
-            element={
-              <PrivateRoute requiredRole="chef" bypassApprovalCheck={true}>
-                <VerificationStatus />
-              </PrivateRoute>
-            }
-          />
+        <Route
+          path="/chef/verification-status"
+          element={
+            <PrivateRoute requiredRole="chef" bypassApprovalCheck={true}>
+              <VerificationStatus />
+            </PrivateRoute>
+          }
+        />
 
-          {/* Admin Dashboard */}
-          <Route
-            path="/admin/dashboard"
-            element={
-              <PrivateRoute requiredRole="ADMIN">
-                <AdminDash />
-              </PrivateRoute>
-            }
-          />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <PrivateRoute requiredRole="ADMIN">
+              <AdminDash />
+            </PrivateRoute>
+          }
+        />
 
-          <Route
-            path="/chef/dashboard/add-food"
-            element={
-              <PrivateRoute requiredRole="chef">
-                <AddFood onBack={() => window.history.back()} />
-              </PrivateRoute>
-            }
-          />
+        <Route
+          path="/chef/dashboard/add-food"
+          element={
+            <PrivateRoute requiredRole="chef">
+              <AddFood onBack={() => window.history.back()} />
+            </PrivateRoute>
+          }
+        />
 
-          {/* Customer Dashboard */}
-          <Route
-            path="/customer/dashboard"
-            element={
-              <PrivateRoute requiredRole="CUSTOMER">
-                <CustomerDash />
-              </PrivateRoute>
-            }
-          />
+        <Route
+          path="/customer/dashboard"
+          element={
+            <PrivateRoute requiredRole="CUSTOMER">
+              <CustomerDash />
+            </PrivateRoute>
+          }
+        />
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </AuthProvider>
   );
 }
-
 export default App;
