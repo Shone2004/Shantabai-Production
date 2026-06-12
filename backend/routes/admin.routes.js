@@ -11,6 +11,7 @@ const {
   approveFood,
   rejectFood,
   getUsers,
+  deleteFood,
 } = require("../controllers/admin.controller");
 
 const { authenticateUser } = require("../middleware/authMiddleware");
@@ -28,6 +29,7 @@ router.put("/providers/:id/suspend", suspendProvider);
 router.get("/foods", getFoods);
 router.put("/foods/:id/approve", approveFood);
 router.put("/foods/:id/reject", rejectFood);
+router.delete("/foods/:id", deleteFood);
 router.get("/users", getUsers);
 
 module.exports = router;
