@@ -69,7 +69,7 @@ const registerProvider = async (req, res) => {
     } = req.body;
 
     // 1. Basic validation — coordinates are optional (null until geocoding is implemented)
-    if (!name || !email || !phone || !password || !kitchenName || !bio || experience === undefined || !city || !area || !pincode || !fullAddress) {
+    if (!name || !email || !phone || !password || !kitchenName || !bio || experience === undefined || experience === null || experience === '' || !city || !area || !pincode || !fullAddress) {
       return res.status(400).json({
         success: false,
         message: "Please provide all required fields",

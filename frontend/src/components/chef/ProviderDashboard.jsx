@@ -188,11 +188,12 @@ export default function ProviderDashboard() {
     category: "",
     mealType: "",
     price: "",
-    pricePer: "per plate",
+    pricePer: "per box",
     description: "",
     quantity: "10",
     totalQuantity: "10",
-    prepTime: "30",
+    pickupTime: "12:00",
+    orderOpenTill: "10:00",
     isVeg: true,
     bringContainer: false,
     spicyLevel: 1,
@@ -344,11 +345,12 @@ export default function ProviderDashboard() {
       category: food.category,
       mealType: food.mealType || "",
       price: food.price.toString(),
-      pricePer: food.pricePer || "per plate",
+      pricePer: food.pricePer || "per box",
       description: food.description,
       quantity: food.quantity.toString(),
       totalQuantity: (food.totalQuantity || food.quantity).toString(),
-      prepTime: food.prepTime.toString(),
+      pickupTime: food.pickupTime || "12:00",
+      orderOpenTill: food.orderOpenTill || "10:00",
       isVeg: food.isVeg,
       bringContainer: food.bringContainer ?? false,
       spicyLevel: food.spicyLevel,
@@ -367,7 +369,7 @@ export default function ProviderDashboard() {
     if (!foodForm.category) errors.category = "Please select a category";
     if (!foodForm.price || isNaN(foodForm.price) || Number(foodForm.price) <= 0) errors.price = "Enter a valid price";
     if (!foodForm.description.trim() || foodForm.description.length < 20) errors.description = "Description must be at least 20 characters";
-    if (!foodForm.prepTime || isNaN(foodForm.prepTime) || Number(foodForm.prepTime) <= 0) errors.prepTime = "Enter preparation time";
+    if (!foodForm.pickupTime) errors.pickupTime = "Enter pickup time";
     if (!foodForm.quantity || isNaN(foodForm.quantity) || Number(foodForm.quantity) < 0) errors.quantity = "Enter available quantity";
 
     if (Object.keys(errors).length > 0) {
@@ -381,7 +383,8 @@ export default function ProviderDashboard() {
       const payload = {
         ...foodForm,
         price: Number(foodForm.price),
-        prepTime: Number(foodForm.prepTime),
+        pickupTime: foodForm.pickupTime,
+        orderOpenTill: foodForm.orderOpenTill,
         quantity: Number(foodForm.quantity),
         totalQuantity: Number(foodForm.totalQuantity || foodForm.quantity)
       };
@@ -420,11 +423,12 @@ export default function ProviderDashboard() {
       category: "",
       mealType: "",
       price: "",
-      pricePer: "per plate",
+      pricePer: "per box",
       description: "",
       quantity: "10",
       totalQuantity: "10",
-      prepTime: "30",
+      pickupTime: "12:00",
+      orderOpenTill: "10:00",
       isVeg: true,
       bringContainer: false,
       spicyLevel: 1,
@@ -1054,7 +1058,7 @@ className="h-12 w-auto object-contain"
                                   <span aria-hidden="true">·</span>
                                   <span className="flex items-center gap-1">
                                     <Clock className="w-3 h-3" aria-hidden="true" />
-                                    {food.prepTime}m
+                                    {food.pickupTime || "—"}
                                   </span>
                                   <span aria-hidden="true">·</span>
                                   <span className="flex items-center gap-1">
@@ -1265,10 +1269,10 @@ className="h-12 w-auto object-contain"
                           Pricing & Logistics
                         </h4>
 
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label htmlFor="food-price" className="text-xs font-bold text-slate-700 block mb-1.5">
-                              Price (₹) <span className="text-rose-500">*</span>
+                              Box Price (₹) <span className="text-rose-500">*</span>
                             </label>
                             <input
                               id="food-price"
@@ -1286,27 +1290,38 @@ className="h-12 w-auto object-contain"
                           </div>
 
                           <div>
-                            <label htmlFor="food-prep-time" className="text-xs font-bold text-slate-700 block mb-1.5">
-                              Prep Time (mins) <span className="text-rose-500">*</span>
+                            <label htmlFor="food-pickup-time" className="text-xs font-bold text-slate-700 block mb-1.5">
+                              Pickup Time <span className="text-rose-500">*</span>
                             </label>
                             <input
-                              id="food-prep-time"
-                              type="number"
-                              value={foodForm.prepTime}
-                              onChange={e => setFoodForm(p => ({ ...p, prepTime: e.target.value }))}
-                              aria-invalid={!!formErrors.prepTime}
+                              id="food-pickup-time"
+                              type="time"
+                              value={foodForm.pickupTime}
+                              onChange={e => setFoodForm(p => ({ ...p, pickupTime: e.target.value }))}
+                              aria-invalid={!!formErrors.pickupTime}
                               className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm outline-none transition-all ${
-                                formErrors.prepTime ? "border-rose-400" : "border-slate-200 focus:border-emerald-500 focus:bg-white"
+                                formErrors.pickupTime ? "border-rose-400" : "border-slate-200 focus:border-emerald-500 focus:bg-white"
                               }`}
-                              placeholder="30"
-                              min="1"
                             />
-                            {formErrors.prepTime && <p role="alert" className="text-[11px] text-rose-500 mt-1">{formErrors.prepTime}</p>}
+                            {formErrors.pickupTime && <p role="alert" className="text-[11px] text-rose-500 mt-1">{formErrors.pickupTime}</p>}
+                          </div>
+
+                          <div>
+                            <label htmlFor="food-order-open-till" className="text-xs font-bold text-slate-700 block mb-1.5">
+                              Order Open Till
+                            </label>
+                            <input
+                              id="food-order-open-till"
+                              type="time"
+                              value={foodForm.orderOpenTill}
+                              onChange={e => setFoodForm(p => ({ ...p, orderOpenTill: e.target.value }))}
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:bg-white transition-all"
+                            />
                           </div>
 
                           <div>
                             <label htmlFor="food-quantity" className="text-xs font-bold text-slate-700 block mb-1.5">
-                              Daily Qty <span className="text-rose-500">*</span>
+                              Quantity Available <span className="text-rose-500">*</span>
                             </label>
                             <input
                               id="food-quantity"
@@ -1581,7 +1596,7 @@ className="h-12 w-auto object-contain"
                             <div className="flex items-center gap-2 pt-1 text-[9px] text-slate-400">
                               <span>{foodForm.category || "No category"}</span>
                               <span aria-hidden="true">·</span>
-                              <span>{foodForm.prepTime || 30} mins</span>
+                              <span>{foodForm.pickupTime || "12:00"}</span>
                             </div>
                           </div>
                         </div>

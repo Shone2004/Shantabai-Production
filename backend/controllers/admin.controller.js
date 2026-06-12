@@ -158,15 +158,13 @@ const suspendProvider = async (req, res) => {
 // @access  Private (Admin only)
 const getFoods = async (req, res) => {
   try {
-    const { status } = req.query;
-    const query = {};
-    if (status) {
-      query.approvalStatus = status.toUpperCase();
-    }
-
-    const foods = await FoodItem.find(query).populate({
+    const foods = await FoodItem.find().populate({
       path: "provider",
-      select: "kitchenName rating city area startingPrice",
+      select: "kitchenName rating city area startingPrice user",
+      populate: {
+        path: "user",
+        select: "name",
+      },
     });
     res.status(200).json({
       success: true,
@@ -268,6 +266,36 @@ const getUsers = async (req, res) => {
   }
 };
 
+// @desc    Delete a food item listing
+// @route   DELETE /api/admin/foods/:id
+// @access  Private (Admin only)
+const deleteFood = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const food = await FoodItem.findById(id);
+    if (!food) {
+      return res.status(404).json({
+        success: false,
+        message: "Food item not found",
+      });
+    }
+
+    await FoodItem.findByIdAndDelete(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Food item deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error deleting food item",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAdminStats,
   getProviders,
@@ -278,4 +306,5 @@ module.exports = {
   approveFood,
   rejectFood,
   getUsers,
+  deleteFood,
 };

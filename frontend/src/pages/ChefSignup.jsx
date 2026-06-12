@@ -179,7 +179,7 @@ export default function ChefSignup() {
       formPayload.append('kitchenName', `${formData.fullName}'s Kitchen`);
       formPayload.append('tagline', `Authentic homemade food by ${formData.fullName}`);
       formPayload.append('bio', formData.bio);
-      formPayload.append('experience', Number(formData.experience));
+      formPayload.append('experience', formData.experience);
       formPayload.append('specialities', JSON.stringify(formData.cuisines));
       formPayload.append('dietaryType', JSON.stringify(formData.dietaryType));
       formPayload.append('serviceTypes', JSON.stringify(formData.serviceTypes));
@@ -215,8 +215,9 @@ export default function ChefSignup() {
         }, 1500);
       }
     } catch (err) {
-      console.error('Failed chef registration:', err);
-      setSubmitStatus('error');
+  console.error('Failed chef registration:', err);
+  console.error('Server said:', err.response?.data);
+  setSubmitStatus('error');
     } finally {
       setIsLoading(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
