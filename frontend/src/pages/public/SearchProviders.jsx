@@ -14,7 +14,7 @@ export default function SearchProviders() {
 
   // New Complex Filter State
   const [filters, setFilters] = useState({
-    location: '',
+    location: searchParams.get('loc') || '',
     cuisines: [],
     dietary: [],
     availability: 'Anytime',
