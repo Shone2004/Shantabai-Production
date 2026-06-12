@@ -3,7 +3,7 @@ const ProviderProfile = require("../models/ProviderProfile");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { uploadToCloudinary } = require("../utils/cloudinaryHelper");
-
+const Counter = require("../models/Counter");
 // Generate JWT for immediate login upon registration
 const generateToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, {
@@ -14,6 +14,34 @@ const generateToken = (id, role) => {
 // @desc    Register a new provider (User + ProviderProfile)
 // @route   POST /api/providers/register
 // @access  Public
+const generateChefId = async (fullName, city) => {
+  const names = fullName.trim().split(" ");
+
+  const firstInitial = names[0]?.charAt(0).toUpperCase() || "X";
+
+  const secondInitial =
+    names.length > 1
+      ? names[names.length - 1].charAt(0).toUpperCase()
+      : "X";
+
+  const counter = await Counter.findOneAndUpdate(
+    { name: "chef" },
+    { $inc: { seq: 1 } },
+    {
+      new: true,
+      upsert: true,
+    }
+  );
+
+  const sequence = String(counter.seq).padStart(5, "0");
+
+  const cityCode = city
+    .substring(0, 3)
+    .toUpperCase()
+    .replace(/\s/g, "");
+
+  return `CHF-${cityCode}-${firstInitial}${secondInitial}-${sequence}`;
+};
 const registerProvider = async (req, res) => {
   try {
     const {
@@ -98,9 +126,12 @@ const registerProvider = async (req, res) => {
 
     // 5. Create ProviderProfile
     try {
+      const chefId = await generateChefId(name, city);
       const providerProfile = await ProviderProfile.create({
+         chefId,
         user: user._id,
         kitchenName,
+       
         tagline,
         bio,
         experience,
@@ -149,12 +180,16 @@ const registerProvider = async (req, res) => {
       throw profileError;
     }
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Server error during registration",
-      error: error.message,
-    });
-  }
+  console.error("========== REGISTER PROVIDER ERROR ==========");
+  console.error(error);
+  console.error("============================================");
+
+  res.status(500).json({
+    success: false,
+    message: "Server error during registration",
+    error: error.message,
+  });
+}
 };
 
 // @desc    Get current provider's profile

@@ -8,7 +8,12 @@ const providerProfileSchema = new mongoose.Schema(
       required: true,
       unique: true, // 1-to-1 relationship with User
     },
-
+     chefId: {
+  type: String,
+  unique: true,
+  required: true,
+  index: true,
+},
     // Kitchen & Brand Details
     kitchenName: {
       type: String,

@@ -1794,7 +1794,11 @@ className="h-12 w-auto object-contain"
                               {profile?.kitchenName || "My Kitchen"}
                             </h4>
                             <p className="text-xs text-slate-400 mt-0.5">by {user?.name}</p>
-
+{profile?.chefId && (
+  <p className="text-xs font-bold text-emerald-600 mt-1">
+    Chef ID: {profile.chefId}
+  </p>
+)}
                             <div className="flex items-center gap-1.5 mt-2 text-xs text-slate-500">
                               <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" aria-hidden="true" />
                               <span className="truncate">
