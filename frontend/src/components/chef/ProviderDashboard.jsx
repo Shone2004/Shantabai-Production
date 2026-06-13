@@ -36,6 +36,9 @@ import {
   Award,
   ChevronDown,
   BarChart2,
+  MessageSquare,
+  Shield,
+  Menu,
 } from "lucide-react";
 import {
   AreaChart,
@@ -46,6 +49,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import ChefBookings from "./ChefBookings";
+import CustomerChats from "./CustomerChats";
+import AdminChat from "./AdminChat";
+import { getSocket } from "../../services/socket";
 
 // ─── Constants (unchanged) ──────────────────────────────────────────────────
 const CUISINE_TYPES = [
@@ -68,15 +74,17 @@ const SPICY_OPTS = [
 
 // ─── Navigation Configuration ───────────────────────────────────────────────
 const SIDEBAR_NAV = [
-  { id: "dashboard",    label: "Dashboard",    icon: LayoutDashboard, comingSoon: false },
-  { id: "bookings",     label: "Bookings",     icon: CalendarDays,    comingSoon: false  },
-  { id: "myfoods",      label: "My Foods",     icon: Utensils,        comingSoon: false },
-  { id: "addfood",      label: "Add Food",     icon: PlusCircle,      comingSoon: false },
-  { id: "earnings",     label: "Earnings",     icon: TrendingUp,      comingSoon: true  },
-  { id: "reviews",      label: "Reviews",      icon: Star,            comingSoon: true  },
-  { id: "availability", label: "Availability", icon: ToggleLeft,      comingSoon: true  },
-  { id: "profile",      label: "Profile",      icon: User,            comingSoon: false },
-  { id: "support",      label: "Support",      icon: LifeBuoy,        comingSoon: true  },
+  { id: "dashboard",      label: "Dashboard",      icon: LayoutDashboard, comingSoon: false },
+  { id: "bookings",       label: "Bookings",       icon: CalendarDays,    comingSoon: false  },
+  { id: "myfoods",        label: "My Foods",       icon: Utensils,        comingSoon: false },
+  { id: "addfood",        label: "Add Food",       icon: PlusCircle,      comingSoon: false },
+  { id: "customer_chats", label: "Customer Chats", icon: MessageSquare,   comingSoon: false },
+  { id: "admin_messages", label: "Admin Messages", icon: Shield,          comingSoon: false },
+  { id: "earnings",       label: "Earnings",       icon: TrendingUp,      comingSoon: true  },
+  { id: "reviews",        label: "Reviews",        icon: Star,            comingSoon: true  },
+  { id: "availability",   label: "Availability",   icon: ToggleLeft,      comingSoon: true  },
+  { id: "profile",        label: "Profile",        icon: User,            comingSoon: false },
+  { id: "support",        label: "Support",        icon: LifeBuoy,        comingSoon: true  },
 ];
 
 const BOTTOM_NAV = [
@@ -97,6 +105,8 @@ function getPageTitle(activePage, editingFoodId) {
     addfood: editingFoodId ? "Edit Food" : "Add Food",
     profile: "Profile",
     bookings: "Bookings",
+    customer_chats: "Customer Chats",
+    admin_messages: "Admin Messages",
     earnings: "Earnings",
     reviews: "Reviews",
     availability: "Availability",
@@ -161,6 +171,11 @@ export default function ProviderDashboard() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [activePage, setActivePage] = useState("dashboard");
+  const [unreadCounts, setUnreadCounts] = useState({
+    customerChats: 0,
+    adminMessages: 0
+  });
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // ── Profile Data (unchanged) ──
   const [profile, setProfile] = useState(null);
@@ -287,11 +302,72 @@ export default function ProviderDashboard() {
     } finally {
       setStatsLoading(false);
     }
+
+    // Fetch unread chat counts
+    fetchUnreadCounts();
+  };
+
+  const fetchUnreadCounts = async () => {
+    try {
+      const res = await api.get("/chat/conversations");
+      if (res.data.success) {
+        let customerUnread = 0;
+        let adminUnread = 0;
+        res.data.conversations.forEach((convo) => {
+          if (convo.type === "CUSTOMER_PROVIDER") {
+            customerUnread += convo.unreadCount || 0;
+          } else if (convo.type === "ADMIN_PROVIDER") {
+            adminUnread += convo.unreadCount || 0;
+          }
+        });
+        setUnreadCounts({
+          customerChats: customerUnread,
+          adminMessages: adminUnread
+        });
+      }
+    } catch (err) {
+      console.error("Failed to fetch unread counts:", err);
+    }
   };
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Listen to socket events to update navigation badges in real-time
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+
+    const handleReceiveMessage = (message) => {
+      const userId = user?._id || user?.id;
+      if (userId && String(message.senderId) !== String(userId)) {
+        const isChatActive = window.activeChatId && String(window.activeChatId) === String(message.conversationId);
+        if (!isChatActive) {
+          setUnreadCounts((prev) => {
+            if (message.senderRole === "CUSTOMER") {
+              return { ...prev, customerChats: prev.customerChats + 1 };
+            } else if (message.senderRole === "ADMIN") {
+              return { ...prev, adminMessages: prev.adminMessages + 1 };
+            }
+            return prev;
+          });
+        }
+      }
+    };
+
+    const handleMessagesRead = () => {
+      fetchUnreadCounts();
+    };
+
+    socket.on("receive_message", handleReceiveMessage);
+    socket.on("messages_read", handleMessagesRead);
+
+    return () => {
+      socket.off("receive_message", handleReceiveMessage);
+      socket.off("messages_read", handleMessagesRead);
+    };
+  }, [user?._id]);
 
   // ── Scroll to top on page change ──
   useEffect(() => {
@@ -490,6 +566,7 @@ export default function ProviderDashboard() {
   const goTo = (pageId) => {
     if (pageId === "addfood" && !editingFoodId) resetFoodForm();
     setActivePage(pageId);
+    fetchUnreadCounts();
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -603,6 +680,16 @@ export default function ProviderDashboard() {
                     isActive ? "text-white" : "text-slate-500 group-hover:text-slate-300"
                   }`} />
                   <span className="flex-1 text-left truncate">{item.label}</span>
+                  {item.id === "customer_chats" && unreadCounts.customerChats > 0 && (
+                    <span className="bg-rose-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
+                      {unreadCounts.customerChats}
+                    </span>
+                  )}
+                  {item.id === "admin_messages" && unreadCounts.adminMessages > 0 && (
+                    <span className="bg-rose-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
+                      {unreadCounts.adminMessages}
+                    </span>
+                  )}
                   {item.comingSoon && !isActive && (
                     <span className="text-[9px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded-full font-bold flex-shrink-0">
                       Soon
@@ -638,23 +725,29 @@ export default function ProviderDashboard() {
           >
             {/* Mobile: Logo */}
            {/* Mobile: Logo */}
-<div className="flex items-center gap-2 md:hidden">
-  <img
-    src="/logonavbar.png"
-    alt="Shantabai"
-className="h-12 w-auto object-contain"
-  />
-
-  <div>
-    <h1 className="text-xs font-black text-slate-900 leading-none">
-      Shantabai <span className="text-emerald-500"></span>
-    </h1>
-
-    <p className="text-[7px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">
-      AAPKI SEVA, HAMARA VADA
-    </p>
-  </div>
-</div>
+            {/* Mobile: Hamburger & Logo */}
+            <div className="flex items-center gap-3 md:hidden">
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="p-1 text-slate-700 hover:text-slate-900 cursor-pointer focus:outline-none flex items-center justify-center touch-target"
+                aria-label="Open navigation menu"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+              <img
+                src="/logonavbar.png"
+                alt="Shantabai"
+                className="h-10 w-auto object-contain"
+              />
+              <div>
+                <h1 className="text-xs font-black text-slate-900 leading-none">
+                  Shantabai
+                </h1>
+                <p className="text-[7px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">
+                  AAPKI SEVA, HAMARA VADA
+                </p>
+              </div>
+            </div>
 
             {/* Desktop: Page Title */}
             <div className="hidden md:block flex-1">
@@ -726,9 +819,14 @@ className="h-12 w-auto object-contain"
                 </div>
               )}
 
-              {/* ══════════════════════════════
-                  PAGE: DASHBOARD
-              ══════════════════════════════ */}
+              {activePage === "customer_chats" && (
+                <CustomerChats />
+              )}
+
+              {activePage === "admin_messages" && (
+                <AdminChat />
+              )}
+
               {activePage === "bookings" && (
                 <ChefBookings />
               )}
@@ -1965,6 +2063,129 @@ className="h-12 w-auto object-contain"
           })}
         </div>
       </nav>
+
+      {/* ════════════════════════════════════════════
+          MOBILE NAVIGATION DRAWER — Mobile Only
+      ════════════════════════════════════════════ */}
+      <div
+        className={`fixed inset-0 z-[150] transition-opacity duration-300 md:hidden ${
+          mobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+      >
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+        
+        {/* Drawer panel */}
+        <div
+          className={`absolute top-0 left-0 bottom-0 w-72 bg-[#0D1117] text-slate-300 flex flex-col shadow-2xl transition-transform duration-300 transform ${
+            mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          {/* Drawer Header */}
+          <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <img
+                src="/logonavbar.png"
+                alt="Shantabai"
+                className="h-10 w-auto object-contain"
+              />
+              <div>
+                <h1 className="text-xs font-black text-white leading-none">
+                  Shantabai
+                </h1>
+                <p className="text-[7px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">
+                  AAPKI SEVA, HAMARA VADA
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Mini profile inside drawer */}
+          <div className="px-4 py-3 mx-3 mt-4 mb-2 rounded-xl bg-white/[0.04] border border-white/5 flex items-center gap-3 flex-shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center font-black text-white text-base flex-shrink-0">
+              {(profile?.kitchenName || user?.name || "C").charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-white truncate leading-none mb-0.5">
+                {profile?.kitchenName || user?.name || "My Kitchen"}
+              </p>
+              <p className="text-[10px] text-slate-500 truncate">
+                {profile?.isVerified ? "✓ Verified Partner" : "⏳ Pending Review"}
+              </p>
+            </div>
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="flex-1 px-3 pb-4 overflow-y-auto hide-scrollbar">
+            <p className="text-[9px] font-extrabold text-slate-700 uppercase tracking-widest px-3 py-2 mt-2 mb-1">
+              Navigation
+            </p>
+            {SIDEBAR_NAV.map(item => {
+              const Icon = item.icon;
+              const isActive = activePage === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    goTo(item.id);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer group mb-0.5 ${
+                    isActive
+                      ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                      : "text-slate-400 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 flex-shrink-0 transition-colors ${
+                    isActive ? "text-white" : "text-slate-500 group-hover:text-slate-300"
+                  }`} />
+                  <span className="flex-1 text-left truncate">{item.label}</span>
+                  
+                  {item.id === "customer_chats" && unreadCounts.customerChats > 0 && (
+                    <span className="bg-rose-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
+                      {unreadCounts.customerChats}
+                    </span>
+                  )}
+                  {item.id === "admin_messages" && unreadCounts.adminMessages > 0 && (
+                    <span className="bg-rose-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
+                      {unreadCounts.adminMessages}
+                    </span>
+                  )}
+                  {item.comingSoon && !isActive && (
+                    <span className="text-[9px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded-full font-bold flex-shrink-0">
+                      Soon
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Logout button at bottom of drawer */}
+          <div className="px-3 pb-5 border-t border-white/5 pt-3 flex-shrink-0">
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                logout();
+                navigate("/login");
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all cursor-pointer group"
+            >
+              <LogOut className="w-4 h-4 group-hover:text-rose-400 transition-colors" />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
     </div>
   );

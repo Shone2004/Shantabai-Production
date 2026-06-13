@@ -1,36 +1,34 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Send, MessageSquare, Loader2, Check, CheckCheck, AlertCircle } from "lucide-react";
-import api from "../../../services/api";
-import { getSocket } from "../../../services/socket";
-import { useAuth } from "../../../context/AuthContext";
+import { Send, Loader2, Shield, AlertCircle, Check, CheckCheck } from "lucide-react";
+import api from "../../services/api";
+import { getSocket } from "../../services/socket";
+import { useAuth } from "../../context/AuthContext";
 
-export default function ProviderChatPanel({ selectedProvider }) {
+export default function AdminChat() {
   const { user } = useAuth();
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const chatEndRef = useRef(null);
+  
+  const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
 
   const scrollToBottom = (behavior = "smooth") => {
-    chatEndRef.current?.scrollIntoView({ behavior });
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
-  // 1. Fetch/Create ADMIN_PROVIDER conversation
+  // 1. Fetch/Create Admin Conversation on mount
   useEffect(() => {
-    const chefUserId = selectedProvider?.user?._id;
-    if (!chefUserId) return;
-
     const setupAdminChat = async () => {
-      setLoading(true);
-      setError(null);
       try {
+        setLoading(true);
+        setError(null);
+        
+        // Let backend auto-resolve the ADMIN user ID and find/create convo
         const response = await api.post("/chat/conversation", {
-          type: "ADMIN_PROVIDER",
-          partnerId: chefUserId,
+          type: "ADMIN_PROVIDER"
         });
 
         if (response.data.success) {
@@ -45,17 +43,17 @@ export default function ProviderChatPanel({ selectedProvider }) {
           }
         }
       } catch (err) {
-        console.error("Failed to setup admin-provider chat:", err);
-        setError("Could not load support chat channel.");
+        console.error("Failed to setup admin chat:", err);
+        setError("Unable to open support chat with Admin. Please check back later.");
       } finally {
         setLoading(false);
       }
     };
 
     setupAdminChat();
-  }, [selectedProvider?._id, selectedProvider?.user?._id]);
+  }, []);
 
-  // 2. Setup socket room and event listeners
+  // 2. Setup socket room and event handlers
   useEffect(() => {
     if (!conversation?._id) return;
 
@@ -112,7 +110,7 @@ export default function ProviderChatPanel({ selectedProvider }) {
     };
   }, [conversation?._id]);
 
-  // Handle Send
+  // Handle Send Message
   const handleSend = (e) => {
     e.preventDefault();
     if (!text.trim() || !conversation?._id) return;
@@ -128,64 +126,58 @@ export default function ProviderChatPanel({ selectedProvider }) {
       api.post("/chat/messages", {
         conversationId: conversation._id,
         text: text.trim(),
-      })
-      .then((res) => {
+      }).then((res) => {
         if (res.data.success) {
           setMessages((prev) => [...prev, res.data.message]);
           setTimeout(() => scrollToBottom("smooth"), 50);
         }
-      })
-      .catch(console.error);
+      }).catch(console.error);
     }
 
     setText("");
   };
 
-  if (!selectedProvider) return null;
-
   return (
-    <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm flex flex-col h-[400px] overflow-hidden">
-      {/* Chat Header */}
-      <div className="flex items-center justify-between border-b border-slate-100 p-4 bg-slate-50/50">
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm">💬</span>
-            <span className="font-black text-xs text-slate-700 uppercase tracking-wider">
-              Admin Communication
-            </span>
-          </div>
-          <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
-            Internal conversation with {selectedProvider.kitchenName || "this provider"}
+    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col h-[calc(100vh-140px)] overflow-hidden animate-scale-in">
+      {/* Active Chat Header */}
+      <div className="bg-slate-900 border-b border-slate-800 p-4 flex items-center gap-3 flex-shrink-0 text-white">
+        <div className="w-10 h-10 rounded-full bg-brand-green/20 text-white font-black flex items-center justify-center flex-shrink-0 border border-slate-800">
+          🛡️
+        </div>
+        <div>
+          <h4 className="text-sm font-bold truncate">Shantabai Administration</h4>
+          <p className="text-[10px] text-slate-400 font-semibold uppercase mt-0.5">
+            Internal Support Channel
           </p>
         </div>
       </div>
 
-      {/* Chat Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white flex flex-col min-h-0">
+      {/* Chat History Scroll */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col min-h-0 bg-slate-50/50">
         {loading ? (
           <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
-            <Loader2 className="w-6 h-6 animate-spin text-slate-500 mb-2" />
-            <p className="text-[10px] font-semibold">Loading messages...</p>
+            <Loader2 className="w-8 h-8 animate-spin text-slate-700" />
+            <p className="text-xs font-semibold mt-2">Connecting to support channel...</p>
           </div>
         ) : error ? (
           <div className="flex-1 flex flex-col items-center justify-center text-rose-500 p-4 text-center">
-            <AlertCircle className="w-6 h-6 mb-2" />
-            <p className="text-[10px] font-bold">{error}</p>
+            <AlertCircle className="w-8 h-8 mb-2" />
+            <p className="text-xs font-bold">{error}</p>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
-            <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 mb-2 border border-slate-100">
-              <MessageSquare className="w-5 h-5" />
+            <div className="w-16 h-16 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-350 shadow-sm mb-3">
+              <Shield className="w-8 h-8 text-slate-350" />
             </div>
-            <h4 className="text-xs font-bold text-slate-700">No Messages Yet</h4>
-            <p className="text-[10px] text-slate-400 max-w-[180px] mt-1 leading-normal">
-              Send a message to this provider to start the support session.
+            <h5 className="text-sm font-bold text-slate-800">No Support History</h5>
+            <p className="text-xs text-slate-400 max-w-[220px] mt-1 leading-relaxed">
+              Introduce yourself here. Administrators will see your messages and reply in real-time.
             </p>
           </div>
         ) : (
           messages.map((msg, index) => {
             const isMe = msg.senderId === user._id;
-            const timeString = new Date(msg.createdAt).toLocaleTimeString([], {
+            const time = new Date(msg.createdAt).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
             });
@@ -193,60 +185,55 @@ export default function ProviderChatPanel({ selectedProvider }) {
             return (
               <div
                 key={msg._id || index}
-                className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
+                className={`flex flex-col ${isMe ? "items-end" : "items-start"} max-w-[85%] ${
+                  isMe ? "self-end" : "self-start"
+                }`}
               >
-                <div className="flex items-center gap-1 mb-0.5">
-                  <span className="text-[9px] font-black text-slate-450 uppercase">
-                    {isMe ? "Admin" : "Provider"}
-                  </span>
-                  <span className="text-[9px] text-slate-300">•</span>
-                  <span className="text-[9px] text-slate-400">{timeString}</span>
-                </div>
                 <div
-                  className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs font-medium leading-relaxed shadow-sm transition-all break-words ${
+                  className={`px-4 py-2.5 rounded-2xl text-xs font-medium leading-relaxed shadow-sm break-words ${
                     isMe
                       ? "bg-slate-900 text-white rounded-tr-none"
-                      : "bg-slate-100 text-slate-800 rounded-tl-none"
+                      : "bg-white text-slate-800 border border-slate-100 rounded-tl-none"
                   }`}
                 >
                   {msg.text}
                 </div>
-                {isMe && (
-                  <div className="flex justify-end mt-0.5 px-0.5">
-                    {msg.isRead ? (
-                      <CheckCheck className="w-3 h-3 text-emerald-500 stroke-[2.5]" />
-                    ) : (
-                      <Check className="w-3 h-3 text-slate-450 stroke-[2.5]" />
-                    )}
-                  </div>
-                )}
+                <div className="flex items-center gap-1 mt-1 px-1">
+                  <span className="text-[9px] font-semibold text-slate-400">{time}</span>
+                  {isMe && (
+                    <span className="text-slate-400">
+                      {msg.isRead ? (
+                        <CheckCheck className="w-3.5 h-3.5 text-emerald-500 stroke-[2.5]" />
+                      ) : (
+                        <Check className="w-3.5 h-3.5 text-slate-400 stroke-[2.5]" />
+                      )}
+                    </span>
+                  )}
+                </div>
               </div>
             );
           })
         )}
-        <div ref={chatEndRef} />
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* Chat Input Area */}
-      <form
-        onSubmit={handleSend}
-        className="p-3 border-t border-slate-100 bg-slate-50/50 flex gap-2 items-center flex-shrink-0"
-      >
+      {/* Sticky Chat Input */}
+      <form onSubmit={handleSend} className="p-3 border-t border-slate-100 bg-white flex gap-2 items-center flex-shrink-0">
         <input
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Type a message to the provider..."
-          className="flex-1 min-w-0 bg-white border border-slate-200 focus:border-slate-800 focus:ring-1 focus:ring-slate-800 text-xs font-semibold rounded-full px-4 py-2.5 outline-none transition-all placeholder:text-slate-400"
-          disabled={loading || !!error}
+          placeholder="Send support message..."
+          className="flex-1 bg-slate-50 border border-slate-200 focus:border-slate-800 focus:ring-1 focus:ring-slate-800 text-xs font-semibold rounded-full px-4 py-2.5 outline-none transition-all placeholder:text-slate-400"
+          disabled={loading || error}
         />
         <button
           type="submit"
-          disabled={!text.trim() || loading || !!error}
+          disabled={!text.trim() || loading || error}
           className={`w-9 h-9 rounded-full flex items-center justify-center transition-all flex-shrink-0 cursor-pointer shadow-sm ${
             text.trim() && !loading && !error
               ? "bg-slate-900 hover:bg-slate-800 text-white"
-              : "bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-200"
+              : "bg-slate-100 text-slate-400 cursor-not-allowed"
           }`}
         >
           <Send className="w-4 h-4" />

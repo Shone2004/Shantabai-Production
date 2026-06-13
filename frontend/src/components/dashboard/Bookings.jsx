@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../services/api';
+import ChatWidget from '../chat/ChatWidget';
 
 const avatar = (name) =>
-  `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f43f5e&color=fff&size=128`;
+  `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0A4D2B&color=fff&size=128`;
 
 const mockBookings = [
   {
@@ -14,7 +16,8 @@ const mockBookings = [
     price: '₹180/day',
     paymentStatus: 'Paid via UPI',
     image: avatar('Savita Home Cook'),
-    tab: 'upcoming'
+    tab: 'upcoming',
+    providerUserId: null // Mock booking
   },
   {
     id: 'BKG-002',
@@ -26,7 +29,8 @@ const mockBookings = [
     price: '₹3,500',
     paymentStatus: 'Payment Pending',
     image: avatar('Rohit Event Chef'),
-    tab: 'upcoming'
+    tab: 'upcoming',
+    providerUserId: null // Mock booking
   },
   {
     id: 'BKG-003',
@@ -38,7 +42,8 @@ const mockBookings = [
     price: '₹150/day',
     paymentStatus: 'Paid',
     image: avatar("Meena's Kitchen"),
-    tab: 'completed'
+    tab: 'completed',
+    providerUserId: null // Mock booking
   },
   {
     id: 'BKG-004',
@@ -50,7 +55,8 @@ const mockBookings = [
     price: '₹800',
     paymentStatus: 'Paid via Card',
     image: avatar('Chef Prakash'),
-    tab: 'completed'
+    tab: 'completed',
+    providerUserId: null // Mock booking
   },
   {
     id: 'BKG-005',
@@ -62,27 +68,56 @@ const mockBookings = [
     price: '₹3,000/month',
     paymentStatus: 'Refunded',
     image: avatar("Anjali's Tiffin"),
-    tab: 'cancelled'
+    tab: 'cancelled',
+    providerUserId: null // Mock booking
   }
 ];
 
 export default function Bookings() {
   const [activeTab, setActiveTab] = useState('upcoming');
   const [allBookings, setAllBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatPartner, setChatPartner] = useState(null);
 
   useEffect(() => {
-    const syncBookings = () => {
-      const savedBookings = JSON.parse(localStorage.getItem('bookings')) || [];
-      setAllBookings([
-        ...mockBookings,
-        ...savedBookings
-      ]);
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        const res = await api.get('/bookings/customer');
+        if (res.data.success) {
+          const dbBookings = res.data.orders.map(order => ({
+            id: order._id,
+            providerName: order.provider?.kitchenName || 'Chef',
+            providerUserId: order.provider?.user,
+            serviceType: order.foodItem?.name || 'Home Cook Service',
+            date: new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+            time: new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+            status: order.status === 'COMPLETED' ? 'Completed' : (order.status === 'CANCELLED' ? 'Cancelled' : (order.status === 'PENDING' ? 'Pending' : 'Confirmed')),
+            price: `₹${order.totalPrice}`,
+            paymentStatus: order.paymentMethod === 'CASH_ON_PICKUP' ? 'Cash on Pickup' : 'Paid',
+            image: order.provider?.avatar || avatar(order.provider?.kitchenName || 'Chef'),
+            tab: order.status === 'COMPLETED' ? 'completed' : (order.status === 'CANCELLED' ? 'cancelled' : 'upcoming'),
+            rawOrder: order
+          }));
+
+          if (dbBookings.length > 0) {
+            setAllBookings(dbBookings);
+          } else {
+            setAllBookings(mockBookings);
+          }
+        } else {
+          setAllBookings(mockBookings);
+        }
+      } catch (err) {
+        console.error('Failed to fetch user bookings from API:', err);
+        setAllBookings(mockBookings);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    syncBookings();
-    
-    window.addEventListener('focus', syncBookings);
-    return () => window.removeEventListener('focus', syncBookings);
+    fetchOrders();
   }, [activeTab]);
 
   const filteredBookings = allBookings.filter(
@@ -104,7 +139,22 @@ export default function Bookings() {
     }
   };
 
-  const handleCancelBooking = (bookingId) => {
+  const handleCancelBooking = async (bookingId) => {
+    // Check if it's a real order or mock
+    const isMock = mockBookings.some((m) => m.id === bookingId);
+    if (!isMock) {
+      try {
+        const res = await api.patch(`/bookings/provider/${bookingId}/status`, { status: 'CANCELLED' });
+        if (res.data.success) {
+          setAllBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'Cancelled', tab: 'cancelled' } : b));
+        }
+      } catch (err) {
+        console.error('Cancel order failed:', err);
+        alert('Failed to cancel order.');
+      }
+      return;
+    }
+
     const updatedBookings = allBookings.map((booking) => {
       if (booking.id === bookingId) {
         return {
@@ -132,8 +182,17 @@ export default function Bookings() {
     );
   };
 
+  const handleOpenChat = (booking) => {
+    setChatPartner({
+      id: booking.providerUserId,
+      name: booking.providerName,
+      role: 'PROVIDER'
+    });
+    setChatOpen(true);
+  };
+
   return (
-    <div className="p-8 max-w-5xl mx-auto animate-in fade-in zoom-in-95 duration-300 pb-12">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto animate-in fade-in zoom-in-95 duration-300 pb-12">
       {/* Header */}
       <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
@@ -166,7 +225,9 @@ export default function Bookings() {
 
       {/* Bookings List */}
       <div className="space-y-6">
-        {filteredBookings.length > 0 ? (
+        {loading ? (
+          <div className="animate-pulse p-8 text-center text-gray-400">Loading bookings...</div>
+        ) : filteredBookings.length > 0 ? (
           filteredBookings.map((booking) => (
             <div
               key={booking.id}
@@ -234,7 +295,7 @@ export default function Bookings() {
               <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
                   {booking.paymentStatus.includes('Paid') ||
-                  booking.paymentStatus === 'Refunded' ? (
+                  booking.paymentStatus === 'Refunded' || booking.paymentStatus === 'Cash on Pickup' ? (
                     <svg
                       className="w-4 h-4 text-green-500"
                       fill="none"
@@ -266,11 +327,20 @@ export default function Bookings() {
                   {booking.paymentStatus}
                 </div>
 
-                <div className="flex gap-3 w-full sm:w-auto">
+                <div className="flex gap-3 w-full sm:w-auto justify-end">
+                  {booking.providerUserId && (
+                    <button
+                      onClick={() => handleOpenChat(booking)}
+                      className="flex-1 sm:flex-none px-5 py-2 text-sm font-bold text-white bg-slate-900 rounded-xl hover:bg-slate-800 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <span>💬 Chat with Cook</span>
+                    </button>
+                  )}
+
                   {activeTab === 'upcoming' && (
                     <button
                       onClick={() => handleCancelBooking(booking.id)}
-                      className="flex-1 sm:flex-none px-5 py-2 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                      className="flex-1 sm:flex-none px-5 py-2 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-colors cursor-pointer"
                     >
                       Cancel
                     </button>
@@ -278,17 +348,17 @@ export default function Bookings() {
 
                   {activeTab === 'completed' && (
                     <>
-                      <button className="flex-1 sm:flex-none px-5 py-2 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-colors">
+                      <button className="flex-1 sm:flex-none px-5 py-2 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-colors cursor-pointer">
                         Leave Review
                       </button>
-                      <button className="flex-1 sm:flex-none px-5 py-2 text-sm font-bold text-primary bg-primary/10 border border-transparent rounded-xl hover:bg-primary/20 transition-colors">
+                      <button className="flex-1 sm:flex-none px-5 py-2 text-sm font-bold text-[#0A4D2B] bg-[#0A4D2B]/10 border border-transparent rounded-xl hover:bg-[#0A4D2B]/20 transition-colors cursor-pointer">
                         Rebook
                       </button>
                     </>
                   )}
 
                   {activeTab === 'cancelled' && (
-                    <button className="w-full sm:w-auto px-5 py-2 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-colors">
+                    <button className="w-full sm:w-auto px-5 py-2 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-colors cursor-pointer">
                       View Details
                     </button>
                   )}
@@ -320,13 +390,23 @@ export default function Bookings() {
               You don't have any {activeTab} service appointments right now.
             </p>
             {activeTab === 'upcoming' && (
-              <button className="bg-primary text-white font-bold px-6 py-2.5 rounded-xl hover:bg-primary/90 transition-colors shadow-sm">
+              <button className="bg-primary text-white font-bold px-6 py-2.5 rounded-xl hover:bg-primary/90 transition-colors shadow-sm cursor-pointer">
                 Find Services
               </button>
             )}
           </div>
         )}
       </div>
+
+      {/* Reusable Chat Widget */}
+      <ChatWidget
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+        partnerId={chatPartner?.id}
+        partnerName={chatPartner?.name}
+        partnerRole={chatPartner?.role}
+        conversationType="CUSTOMER_PROVIDER"
+      />
     </div>
   );
 }
