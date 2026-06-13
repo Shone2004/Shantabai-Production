@@ -84,6 +84,20 @@ export const initSocket = (currentUser) => {
     }
   });
 
+  // Global background listener for support ticket alerts
+  socket.on("support_notification", (notification) => {
+    console.log("📨 [Global Support Listener] Support notification received:", notification);
+    
+    // Check if user is currently viewing the active ticket
+    const isCurrentTicketActive = window.activeTicketId && String(window.activeTicketId) === String(notification.ticketDbId);
+    
+    if (!isCurrentTicketActive) {
+      // Dispatch custom window event to trigger list reloading or local updates
+      const event = new CustomEvent("support_notification_alert", { detail: notification });
+      window.dispatchEvent(event);
+    }
+  });
+
   socket.on("connect_error", (err) => {
     console.error("⚡ Socket.IO connection error:", err.message);
   });

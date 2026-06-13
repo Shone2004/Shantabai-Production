@@ -18,6 +18,7 @@ const adminRoutes = require("./routes/admin.routes");
 const bookingRoutes = require("./routes/booking.routes");
 const contactRoutes = require("./routes/contact.routes");
 const chatRoutes = require("./routes/chat.routes");
+const supportRoutes = require("./routes/support.routes");
 
 const app = express();
 const server = http.createServer(app);
@@ -38,6 +39,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/support", supportRoutes);
 
 app.get("/", (req, res) => {
   res.send("kp API Running");

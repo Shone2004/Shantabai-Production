@@ -6,7 +6,8 @@ import {
   UserCheck,
   Utensils,
   Users,
-  LogOut
+  LogOut,
+  LifeBuoy
 } from "lucide-react";
 import api from "../../../services/api";
 import { getSocket } from "../../../services/socket";
@@ -22,6 +23,7 @@ export default function AdminSidebar({
 }) {
   const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [supportUnreadCount, setSupportUnreadCount] = useState(0);
 
   const fetchUnreadCount = async () => {
     try {
@@ -40,9 +42,24 @@ export default function AdminSidebar({
     }
   };
 
+  const fetchSupportUnreadCount = async () => {
+    try {
+      const res = await api.get("/support/admin/tickets");
+      if (res.data.success) {
+        const openTickets = res.data.tickets.filter(
+          (t) => t.status === "Open" || t.status === "In Progress"
+        );
+        setSupportUnreadCount(openTickets.length);
+      }
+    } catch (err) {
+      console.error("Failed to fetch admin support count:", err);
+    }
+  };
+
   useEffect(() => {
     // Initial fetch
     fetchUnreadCount();
+    fetchSupportUnreadCount();
 
     // Listen to socket events for real-time badge updates
     const socket = getSocket();
@@ -64,18 +81,25 @@ export default function AdminSidebar({
       fetchUnreadCount();
     };
 
+    const handleSupportNotification = () => {
+      fetchSupportUnreadCount();
+    };
+
     socket.on("receive_message", handleReceiveMessage);
     socket.on("messages_read", handleMessagesRead);
+    socket.on("support_notification", handleSupportNotification);
 
     return () => {
       socket.off("receive_message", handleReceiveMessage);
       socket.off("messages_read", handleMessagesRead);
+      socket.off("support_notification", handleSupportNotification);
     };
   }, [user?._id, user?.id]);
 
   // Sync when activeTab changes
   useEffect(() => {
     fetchUnreadCount();
+    fetchSupportUnreadCount();
   }, [activeTab]);
 
   return (
@@ -122,7 +146,8 @@ export default function AdminSidebar({
             { id: "dashboard", label: "Overview", icon: Sliders },
             { id: "providers", label: "Home Cooks", icon: UserCheck },
             { id: "foods", label: "Food Listings", icon: Utensils },
-            { id: "users", label: "User Accounts", icon: Users }
+            { id: "users", label: "User Accounts", icon: Users },
+            { id: "support-tickets", label: "Support Tickets", icon: LifeBuoy }
           ].map(item => {
             const Icon = item.icon;
             const active = activeTab === item.id;
@@ -144,6 +169,11 @@ export default function AdminSidebar({
                 {item.id === "providers" && unreadCount > 0 && (
                   <span className="bg-rose-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
                     {unreadCount}
+                  </span>
+                )}
+                {item.id === "support-tickets" && supportUnreadCount > 0 && (
+                  <span className="bg-rose-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
+                    {supportUnreadCount}
                   </span>
                 )}
               </button>

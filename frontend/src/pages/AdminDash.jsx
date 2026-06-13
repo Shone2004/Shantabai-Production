@@ -13,6 +13,7 @@ import FoodDetailsModal from "../components/admin/foods/FoodDetailsModal.jsx";
 import UsersPage from "../components/admin/users/UsersPage.jsx";
 import UserDetailsModal from "../components/admin/users/UserDetailsModal.jsx";
 import ConfirmDialog from "../components/admin/shared/ConfirmDialog.jsx";
+import SupportTicketsPage from "../components/admin/support/SupportTicketsPage.jsx";
 
 // Date time formatter helper functions
 const formatDateTime = (dateString) => {
@@ -417,6 +418,14 @@ export default function AdminDash() {
               setUserSearchQuery={setUserSearchQuery}
               setSelectedUser={setSelectedUser}
               setIsUserModalOpen={setIsUserModalOpen}
+            />
+          )}
+
+          {/* ════ 5. SUPPORT TICKETS PAGE ════ */}
+          {activeTab === "support-tickets" && (
+            <SupportTicketsPage
+              showToast={showToast}
+              formatDateTime={formatDateTime}
             />
           )}
 

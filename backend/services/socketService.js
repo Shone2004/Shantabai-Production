@@ -44,6 +44,12 @@ const initSocket = (server) => {
     socket.join(`user_${socket.user._id}`);
     console.log(`👤 User ${socket.user.name} joined personal room: user_${socket.user._id}`);
 
+    // Join admins room if role is ADMIN
+    if (socket.user.role === "ADMIN") {
+      socket.join("admins");
+      console.log(`🔑 Admin ${socket.user.name} joined room: admins`);
+    }
+
     // Client -> Server: Join room conversation_<conversationId>
     socket.on("join_conversation", async ({ conversationId }) => {
       try {
@@ -73,6 +79,38 @@ const initSocket = (server) => {
       } catch (err) {
         console.error("Error in join_conversation socket event:", err);
         socket.emit("error_message", { message: "Internal server error joining conversation" });
+      }
+    });
+
+    // Client -> Server: Join support ticket room ticket_<ticketId>
+    socket.on("join_ticket", async ({ ticketId }) => {
+      try {
+        if (!ticketId) return;
+
+        const SupportTicket = require("../models/SupportTicket");
+        const ticket = await SupportTicket.findById(ticketId);
+        if (!ticket) {
+          socket.emit("error_message", { message: "Support ticket not found" });
+          return;
+        }
+
+        // Verify participant authorization
+        const isCreator = ticket.customerId.toString() === socket.user._id.toString();
+        const isAdmin = socket.user.role === "ADMIN";
+
+        if (!isCreator && !isAdmin) {
+          socket.emit("error_message", {
+            message: "Access denied. You are not authorized for this support ticket conversation.",
+          });
+          return;
+        }
+
+        const roomName = `ticket_${ticketId}`;
+        socket.join(roomName);
+        console.log(`👤 User ${socket.user.name} joined ticket room: ${roomName}`);
+      } catch (err) {
+        console.error("Error in join_ticket socket event:", err);
+        socket.emit("error_message", { message: "Internal server error joining ticket room" });
       }
     });
 
