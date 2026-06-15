@@ -21,7 +21,7 @@ const Hero = () => {
     const qParam  = query.trim() ? `q=${encodeURIComponent(query.trim())}` : '';
     const locParam = location    ? `loc=${encodeURIComponent(location)}`    : '';
     const params   = [qParam, locParam].filter(Boolean).join('&');
-    navigate(`/search${params ? `?${params}` : ''}`);
+    navigate(`/food${params ? `?${params}` : ''}`);
   };
 
   const containerVariants = {

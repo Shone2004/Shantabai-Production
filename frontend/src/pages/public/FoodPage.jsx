@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import FoodCard from '../../components/food/FoodCard.jsx';
 import api from '../../services/api';
 
 export default function FoodPage() {
+  const [searchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState('All Meals');
   const [vegOnly, setVegOnly] = useState(false);
   const [nonVegOnly, setNonVegOnly] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || '');
   const [sortBy, setSortBy] = useState('relevance');
 
   const [foods, setFoods] = useState([]);
@@ -33,6 +35,10 @@ export default function FoodPage() {
               category: item.category,
               mealType: item.mealType || '',
               isVeg: item.isVeg,
+              bringContainer: item.bringContainer ?? false,
+              serviceDate: item.serviceDate,
+              startTime: item.startTime,
+              endTime: item.endTime,
               availabilityDetails: {
                 isAvailable: item.quantity > 0 && item.status === 'available',
                 ordersToday: item.ordersToday || 0,

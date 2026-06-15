@@ -14,6 +14,11 @@ exports.createOrder = async (req, res) => {
       return res.status(400).json({ success: false, message: "Food item not found" });
     }
 
+    const now = new Date();
+    if (food.expiryAt && food.expiryAt <= now) {
+      return res.status(400).json({ success: false, message: "This listing has expired and cannot be reserved." });
+    }
+
     if (food.status !== "available" || food.quantity < quantity) {
       return res.status(400).json({ success: false, message: "Not enough quantity available" });
     }

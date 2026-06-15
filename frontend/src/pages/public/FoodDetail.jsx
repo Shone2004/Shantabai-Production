@@ -234,6 +234,49 @@ const FoodDetail = () => {
                 />
               </div>
 
+              {/* Quantity Selector */}
+<div className="mb-6">
+  <label className="block text-sm font-bold text-gray-700 mb-2">
+    Quantity
+  </label>
+
+  <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl p-3">
+    <span className="text-gray-600 font-medium">
+      Portions
+    </span>
+
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+        className="w-10 h-10 rounded-lg border border-gray-300 bg-white text-xl font-bold hover:bg-gray-100 transition"
+      >
+        −
+      </button>
+
+      <span className="w-8 text-center text-lg font-bold">
+        {quantity}
+      </span>
+
+      <button
+        type="button"
+        onClick={() =>
+          setQuantity((prev) =>
+            Math.min(food.quantityAvailable, prev + 1)
+          )
+        }
+        className="w-10 h-10 rounded-lg border border-gray-300 bg-white text-xl font-bold hover:bg-gray-100 transition"
+      >
+        +
+      </button>
+    </div>
+  </div>
+
+  <p className="text-xs text-gray-500 mt-2">
+    Available: {food.quantityAvailable} portions
+  </p>
+</div>
+
               <div className="bg-gray-50 p-4 rounded-xl flex justify-between items-center mb-6">
                 <span className="font-bold text-gray-700">Total Amount</span>
                 <span className="text-2xl font-black text-brand-green">₹{food.price * quantity}</span>

@@ -46,9 +46,14 @@ export default function ProviderProfile() {
             left: item.quantity,
             total: item.totalQuantity || item.quantity
           },
+          serviceDate: item.serviceDate,
+          startTime: item.startTime,
+          endTime: item.endTime,
           timeWindow: item.timeWindow || '12:30 - 2:00 PM',
           location: `${fetchedProvider.area}, ${fetchedProvider.city}`,
           distance: '1.2 km away',
+          isVeg: item.isVeg,
+          bringContainer: item.bringContainer,
           tags: [item.isVeg ? 'Veg' : 'Non-Veg', item.category, ...(item.tags || [])].filter(Boolean),
           provider: {
             name: fetchedProvider.kitchenName || 'Home Cook',

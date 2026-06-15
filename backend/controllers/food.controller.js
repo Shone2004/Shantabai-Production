@@ -2,6 +2,53 @@ const FoodItem = require("../models/FoodItem");
 const ProviderProfile = require("../models/ProviderProfile");
 const { uploadToCloudinary } = require("../utils/cloudinaryHelper");
 
+// Helper to parse Date and Time String into a combined Date object
+const parseDateTime = (dateVal, timeStr) => {
+  if (!dateVal || !timeStr) return null;
+  const baseDate = new Date(dateVal);
+  if (isNaN(baseDate.getTime())) return null;
+
+  const match = timeStr.trim().match(/^(\d+):(\d+)\s*(AM|PM)?$/i);
+  if (!match) return baseDate;
+
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const ampm = match[3];
+
+  if (ampm) {
+    const upperAmpm = ampm.toUpperCase();
+    if (upperAmpm === "PM" && hours < 12) {
+      hours += 12;
+    } else if (upperAmpm === "AM" && hours === 12) {
+      hours = 0;
+    }
+  }
+
+  const combined = new Date(baseDate);
+  combined.setHours(hours, minutes, 0, 0);
+  return combined;
+};
+
+// Helper to format 24h or arbitrary time input into standard 12-hour AM/PM format
+const formatTime12h = (timeStr) => {
+  if (!timeStr) return "";
+  const match = timeStr.trim().match(/^(\d+):(\d+)\s*(AM|PM)?$/i);
+  if (!match) return timeStr;
+
+  let hours = parseInt(match[1], 10);
+  const minutes = String(match[2]).padStart(2, "0");
+  const ampm = match[3];
+
+  if (ampm) {
+    return `${hours}:${minutes} ${ampm.toUpperCase()}`;
+  }
+
+  const suffix = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  hours = hours ? hours : 12; // 0 becomes 12
+  return `${hours}:${minutes} ${suffix}`;
+};
+
 // @desc    Create a new food item
 // @route   POST /api/foods
 // @access  Private (Provider only)
@@ -17,12 +64,14 @@ const createFoodItem = async (req, res) => {
       quantity,
       totalQuantity,
       prepTime,
-      timeWindow,
       images,
       isVeg,
       bringContainer,
       spicyLevel,
       tags,
+      serviceDate,
+      startTime,
+      endTime,
     } = req.body;
 
     // Find the provider profile for the logged-in user
@@ -34,12 +83,16 @@ const createFoodItem = async (req, res) => {
       });
     }
 
-    if (!name || !description || !price || !category || quantity === undefined) {
+    if (!name || !description || !price || !category || quantity === undefined || !serviceDate || !startTime || !endTime) {
       return res.status(400).json({
         success: false,
-        message: "Please provide all required fields (name, description, price, category, quantity)",
+        message: "Please provide all required fields (name, description, price, category, quantity, serviceDate, startTime, endTime)",
       });
     }
+
+    // Compute expiry date and legacy time window format
+    const computedExpiryAt = parseDateTime(serviceDate, endTime);
+    const computedTimeWindow = `${formatTime12h(startTime)} - ${formatTime12h(endTime)}`;
 
     // Handle Image Uploads to Cloudinary (Base64 from body or Buffers from Multer)
     let uploadedImages = [];
@@ -89,7 +142,11 @@ const createFoodItem = async (req, res) => {
       quantity,
       totalQuantity: totalQuantity !== undefined ? totalQuantity : quantity,
       prepTime: prepTime || 30,
-      timeWindow: timeWindow || "",
+      serviceDate,
+      startTime,
+      endTime,
+      expiryAt: computedExpiryAt,
+      timeWindow: computedTimeWindow,
       images: uploadedImages,
       isVeg: isVeg !== undefined ? isVeg : true,
       bringContainer: bringContainer !== undefined ? bringContainer : false,
@@ -121,6 +178,9 @@ const getAllFoods = async (req, res) => {
   try {
     const { category, mealType, isVeg, providerId, search } = req.query;
     const query = {};
+    const now = new Date();
+    // Only return non-expired listings
+    query.expiryAt = { $gt: now };
 
     // No approval filter — approved chefs' foods are always visible
 
@@ -179,6 +239,14 @@ const getFoodById = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Food item not found",
+      });
+    }
+
+    const now = new Date();
+    if (foodItem.expiryAt && foodItem.expiryAt <= now) {
+      return res.status(400).json({
+        success: false,
+        message: "This food item listing has expired",
       });
     }
 
@@ -253,6 +321,25 @@ const updateFoodItem = async (req, res) => {
         success: false,
         message: "Not authorized to update this food item",
       });
+    }
+
+    // Providers cannot reactivate or extend expired listings
+    const now = new Date();
+    if (foodItem.expiryAt && foodItem.expiryAt <= now) {
+      return res.status(400).json({
+        success: false,
+        message: "This listing has expired and cannot be modified or reactivated. Please create a new listing.",
+      });
+    }
+
+    // Recompute expiry details if scheduling details are updated
+    if (updateData.serviceDate || updateData.startTime || updateData.endTime) {
+      const serviceDate = updateData.serviceDate || foodItem.serviceDate;
+      const startTime = updateData.startTime || foodItem.startTime;
+      const endTime = updateData.endTime || foodItem.endTime;
+
+      updateData.expiryAt = parseDateTime(serviceDate, endTime);
+      updateData.timeWindow = `${formatTime12h(startTime)} - ${formatTime12h(endTime)}`;
     }
 
     // Prevent direct overrides of administrative status flags

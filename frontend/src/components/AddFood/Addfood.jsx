@@ -12,6 +12,9 @@ const INITIAL = {
   name: "", category: "", price: "", description: "",
   prepTime: "", quantity: "", isVeg: true, spicyLevel: 0, status: "available",
   bringContainer: false,
+  serviceDate: "",
+  startTime: "12:00",
+  endTime: "14:00",
 };
 
 const SPICY_OPTS = [
@@ -30,6 +33,9 @@ function validate(form, images) {
   if (!form.description.trim() || form.description.length < 20)    e.description = "Description required (min 20 chars)";
   if (!form.prepTime || isNaN(form.prepTime) || Number(form.prepTime) <= 0) e.prepTime = "Enter valid prep time in minutes";
   if (!form.quantity || isNaN(form.quantity) || Number(form.quantity) < 0)  e.quantity = "Enter valid quantity";
+  if (!form.serviceDate)                                            e.serviceDate = "Service date is required";
+  if (!form.startTime)                                              e.startTime   = "Start time is required";
+  if (!form.endTime)                                                e.endTime     = "End time is required";
   if (images.length === 0)                                          e.images      = "Upload at least one food image";
   return e;
 }
@@ -210,6 +216,20 @@ export default function AddFood({ onBack }) {
                 <Field label="Preparation Time (minutes)" required error={errors.prepTime} touched={touched.prepTime}>
                   <input type="number" min="1" {...fld("prepTime")} className={inputCls("prepTime") + " max-w-[180px]"} placeholder="30" />
                 </Field>
+
+                <div className="grid grid-cols-1 gap-4 mb-4 pt-2 border-t border-gray-100 mt-2">
+                  <Field label="Service Date" required error={errors.serviceDate} touched={touched.serviceDate}>
+                    <input type="date" {...fld("serviceDate")} className={inputCls("serviceDate")} />
+                  </Field>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field label="Start Time" required error={errors.startTime} touched={touched.startTime}>
+                      <input type="time" {...fld("startTime")} className={inputCls("startTime")} />
+                    </Field>
+                    <Field label="End Time" required error={errors.endTime} touched={touched.endTime}>
+                      <input type="time" {...fld("endTime")} className={inputCls("endTime")} />
+                    </Field>
+                  </div>
+                </div>
 
                 {/* Availability Status */}
                 <div className="mt-4">
