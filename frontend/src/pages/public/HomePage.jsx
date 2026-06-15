@@ -29,9 +29,14 @@ const mapBackendFoodToCard = (backendFood) => {
       left: backendFood.quantity || 0,
       total: backendFood.totalQuantity || backendFood.quantity || 0
     },
+    serviceDate: backendFood.serviceDate,
+    startTime: backendFood.startTime,
+    endTime: backendFood.endTime,
     timeWindow: backendFood.timeWindow || '12:00 - 2:00 PM',
     location: backendFood.provider ? `${backendFood.provider.area}, ${backendFood.provider.city}` : 'Pune',
     distance: '1.5 km away',
+    bringContainer: backendFood.bringContainer,
+    isVeg: backendFood.isVeg,
     tags: [
       backendFood.isVeg ? 'Veg' : 'Non-Veg',
       ...(backendFood.tags || [])

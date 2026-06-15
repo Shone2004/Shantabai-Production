@@ -35,6 +35,10 @@ export default function FoodPage() {
               category: item.category,
               mealType: item.mealType || '',
               isVeg: item.isVeg,
+              bringContainer: item.bringContainer ?? false,
+              serviceDate: item.serviceDate,
+              startTime: item.startTime,
+              endTime: item.endTime,
               availabilityDetails: {
                 isAvailable: item.quantity > 0 && item.status === 'available',
                 ordersToday: item.ordersToday || 0,

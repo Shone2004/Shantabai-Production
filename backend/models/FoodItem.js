@@ -75,8 +75,28 @@ const foodItemSchema = new mongoose.Schema(
       default: 30,
     },
 
+    serviceDate: {
+      type: Date,
+      required: [true, "Service date is required"],
+    },
+
+    startTime: {
+      type: String,
+      required: [true, "Start time is required"],
+    },
+
+    endTime: {
+      type: String,
+      required: [true, "End time is required"],
+    },
+
+    expiryAt: {
+      type: Date,
+      index: true,
+    },
+
     timeWindow: {
-      type: String, // e.g., "12:00 - 2:00 PM", "8:00 - 10:00 AM"
+      type: String, // Kept for legacy compatibility
       default: "",
     },
 
@@ -165,6 +185,7 @@ foodItemSchema.index({ approvalStatus: 1 });
 // Compound indexes for optimization
 foodItemSchema.index({ provider: 1, status: 1 }); // Finding a chef's available items quickly
 foodItemSchema.index({ category: 1, status: 1, price: 1 }); // Filter/Sort menus
+foodItemSchema.index({ status: 1, approvalStatus: 1, expiryAt: 1 }); // Customer queries filtering out expired/unapproved items
 
 // Text index for searches matching food name/description
 foodItemSchema.index({

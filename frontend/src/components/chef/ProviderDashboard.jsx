@@ -207,8 +207,9 @@ export default function ProviderDashboard() {
     description: "",
     quantity: "10",
     totalQuantity: "10",
-    pickupTime: "12:00",
-    orderOpenTill: "10:00",
+    serviceDate: "",
+    startTime: "12:00",
+    endTime: "14:00",
     isVeg: true,
     bringContainer: false,
     spicyLevel: 1,
@@ -425,8 +426,9 @@ export default function ProviderDashboard() {
       description: food.description,
       quantity: food.quantity.toString(),
       totalQuantity: (food.totalQuantity || food.quantity).toString(),
-      pickupTime: food.pickupTime || "12:00",
-      orderOpenTill: food.orderOpenTill || "10:00",
+      serviceDate: food.serviceDate ? new Date(food.serviceDate).toISOString().split('T')[0] : "",
+      startTime: food.startTime || "12:00",
+      endTime: food.endTime || "14:00",
       isVeg: food.isVeg,
       bringContainer: food.bringContainer ?? false,
       spicyLevel: food.spicyLevel,
@@ -445,7 +447,9 @@ export default function ProviderDashboard() {
     if (!foodForm.category) errors.category = "Please select a category";
     if (!foodForm.price || isNaN(foodForm.price) || Number(foodForm.price) <= 0) errors.price = "Enter a valid price";
     if (!foodForm.description.trim() || foodForm.description.length < 20) errors.description = "Description must be at least 20 characters";
-    if (!foodForm.pickupTime) errors.pickupTime = "Enter pickup time";
+    if (!foodForm.serviceDate) errors.serviceDate = "Enter service date";
+    if (!foodForm.startTime) errors.startTime = "Enter start time";
+    if (!foodForm.endTime) errors.endTime = "Enter end time";
     if (!foodForm.quantity || isNaN(foodForm.quantity) || Number(foodForm.quantity) < 0) errors.quantity = "Enter available quantity";
 
     if (Object.keys(errors).length > 0) {
@@ -459,8 +463,9 @@ export default function ProviderDashboard() {
       const payload = {
         ...foodForm,
         price: Number(foodForm.price),
-        pickupTime: foodForm.pickupTime,
-        orderOpenTill: foodForm.orderOpenTill,
+        serviceDate: foodForm.serviceDate,
+        startTime: foodForm.startTime,
+        endTime: foodForm.endTime,
         quantity: Number(foodForm.quantity),
         totalQuantity: Number(foodForm.totalQuantity || foodForm.quantity)
       };
@@ -503,8 +508,9 @@ export default function ProviderDashboard() {
       description: "",
       quantity: "10",
       totalQuantity: "10",
-      pickupTime: "12:00",
-      orderOpenTill: "10:00",
+      serviceDate: "",
+      startTime: "12:00",
+      endTime: "14:00",
       isVeg: true,
       bringContainer: false,
       spicyLevel: 1,
@@ -1097,11 +1103,14 @@ export default function ProviderDashboard() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       {foods.map(food => {
                         const spicyIdx = Math.min(Number(food.spicyLevel || 0), 3);
-                        const isAvailable = food.status === "available" && food.quantity > 0;
+                        const isExpired = food.expiryAt ? new Date(food.expiryAt) <= new Date() : false;
+                        const isAvailable = !isExpired && food.status === "available" && food.quantity > 0;
                         return (
                           <article
                             key={food._id}
-                            className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col"
+                            className={`bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col ${
+                              isExpired ? "opacity-75" : ""
+                            }`}
                           >
                             {/* Food Image */}
                             <div className="relative h-44 bg-slate-100 overflow-hidden flex-shrink-0">
@@ -1127,15 +1136,17 @@ export default function ProviderDashboard() {
                                 </span>
                               </div>
 
-                              {/* Approval Badge */}
+                              {/* Approval Badge / Expired Badge */}
                               <div className={`absolute top-3 right-3 rounded-lg px-2.5 py-1 text-[9px] font-black uppercase tracking-wide shadow-sm ${
-                                food.approvalStatus === "APPROVED"
+                                isExpired
+                                  ? "bg-rose-600 text-white"
+                                  : food.approvalStatus === "APPROVED"
                                   ? "bg-emerald-500 text-white"
                                   : food.approvalStatus === "REJECTED"
                                   ? "bg-rose-500 text-white"
                                   : "bg-amber-400 text-slate-900"
                               }`}>
-                                {food.approvalStatus || "PENDING"}
+                                {isExpired ? "EXPIRED" : (food.approvalStatus || "PENDING")}
                               </div>
 
                               {/* Price */}
@@ -1182,22 +1193,37 @@ export default function ProviderDashboard() {
 
                               {/* Action Bar */}
                               <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-50">
-                                <button
-                                  onClick={() => toggleFoodStatus(food._id, food.status, food.quantity)}
-                                  className={`flex-1 py-2.5 text-[10px] uppercase tracking-wider font-bold rounded-xl border transition-all cursor-pointer touch-target ${
-                                    isAvailable
-                                      ? "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
-                                      : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
-                                  }`}
-                                  aria-label={isAvailable ? "Set to offline" : "Set to live"}
-                                >
-                                  {isAvailable ? "● Live" : "○ Offline"}
-                                </button>
+                                {isExpired ? (
+                                  <button
+                                    disabled
+                                    className="flex-1 py-2.5 text-[10px] uppercase tracking-wider font-bold rounded-xl border bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
+                                    aria-label="This food item has expired"
+                                  >
+                                    ● Expired
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => toggleFoodStatus(food._id, food.status, food.quantity)}
+                                    className={`flex-1 py-2.5 text-[10px] uppercase tracking-wider font-bold rounded-xl border transition-all cursor-pointer touch-target ${
+                                      isAvailable
+                                        ? "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                                        : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
+                                    }`}
+                                    aria-label={isAvailable ? "Set to offline" : "Set to live"}
+                                  >
+                                    {isAvailable ? "● Live" : "○ Offline"}
+                                  </button>
+                                )}
 
                                 <button
-                                  onClick={() => triggerEditMode(food)}
-                                  className="w-10 h-10 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all cursor-pointer touch-target"
-                                  aria-label={`Edit ${food.name}`}
+                                  onClick={() => !isExpired && triggerEditMode(food)}
+                                  disabled={isExpired}
+                                  className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all touch-target ${
+                                    isExpired
+                                      ? "border-slate-100 text-slate-300 bg-slate-50 cursor-not-allowed"
+                                      : "border-slate-200 text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 cursor-pointer"
+                                  }`}
+                                  aria-label={isExpired ? "Cannot edit expired food" : `Edit ${food.name}`}
                                 >
                                   <Edit className="w-3.5 h-3.5" aria-hidden="true" />
                                 </button>
@@ -1387,34 +1413,55 @@ export default function ProviderDashboard() {
                             {formErrors.price && <p role="alert" className="text-[11px] text-rose-500 mt-1">{formErrors.price}</p>}
                           </div>
 
-                          <div>
-                            <label htmlFor="food-pickup-time" className="text-xs font-bold text-slate-700 block mb-1.5">
-                              Pickup Time <span className="text-rose-500">*</span>
+                          <div className="col-span-2">
+                            <label htmlFor="food-service-date" className="text-xs font-bold text-slate-700 block mb-1.5">
+                              Service Date <span className="text-rose-500">*</span>
                             </label>
                             <input
-                              id="food-pickup-time"
-                              type="time"
-                              value={foodForm.pickupTime}
-                              onChange={e => setFoodForm(p => ({ ...p, pickupTime: e.target.value }))}
-                              aria-invalid={!!formErrors.pickupTime}
+                              id="food-service-date"
+                              type="date"
+                              value={foodForm.serviceDate}
+                              onChange={e => setFoodForm(p => ({ ...p, serviceDate: e.target.value }))}
+                              aria-invalid={!!formErrors.serviceDate}
                               className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm outline-none transition-all ${
-                                formErrors.pickupTime ? "border-rose-400" : "border-slate-200 focus:border-emerald-500 focus:bg-white"
+                                formErrors.serviceDate ? "border-rose-400" : "border-slate-200 focus:border-emerald-500 focus:bg-white"
                               }`}
                             />
-                            {formErrors.pickupTime && <p role="alert" className="text-[11px] text-rose-500 mt-1">{formErrors.pickupTime}</p>}
+                            {formErrors.serviceDate && <p role="alert" className="text-[11px] text-rose-500 mt-1">{formErrors.serviceDate}</p>}
                           </div>
 
                           <div>
-                            <label htmlFor="food-order-open-till" className="text-xs font-bold text-slate-700 block mb-1.5">
-                              Order Open Till
+                            <label htmlFor="food-start-time" className="text-xs font-bold text-slate-700 block mb-1.5">
+                              Start Time <span className="text-rose-500">*</span>
                             </label>
                             <input
-                              id="food-order-open-till"
+                              id="food-start-time"
                               type="time"
-                              value={foodForm.orderOpenTill}
-                              onChange={e => setFoodForm(p => ({ ...p, orderOpenTill: e.target.value }))}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:bg-white transition-all"
+                              value={foodForm.startTime}
+                              onChange={e => setFoodForm(p => ({ ...p, startTime: e.target.value }))}
+                              aria-invalid={!!formErrors.startTime}
+                              className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm outline-none transition-all ${
+                                formErrors.startTime ? "border-rose-400" : "border-slate-200 focus:border-emerald-500 focus:bg-white"
+                              }`}
                             />
+                            {formErrors.startTime && <p role="alert" className="text-[11px] text-rose-500 mt-1">{formErrors.startTime}</p>}
+                          </div>
+
+                          <div>
+                            <label htmlFor="food-end-time" className="text-xs font-bold text-slate-700 block mb-1.5">
+                              End Time <span className="text-rose-500">*</span>
+                            </label>
+                            <input
+                              id="food-end-time"
+                              type="time"
+                              value={foodForm.endTime}
+                              onChange={e => setFoodForm(p => ({ ...p, endTime: e.target.value }))}
+                              aria-invalid={!!formErrors.endTime}
+                              className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm outline-none transition-all ${
+                                formErrors.endTime ? "border-rose-400" : "border-slate-200 focus:border-emerald-500 focus:bg-white"
+                              }`}
+                            />
+                            {formErrors.endTime && <p role="alert" className="text-[11px] text-rose-500 mt-1">{formErrors.endTime}</p>}
                           </div>
 
                           <div>
@@ -1694,7 +1741,10 @@ export default function ProviderDashboard() {
                             <div className="flex items-center gap-2 pt-1 text-[9px] text-slate-400">
                               <span>{foodForm.category || "No category"}</span>
                               <span aria-hidden="true">·</span>
-                              <span>{foodForm.pickupTime || "12:00"}</span>
+                              <span>
+                                {foodForm.serviceDate ? `${new Date(foodForm.serviceDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} • ` : ""}
+                                {foodForm.startTime || "12:00"} - {foodForm.endTime || "14:00"}
+                              </span>
                             </div>
                           </div>
                         </div>
