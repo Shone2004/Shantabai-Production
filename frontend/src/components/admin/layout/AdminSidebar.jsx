@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Shield,
   X,
@@ -6,8 +6,12 @@ import {
   UserCheck,
   Utensils,
   Users,
-  LogOut
+  LogOut,
+  LifeBuoy
 } from "lucide-react";
+import api from "../../../services/api";
+import { getSocket } from "../../../services/socket";
+import { useAuth } from "../../../context/AuthContext";
 
 export default function AdminSidebar({
   activeTab,
@@ -17,6 +21,87 @@ export default function AdminSidebar({
   logout,
   navigate
 }) {
+  const { user } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [supportUnreadCount, setSupportUnreadCount] = useState(0);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const res = await api.get("/chat/conversations");
+      if (res.data.success) {
+        let total = 0;
+        res.data.conversations.forEach((convo) => {
+          if (convo.type === "ADMIN_PROVIDER") {
+            total += convo.unreadCount || 0;
+          }
+        });
+        setUnreadCount(total);
+      }
+    } catch (err) {
+      console.error("Failed to fetch admin unread count:", err);
+    }
+  };
+
+  const fetchSupportUnreadCount = async () => {
+    try {
+      const res = await api.get("/support/admin/tickets");
+      if (res.data.success) {
+        const openTickets = res.data.tickets.filter(
+          (t) => t.status === "Open" || t.status === "In Progress"
+        );
+        setSupportUnreadCount(openTickets.length);
+      }
+    } catch (err) {
+      console.error("Failed to fetch admin support count:", err);
+    }
+  };
+
+  useEffect(() => {
+    // Initial fetch
+    fetchUnreadCount();
+    fetchSupportUnreadCount();
+
+    // Listen to socket events for real-time badge updates
+    const socket = getSocket();
+    if (!socket) return;
+
+    const handleReceiveMessage = (message) => {
+      const userId = user?.id || user?._id;
+      if (userId && String(message.senderId) !== String(userId)) {
+        const isChatActive = window.activeChatId && String(window.activeChatId) === String(message.conversationId);
+        if (!isChatActive && message.senderRole === "PROVIDER") {
+          // Increment unread count by 1 for incoming provider message
+          setUnreadCount((prev) => prev + 1);
+        }
+      }
+    };
+
+    const handleMessagesRead = () => {
+      // Re-sync unread counts
+      fetchUnreadCount();
+    };
+
+    const handleSupportNotification = () => {
+      fetchSupportUnreadCount();
+    };
+
+    socket.on("receive_message", handleReceiveMessage);
+    socket.on("messages_read", handleMessagesRead);
+    socket.on("support_notification", handleSupportNotification);
+
+    return () => {
+      socket.off("receive_message", handleReceiveMessage);
+      socket.off("messages_read", handleMessagesRead);
+      socket.off("support_notification", handleSupportNotification);
+    };
+  }, [user?._id, user?.id]);
+
+  // Sync when activeTab changes
+  useEffect(() => {
+    fetchUnreadCount();
+    fetchSupportUnreadCount();
+  }, [activeTab]);
+
   return (
     <>
       {/* Sidebar Backdrop for Mobile */}
@@ -61,7 +146,8 @@ export default function AdminSidebar({
             { id: "dashboard", label: "Overview", icon: Sliders },
             { id: "providers", label: "Home Cooks", icon: UserCheck },
             { id: "foods", label: "Food Listings", icon: Utensils },
-            { id: "users", label: "User Accounts", icon: Users }
+            { id: "users", label: "User Accounts", icon: Users },
+            { id: "support-tickets", label: "Support Tickets", icon: LifeBuoy }
           ].map(item => {
             const Icon = item.icon;
             const active = activeTab === item.id;
@@ -72,14 +158,24 @@ export default function AdminSidebar({
                   setActiveTab(item.id);
                   setSidebarOpen(false); // Close sidebar on selection on mobile
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all ${
+                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                   active 
                     ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/15" 
                     : "hover:bg-slate-800/80 hover:text-slate-100"
                 }`}
               >
                 <Icon className={`w-4.5 h-4.5 ${active ? "text-white" : "text-slate-400 group-hover:text-slate-100"}`} />
-                <span>{item.label}</span>
+                <span className="flex-1 text-left">{item.label}</span>
+                {item.id === "providers" && unreadCount > 0 && (
+                  <span className="bg-rose-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
+                    {unreadCount}
+                  </span>
+                )}
+                {item.id === "support-tickets" && supportUnreadCount > 0 && (
+                  <span className="bg-rose-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
+                    {supportUnreadCount}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -92,7 +188,7 @@ export default function AdminSidebar({
               logout();
               navigate("/login");
             }}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold hover:bg-rose-500/10 hover:text-rose-400 transition-colors text-slate-400"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold hover:bg-rose-500/10 hover:text-rose-400 transition-colors text-slate-400 cursor-pointer"
           >
             <LogOut className="w-4.5 h-4.5 text-slate-400" />
             <span>Logout</span>

@@ -7,6 +7,7 @@ import StatsCards from "../components/dashboard/StatsCards";
 import FindServices from "../components/dashboard/FindServices";
 import Bookings from "../components/dashboard/Bookings";
 import Favorites from "../components/dashboard/Favorites";
+import CustomerSupport from "../components/customer/CustomerSupport";
 
 const CustomerDash = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -25,7 +26,7 @@ const CustomerDash = () => {
     <div className="flex flex-col lg:flex-row min-h-screen bg-brand-cream">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      <div className="flex-1 p-4 md:p-6 lg:p-8 flex flex-col h-screen overflow-y-auto">
+      <div className="flex-1 p-4 md:p-6 lg:p-8 flex flex-col h-screen overflow-y-auto pt-20 lg:pt-8 lg:ml-64">
         {/* Dashboard Home tab view */}
         {activeTab === "dashboard" && (
           <>
@@ -98,6 +99,13 @@ const CustomerDash = () => {
         {activeTab === "favorites" && (
           <div className="mt-8">
             <Favorites />
+          </div>
+        )}
+
+        {/* Support Ticket View */}
+        {activeTab === "support" && (
+          <div className="mt-8">
+            <CustomerSupport />
           </div>
         )}
       </div>

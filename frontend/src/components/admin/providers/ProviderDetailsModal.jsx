@@ -477,15 +477,8 @@ export default function ProviderDetailsModal({
                   />
 
                   {/* SECTION 9 — ADMIN COMMUNICATION CHAT */}
-                  <ProviderChatPanel
-                    selectedProvider={selectedProvider}
-                    providerChats={providerChats}
-                    chatInput={chatInput}
-                    setChatInput={setChatInput}
-                    chatEndRef={chatEndRef}
-                    handleSendMessage={handleSendMessage}
-                    handleClearChat={handleClearChat}
-                    defaultMessages={defaultMessages}
+                  <ProviderChatPanel 
+                    selectedProvider={selectedProvider} 
                   />
 
                 </div>
