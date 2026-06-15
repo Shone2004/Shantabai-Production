@@ -58,6 +58,12 @@ const cardVariants = {
   }),
 };
 
+const STATS = [
+  { emoji: '🏠', value: '500+',    label: 'Home Cooks'      },
+  { emoji: '🍱', value: '10,000+', label: 'Meals Served'    },
+  { emoji: '📍', value: '12+',     label: 'Neighbourhoods'  },
+  { emoji: '⭐', value: '4.8',     label: 'Avg Rating'      },
+];
 
 const FOOTER_LINKS = {
   Company: [
@@ -136,6 +142,20 @@ export default function HomePage() {
       {/* Hero */}
       <Hero />
 
+      {/* Stats Strip */}
+      <div className="bg-brand-green">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-0 divide-y-2 sm:divide-y-0 sm:divide-x divide-white/10">
+          {STATS.map((s) => (
+            <div key={s.label} className="flex items-center gap-3 px-4 sm:justify-center first:pt-0 pt-4 sm:pt-0">
+              <span className="text-2xl">{s.emoji}</span>
+              <div>
+                <p className="text-lg font-black text-white leading-tight">{s.value}</p>
+                <p className="text-xs font-semibold text-white/60 leading-tight">{s.label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="max-w-7xl mx-auto mt-6">
 
@@ -234,7 +254,6 @@ export default function HomePage() {
         <div className="mt-14">
           <ChefSection
             onConsultAI={() => setShowAI(true)}
-            onViewProfile={(chef) => navigate(`/provider/${chef.id}`)}
           />
         </div>
 

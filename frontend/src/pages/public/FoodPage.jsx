@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import FoodCard from '../../components/food/FoodCard.jsx';
 import api from '../../services/api';
 
 export default function FoodPage() {
+  const [searchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState('All Meals');
   const [vegOnly, setVegOnly] = useState(false);
   const [nonVegOnly, setNonVegOnly] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || '');
   const [sortBy, setSortBy] = useState('relevance');
 
   const [foods, setFoods] = useState([]);
