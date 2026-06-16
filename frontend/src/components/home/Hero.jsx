@@ -13,7 +13,7 @@ const LOCATIONS = [
 
 const Hero = () => {
   const [query, setQuery] = useState('');
-  const [location, setLocation] = useState('Baner, Pune');
+const [location, setLocation] = useState('Detecting location...');
   const navigate = useNavigate();
 
   const handleSearch = (e) => {
