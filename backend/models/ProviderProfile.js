@@ -60,6 +60,11 @@ const providerProfileSchema = new mongoose.Schema(
       default: "",
     },
 
+    kitchenPhoto: {
+      type: String,
+      default: "",
+    },
+
     // Verification Status
     isVerified: {
       type: Boolean,

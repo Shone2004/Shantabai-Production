@@ -4,7 +4,6 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { uploadToCloudinary } = require("../utils/cloudinaryHelper");
 
-// Generate JWT for immediate login upon registration
 const generateToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, {
     expiresIn: "7d",
@@ -17,12 +16,10 @@ const generateToken = (id, role) => {
 const registerProvider = async (req, res) => {
   try {
     const {
-      // User fields
       name,
       email,
       phone,
       password,
-      // Provider profile fields
       kitchenName,
       tagline,
       bio,
@@ -36,19 +33,18 @@ const registerProvider = async (req, res) => {
       latitude,
       avatar,
       aadharUrl,
+      kitchenPhoto,
       dietaryType,
       serviceTypes,
     } = req.body;
 
-    // 1. Basic validation — coordinates are optional (null until geocoding is implemented)
-    if (!name || !email || !phone || !password || !kitchenName || !bio || experience === undefined || experience === null || experience === '' || !city || !area || !pincode || !fullAddress) {
+    if (!name || !email || !phone || !password || !kitchenName || !bio || experience === undefined || experience === null || experience === "" || !city || !area || !pincode || !fullAddress) {
       return res.status(400).json({
         success: false,
         message: "Please provide all required fields",
       });
     }
 
-    // 2. Check if user already exists
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({
@@ -57,22 +53,19 @@ const registerProvider = async (req, res) => {
       });
     }
 
-    // Handle Image Uploads to Cloudinary (Base64 from body or Buffers from Multer files)
+    // 1. Upload avatar
     let cloudinaryAvatarUrl = "";
-    let cloudinaryAadharUrl = "";
-
-    // 1. Check if avatar is uploaded via req.files (Multer)
     if (req.files && req.files.avatar) {
       const avatarFile = Array.isArray(req.files.avatar) ? req.files.avatar[0] : req.files.avatar;
       cloudinaryAvatarUrl = await uploadToCloudinary(avatarFile.buffer, "shantabai/avatars");
     } else if (req.file && req.file.fieldname === "avatar") {
       cloudinaryAvatarUrl = await uploadToCloudinary(req.file.buffer, "shantabai/avatars");
     } else if (avatar) {
-      // Fallback: Check if sent as base64 string
       cloudinaryAvatarUrl = await uploadToCloudinary(avatar, "shantabai/avatars");
     }
 
-    // 2. Check if aadhar document is uploaded
+    // 2. Upload aadhar
+    let cloudinaryAadharUrl = "";
     if (req.files && req.files.aadhar) {
       const aadharFile = Array.isArray(req.files.aadhar) ? req.files.aadhar[0] : req.files.aadhar;
       cloudinaryAadharUrl = await uploadToCloudinary(aadharFile.buffer, "shantabai/documents");
@@ -82,11 +75,20 @@ const registerProvider = async (req, res) => {
       cloudinaryAadharUrl = await uploadToCloudinary(aadharUrl, "shantabai/documents");
     }
 
-    // 3. Hash password
+    // 3. Upload kitchen photo
+    let cloudinaryKitchenPhotoUrl = "";
+    if (req.files && req.files.kitchenPhoto) {
+      const kitchenFile = Array.isArray(req.files.kitchenPhoto) ? req.files.kitchenPhoto[0] : req.files.kitchenPhoto;
+      cloudinaryKitchenPhotoUrl = await uploadToCloudinary(kitchenFile.buffer, "shantabai/kitchens");
+    } else if (kitchenPhoto) {
+      cloudinaryKitchenPhotoUrl = await uploadToCloudinary(kitchenPhoto, "shantabai/kitchens");
+    }
+
+    // 4. Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // 4. Create User
+    // 5. Create User
     const user = await User.create({
       name,
       email,
@@ -96,7 +98,7 @@ const registerProvider = async (req, res) => {
       profileImage: cloudinaryAvatarUrl,
     });
 
-    // 5. Create ProviderProfile
+    // 6. Create ProviderProfile
     try {
       const providerProfile = await ProviderProfile.create({
         user: user._id,
@@ -111,7 +113,6 @@ const registerProvider = async (req, res) => {
         area,
         pincode,
         fullAddress,
-        // Only set location if valid coordinates are provided
         ...(longitude !== undefined && latitude !== undefined && longitude !== null && latitude !== null
           ? {
               location: {
@@ -122,10 +123,10 @@ const registerProvider = async (req, res) => {
           : {}),
         avatar: cloudinaryAvatarUrl,
         aadharUrl: cloudinaryAadharUrl,
+        kitchenPhoto: cloudinaryKitchenPhotoUrl,
         verificationStatus: "PENDING",
       });
 
-      // 6. Generate Token
       const token = generateToken(user._id, user.role);
 
       res.status(201).json({
@@ -144,7 +145,6 @@ const registerProvider = async (req, res) => {
         profile: providerProfile,
       });
     } catch (profileError) {
-      // Rollback user creation if profile creation fails
       await User.findByIdAndDelete(user._id);
       throw profileError;
     }
@@ -163,7 +163,7 @@ const registerProvider = async (req, res) => {
 const getMyProviderProfile = async (req, res) => {
   try {
     const profile = await ProviderProfile.findOne({ user: req.user._id }).populate("user", "-password");
-    
+
     if (!profile) {
       return res.status(404).json({
         success: false,
@@ -220,11 +220,9 @@ const updateMyProviderProfile = async (req, res) => {
       });
     }
 
-    // Handle Image Uploads to Cloudinary (Base64 from body or Buffers from Multer files)
     let cloudinaryAvatarUrl = "";
     let cloudinaryCoverUrl = "";
 
-    // 1. Process avatar upload if sent
     if (req.files && req.files.avatar) {
       const avatarFile = Array.isArray(req.files.avatar) ? req.files.avatar[0] : req.files.avatar;
       cloudinaryAvatarUrl = await uploadToCloudinary(avatarFile.buffer, "shantabai/avatars");
@@ -232,7 +230,6 @@ const updateMyProviderProfile = async (req, res) => {
       cloudinaryAvatarUrl = await uploadToCloudinary(avatar, "shantabai/avatars");
     }
 
-    // 2. Process coverImage upload if sent
     if (req.files && req.files.coverImage) {
       const coverFile = Array.isArray(req.files.coverImage) ? req.files.coverImage[0] : req.files.coverImage;
       cloudinaryCoverUrl = await uploadToCloudinary(coverFile.buffer, "shantabai/covers");
@@ -240,7 +237,6 @@ const updateMyProviderProfile = async (req, res) => {
       cloudinaryCoverUrl = await uploadToCloudinary(coverImage, "shantabai/covers");
     }
 
-    // Update fields if provided
     if (kitchenName !== undefined) profile.kitchenName = kitchenName;
     if (tagline !== undefined) profile.tagline = tagline;
     if (bio !== undefined) profile.bio = bio;
@@ -256,10 +252,9 @@ const updateMyProviderProfile = async (req, res) => {
     if (area !== undefined) profile.area = area;
     if (pincode !== undefined) profile.pincode = pincode;
     if (fullAddress !== undefined) profile.fullAddress = fullAddress;
-    
+
     if (cloudinaryAvatarUrl) {
       profile.avatar = cloudinaryAvatarUrl;
-      // Keep User profileImage synced!
       await User.findByIdAndUpdate(req.user._id, { profileImage: cloudinaryAvatarUrl });
     }
 
@@ -317,7 +312,7 @@ const getProviderById = async (req, res) => {
   try {
     const { id } = req.params;
     const provider = await ProviderProfile.findById(id).populate("user", "name email phone profileImage");
-    
+
     if (!provider) {
       return res.status(404).json({
         success: false,

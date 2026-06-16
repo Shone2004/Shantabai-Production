@@ -46,6 +46,10 @@ export default function ChefSignup() {
   const [aadharFile, setAadharFile] = useState(null);
   const [aadharFileName, setAadharFileName] = useState('');
 
+  //Kitchen photo
+  const [kitchenPhotoPreview, setKitchenPhotoPreview] = useState(null);
+  const [kitchenPhotoFile, setKitchenPhotoFile] = useState(null);
+
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // 'success' or 'error'
@@ -124,6 +128,23 @@ export default function ChefSignup() {
     }
   };
 
+  const handleKitchenPhotoUpload = (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors(prev => ({ ...prev, kitchenPhoto: 'Image must be less than 5MB' }));
+      return;
+    }
+    setKitchenPhotoFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setKitchenPhotoPreview(reader.result);
+      setErrors(prev => ({ ...prev, kitchenPhoto: null }));
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
   const handleAadharUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -192,6 +213,11 @@ export default function ChefSignup() {
       // Attach avatar photo file if available
       if (photoFile) {
         formPayload.append('avatar', photoFile);
+      }
+
+      //Attach kitchen photo
+      if (kitchenPhotoFile) {
+        formPayload.append('kitchenPhoto', kitchenPhotoFile);
       }
 
       // Attach Aadhaar document if available
@@ -562,6 +588,7 @@ export default function ChefSignup() {
                 </div>
 
 
+                {/* Bio field — already exists, no change */}
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-gray-700">Short Bio / About Me <span className="text-red-500">*</span></label>
                   <p className="text-xs text-gray-500">Tell customers a bit about your cooking journey, secret recipes, or hygiene practices.</p>
@@ -573,8 +600,40 @@ export default function ChefSignup() {
                   />
                   {errors.bio && <p className="text-xs font-bold text-red-500">{errors.bio}</p>}
                 </div>
-              </div>
-            </div>
+
+                {/* Kitchen Photo Upload — NEW, inside space-y-6 */}
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Kitchen Photo</label>
+                  <p className="text-xs text-gray-500">Upload a photo of your kitchen. A clean, well-lit shot builds customer trust.</p>
+                  <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-gray-50 border border-gray-200 rounded-2xl hover:bg-brand-green/5 hover:border-brand-green/30 transition-all group">
+                    <div className="relative w-32 h-24 rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden shrink-0">
+                      {kitchenPhotoPreview ? (
+                        <img src={kitchenPhotoPreview} alt="Kitchen Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-3xl text-gray-400">🍳</span>
+                      )}
+                      <input type="file" accept="image/*" onChange={handleKitchenPhotoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                    </div>
+                    <div className="flex-1 text-center sm:text-left">
+                      {kitchenPhotoPreview ? (
+                        <p className="text-xs font-bold text-green-700 mb-2">✅ Kitchen photo uploaded</p>
+                      ) : (
+                        <p className="text-xs text-gray-500 mb-2">JPG, PNG · Max 5MB</p>
+                      )}
+                      {errors.kitchenPhoto && <p className="text-xs font-bold text-red-500">{errors.kitchenPhoto}</p>}
+                    </div>
+                    <div className="relative shrink-0">
+                      <button type="button" className="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 shadow-sm hover:border-gray-300 transition-all cursor-pointer">
+                        {kitchenPhotoPreview ? 'Change Photo' : 'Upload Photo'}
+                      </button>
+                      <input type="file" accept="image/*" onChange={handleKitchenPhotoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                    </div>
+                  </div>
+                </div>
+
+              </div>   {/* ← closes space-y-6 */}
+            </div>     {/* ← closes Section 3 */}
+
 
             {/* --- SECTION 4: Identity Verification --- */}
             <div>

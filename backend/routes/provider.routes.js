@@ -20,7 +20,8 @@ router.post(
   "/register",
   upload.fields([
     { name: "avatar", maxCount: 1 },
-    { name: "aadhar", maxCount: 1 }
+    { name: "aadhar", maxCount: 1 },
+    { name: "kitchenPhoto", maxCount: 1 },
   ]),
   registerProvider
 );
@@ -47,12 +48,12 @@ router.put(
   allowRoles("PROVIDER"),
   upload.fields([
     { name: "avatar", maxCount: 1 },
-    { name: "coverImage", maxCount: 1 }
+    { name: "coverImage", maxCount: 1 },
   ]),
   updateMyProviderProfile
 );
 
-// Public single profile fetch (mounted after /me to prevent collision)
+// Public single profile fetch
 router.get("/:id", getProviderById);
 
 module.exports = router;
