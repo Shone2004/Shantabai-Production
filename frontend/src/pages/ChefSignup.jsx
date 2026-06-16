@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
@@ -8,8 +8,8 @@ const Eye = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20
 const EyeOff = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>);
 
 const SUGGESTED_CUISINES = [
-  'North Indian', 'South Indian', 'Maharashtrian', 'Gujarati', 
-  'Bengali', 'Chinese', 'Italian', 'Healthy/Diet', 'Baking', 
+  'North Indian', 'South Indian', 'Maharashtrian', 'Gujarati',
+  'Bengali', 'Chinese', 'Italian', 'Healthy/Diet', 'Baking',
   'Street Food', 'Vegan', 'Keto', 'Desserts', 'Mughlai', 'Continental',
   'Punjabi', 'Rajasthani', 'Biryani Special', 'Seafood'
 ];
@@ -17,9 +17,36 @@ const SUGGESTED_CUISINES = [
 const DIETARY_TYPES = ['Veg', 'Non-Veg', 'Vegan'];
 const SERVICE_TYPES = ['Home Delivery', 'Pickup', 'Event Catering', 'Daily Tiffin Service'];
 
+// ─── Nominatim helpers ───────────────────────────────────────────────────────
+
+// Reverse geocode: coords → address fields
+const reverseGeocode = async (lat, lng) => {
+  const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`;
+  const res = await fetch(url, {
+    headers: { 'Accept-Language': 'en', 'User-Agent': 'ShantabaiApp/1.0' }
+  });
+  if (!res.ok) throw new Error('Reverse geocode failed');
+  return res.json();
+};
+
+// Forward geocode: pincode → coords
+const forwardGeocodeByPincode = async (pincode) => {
+  const url = `https://nominatim.openstreetmap.org/search?postalcode=${pincode}&country=India&format=json&addressdetails=1&limit=1`;
+  const res = await fetch(url, {
+    headers: { 'Accept-Language': 'en', 'User-Agent': 'ShantabaiApp/1.0' }
+  });
+  if (!res.ok) throw new Error('Forward geocode failed');
+  const data = await res.json();
+  if (!data.length) throw new Error('Pincode not found');
+  return data[0];
+};
+
+// ────────────────────────────────────────────────────────────────────────────
+
 export default function ChefSignup() {
   const navigate = useNavigate();
   const { login } = useAuth();
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -34,30 +61,120 @@ export default function ChefSignup() {
     experience: '',
     bio: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
+
+  // Coordinates stored separately — never shown to user
+  const [coords, setCoords] = useState({ latitude: null, longitude: null });
+
+  // Geolocation UI states
+  // 'detecting' | 'success' | 'denied' | 'error' | 'idle'
+  const [geoStatus, setGeoStatus] = useState('detecting');
+  const [geoMessage, setGeoMessage] = useState('');
+
+  const pincodeDebounceRef = useRef(null);
 
   const [cuisineInput, setCuisineInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(null);
-  const [photoFile, setPhotoFile] = useState(null); // Raw File object for FormData upload
-  
-  // Aadhar specific states
+  const [photoFile, setPhotoFile] = useState(null);
   const [aadharFile, setAadharFile] = useState(null);
   const [aadharFileName, setAadharFileName] = useState('');
-
-  //Kitchen photo
   const [kitchenPhotoPreview, setKitchenPhotoPreview] = useState(null);
   const [kitchenPhotoFile, setKitchenPhotoFile] = useState(null);
-
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState(null); // 'success' or 'error'
+  const [submitStatus, setSubmitStatus] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const filteredCuisines = SUGGESTED_CUISINES.filter(c => 
-    c.toLowerCase().includes(cuisineInput.toLowerCase()) && 
+  // ─── Auto-detect location on mount ────────────────────────────────────────
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setGeoStatus('error');
+      setGeoMessage('Your browser does not support location detection. Please fill in your address manually.');
+      return;
+    }
+
+    setGeoStatus('detecting');
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const data = await reverseGeocode(latitude, longitude);
+          const addr = data.address || {};
+
+          // Map Nominatim fields to our form — Indian address structure
+          const city =
+            addr.city || addr.town || addr.village || addr.county || '';
+          const area =
+            addr.suburb || addr.neighbourhood || addr.residential || addr.road || '';
+          const pincode = addr.postcode || '';
+
+          setFormData(prev => ({
+            ...prev,
+            city,
+            area,
+            pincode,
+          }));
+          setCoords({ latitude, longitude });
+          setGeoStatus('success');
+          setGeoMessage('Location detected! Fields below are pre-filled — edit if needed.');
+        } catch {
+          setGeoStatus('error');
+          setGeoMessage('Could not read your location details. Please fill in your address manually.');
+        }
+      },
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) {
+          setGeoStatus('denied');
+          setGeoMessage('Location access was denied. Enter your pincode below and we\'ll set your location automatically.');
+        } else {
+          setGeoStatus('error');
+          setGeoMessage('Location detection failed. Please fill in your address manually.');
+        }
+      },
+      { timeout: 10000, maximumAge: 60000 }
+    );
+  }, []);
+
+  // ─── Pincode fallback: forward geocode when pincode is complete ────────────
+  useEffect(() => {
+    // Only run fallback if geolocation didn't already give us coords
+    if (coords.latitude !== null) return;
+    if (!/^\d{6}$/.test(formData.pincode)) return;
+
+    clearTimeout(pincodeDebounceRef.current);
+    pincodeDebounceRef.current = setTimeout(async () => {
+      try {
+        const data = await forwardGeocodeByPincode(formData.pincode);
+        setCoords({ latitude: parseFloat(data.lat), longitude: parseFloat(data.lon) });
+
+        // Auto-fill city and area only if they're still empty
+        const addr = data.address || {};
+        setFormData(prev => ({
+          ...prev,
+          city: prev.city || addr.city || addr.town || addr.village || addr.county || '',
+          area: prev.area || addr.suburb || addr.neighbourhood || addr.road || '',
+        }));
+
+        setGeoStatus('success');
+        setGeoMessage('Location set from your pincode.');
+      } catch {
+        // Silently fail — coords just won't be sent, that's fine
+        setGeoStatus('error');
+        setGeoMessage('Could not resolve pincode to a location. Please fill in city and area manually.');
+      }
+    }, 600); // debounce 600ms
+
+    return () => clearTimeout(pincodeDebounceRef.current);
+  }, [formData.pincode, coords.latitude]);
+
+  // ─── Handlers ──────────────────────────────────────────────────────────────
+
+  const filteredCuisines = SUGGESTED_CUISINES.filter(c =>
+    c.toLowerCase().includes(cuisineInput.toLowerCase()) &&
     !formData.cuisines.includes(c)
   );
 
@@ -66,14 +183,18 @@ export default function ChefSignup() {
     let hasInvalidChar = false;
 
     if (name === 'pincode' || name === 'phone') {
-      if (/\D/.test(value)) {
-        hasInvalidChar = true;
-      }
+      if (/\D/.test(value)) hasInvalidChar = true;
       value = value.replace(/\D/g, '');
     }
 
+    // If chef manually edits pincode, reset coords so fallback geocode re-runs
+    if (name === 'pincode') {
+      setCoords({ latitude: null, longitude: null });
+      setGeoStatus('idle');
+    }
+
     setFormData(prev => ({ ...prev, [name]: value }));
-    
+
     if (hasInvalidChar) {
       setErrors(prev => ({ ...prev, [name]: 'Only numbers are allowed' }));
     } else if (errors[name]) {
@@ -85,77 +206,48 @@ export default function ChefSignup() {
     if (e) e.preventDefault();
     const cuisineToAdd = customCuisine || cuisineInput;
     if (cuisineToAdd.trim() && !formData.cuisines.includes(cuisineToAdd.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        cuisines: [...prev.cuisines, cuisineToAdd.trim()]
-      }));
+      setFormData(prev => ({ ...prev, cuisines: [...prev.cuisines, cuisineToAdd.trim()] }));
       setCuisineInput('');
       setShowSuggestions(false);
-      if (errors.cuisines) {
-        setErrors(prev => ({ ...prev, cuisines: null }));
-      }
+      if (errors.cuisines) setErrors(prev => ({ ...prev, cuisines: null }));
     }
   };
 
   const handleRemoveCuisine = (cuisineToRemove) => {
-    setFormData(prev => ({
-      ...prev,
-      cuisines: prev.cuisines.filter(c => c !== cuisineToRemove)
-    }));
+    setFormData(prev => ({ ...prev, cuisines: prev.cuisines.filter(c => c !== cuisineToRemove) }));
   };
 
   const handleCuisineKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddCuisine(e);
-    }
+    if (e.key === 'Enter') { e.preventDefault(); handleAddCuisine(e); }
   };
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, photo: 'Image must be less than 5MB' }));
-        return;
-      }
-      setPhotoFile(file); // Store the raw File object for multipart upload
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result); // Keep base64 for preview display
-        setErrors(prev => ({ ...prev, photo: null }));
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { setErrors(prev => ({ ...prev, photo: 'Image must be less than 5MB' })); return; }
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => { setPhotoPreview(reader.result); setErrors(prev => ({ ...prev, photo: null })); };
+    reader.readAsDataURL(file);
   };
 
   const handleKitchenPhotoUpload = (e) => {
-  const file = e.target.files[0];
-  if (file) {
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors(prev => ({ ...prev, kitchenPhoto: 'Image must be less than 5MB' }));
-      return;
-    }
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { setErrors(prev => ({ ...prev, kitchenPhoto: 'Image must be less than 5MB' })); return; }
     setKitchenPhotoFile(file);
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setKitchenPhotoPreview(reader.result);
-      setErrors(prev => ({ ...prev, kitchenPhoto: null }));
-    };
+    reader.onloadend = () => { setKitchenPhotoPreview(reader.result); setErrors(prev => ({ ...prev, kitchenPhoto: null })); };
     reader.readAsDataURL(file);
-  }
-};
+  };
 
   const handleAadharUpload = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, aadhar: 'File must be less than 5MB' }));
-        return;
-      }
-      setAadharFile(file);
-      setAadharFileName(file.name);
-      setErrors(prev => ({ ...prev, aadhar: null }));
-    }
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { setErrors(prev => ({ ...prev, aadhar: 'File must be less than 5MB' })); return; }
+    setAadharFile(file);
+    setAadharFileName(file.name);
+    setErrors(prev => ({ ...prev, aadhar: null }));
   };
 
   const validateForm = () => {
@@ -174,7 +266,6 @@ export default function ChefSignup() {
     if (!formData.bio.trim() || formData.bio.length < 20) newErrors.bio = 'Bio must be at least 20 characters';
     if (!formData.password || formData.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -182,16 +273,10 @@ export default function ChefSignup() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitStatus(null);
-    
-    if (!validateForm()) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-
+    if (!validateForm()) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     setIsLoading(true);
 
     try {
-      // Build multipart/form-data payload so files are actually uploaded
       const formPayload = new FormData();
       formPayload.append('name', formData.fullName);
       formPayload.append('email', formData.email);
@@ -208,65 +293,89 @@ export default function ChefSignup() {
       formPayload.append('area', formData.area);
       formPayload.append('pincode', formData.pincode);
       formPayload.append('fullAddress', formData.fullAddress);
-      // Coordinates omitted — will be set during geocoding implementation
 
-      // Attach avatar photo file if available
-      if (photoFile) {
-        formPayload.append('avatar', photoFile);
+      // Send coords only if successfully resolved
+      if (coords.latitude !== null && coords.longitude !== null) {
+        formPayload.append('latitude', coords.latitude);
+        formPayload.append('longitude', coords.longitude);
       }
 
-      //Attach kitchen photo
-      if (kitchenPhotoFile) {
-        formPayload.append('kitchenPhoto', kitchenPhotoFile);
-      }
-
-      // Attach Aadhaar document if available
-      if (aadharFile) {
-        formPayload.append('aadhar', aadharFile);
-      }
+      if (photoFile) formPayload.append('avatar', photoFile);
+      if (kitchenPhotoFile) formPayload.append('kitchenPhoto', kitchenPhotoFile);
+      if (aadharFile) formPayload.append('aadhar', aadharFile);
 
       const response = await api.post('/providers/register', formPayload, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      
+
       if (response.data.success) {
         setSubmitStatus('success');
-        
-        // Log in the user automatically
         login(response.data.user, response.data.token);
-        
-        // Redirect to chef dashboard after 1.5 seconds
-        setTimeout(() => {
-          navigate('/chef/dashboard');
-        }, 1500);
+        setTimeout(() => navigate('/chef/dashboard'), 1500);
       }
     } catch (err) {
-  console.error('Failed chef registration:', err);
-  console.error('Server said:', err.response?.data);
-  setSubmitStatus('error');
+      console.error('Failed chef registration:', err);
+      console.error('Server said:', err.response?.data);
+      setSubmitStatus('error');
     } finally {
       setIsLoading(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
+  // ─── Geo status banner ─────────────────────────────────────────────────────
+  const GeoBanner = () => {
+    if (geoStatus === 'detecting') return (
+      <div className="flex items-center gap-3 px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700 mb-6">
+        <svg className="animate-spin h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+        </svg>
+        <span>Detecting your location...</span>
+      </div>
+    );
+
+    if (geoStatus === 'success') return (
+      <div className="flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700 mb-6">
+        <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
+        </svg>
+        <span>{geoMessage}</span>
+      </div>
+    );
+
+    if (geoStatus === 'denied') return (
+      <div className="flex items-start gap-3 px-4 py-3 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-800 mb-6">
+        <span className="text-lg shrink-0">📍</span>
+        <span>{geoMessage}</span>
+      </div>
+    );
+
+    if (geoStatus === 'error') return (
+      <div className="flex items-start gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 mb-6">
+        <span className="text-lg shrink-0">⚠️</span>
+        <span>{geoMessage}</span>
+      </div>
+    );
+
+    return null;
+  };
+
+  // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        
-        {/* Header section */}
+
+        {/* Header */}
         <div className="text-center mb-10">
-          <motion.h1 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
+          <motion.h1
+            initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
             className="text-4xl font-black text-gray-900 tracking-tight mb-3"
           >
             Join as a <span className="text-brand-green">Home Chef</span>
           </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
+          <motion.p
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
             className="text-lg text-gray-600 max-w-2xl mx-auto"
           >
             Turn your passion for cooking into a thriving business. Reach hundreds of hungry customers in your neighborhood.
@@ -276,10 +385,8 @@ export default function ChefSignup() {
         {/* Status Messages */}
         <AnimatePresence>
           {submitStatus === 'success' && (
-            <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
+            <motion.div
+              initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
               className="mb-8 bg-green-50 border border-green-200 rounded-2xl p-6 text-center shadow-sm"
             >
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -289,12 +396,9 @@ export default function ChefSignup() {
               <p className="text-green-700">Welcome to the Shantabai family. Our team will review your application and contact you shortly.</p>
             </motion.div>
           )}
-          
           {submitStatus === 'error' && (
-            <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
+            <motion.div
+              initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
               className="mb-8 bg-red-50 border border-red-200 rounded-2xl p-4 text-center text-red-700 shadow-sm"
             >
               Something went wrong. Please try submitting again.
@@ -303,37 +407,28 @@ export default function ChefSignup() {
         </AnimatePresence>
 
         {/* Main Form */}
-        <motion.form 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          onSubmit={handleSubmit} 
+        <motion.form
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+          onSubmit={handleSubmit}
           className="bg-white rounded-[2rem] shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden"
         >
           <div className="p-8 sm:p-10 space-y-12">
-            
-            {/* --- SECTION 1: Personal Details --- */}
+
+            {/* SECTION 1: Personal Details */}
             <div>
               <h2 className="text-xl font-bold text-gray-900 border-b border-gray-100 pb-3 mb-6">Personal Details</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                {/* Profile Photo Upload */}
+
+                {/* Profile Photo */}
                 <div className="md:col-span-2 flex flex-col sm:flex-row items-center gap-6 mb-2">
                   <div className="relative w-28 h-28 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden shrink-0 group">
-                    {photoPreview ? (
-                      <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-3xl text-gray-400 group-hover:scale-110 transition-transform">📸</span>
-                    )}
+                    {photoPreview
+                      ? <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                      : <span className="text-3xl text-gray-400 group-hover:scale-110 transition-transform">📸</span>}
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
                       <span className="text-white text-xs font-bold">Change</span>
                     </div>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handlePhotoUpload}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    />
+                    <input type="file" accept="image/*" onChange={handlePhotoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-gray-900 mb-1">Profile Photo <span className="text-red-500">*</span></h3>
@@ -344,7 +439,7 @@ export default function ChefSignup() {
 
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-gray-700">Full Name <span className="text-red-500">*</span></label>
-                  <input 
+                  <input
                     type="text" name="fullName" value={formData.fullName} onChange={handleInputChange}
                     placeholder="e.g. Savitri Devi"
                     className={`w-full px-4 py-3 rounded-xl border bg-gray-50 focus:bg-white transition-all outline-none ${errors.fullName ? 'border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/10' : 'border-gray-200 focus:border-brand-green focus:ring-4 focus:ring-brand-green/10'}`}
@@ -354,7 +449,7 @@ export default function ChefSignup() {
 
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-gray-700">Email Address <span className="text-red-500">*</span></label>
-                  <input 
+                  <input
                     type="email" name="email" value={formData.email} onChange={handleInputChange}
                     placeholder="savitri@example.com"
                     className={`w-full px-4 py-3 rounded-xl border bg-gray-50 focus:bg-white transition-all outline-none ${errors.email ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-brand-green'}`}
@@ -365,13 +460,10 @@ export default function ChefSignup() {
                 <div className="space-y-1.5 md:col-span-2">
                   <label className="text-sm font-bold text-gray-700">Phone Number <span className="text-red-500">*</span></label>
                   <div className="flex">
-                    <span className="inline-flex items-center px-4 rounded-l-xl border border-r-0 border-gray-200 bg-gray-100 text-gray-500 font-bold text-sm">
-                      +91
-                    </span>
-                    <input 
+                    <span className="inline-flex items-center px-4 rounded-l-xl border border-r-0 border-gray-200 bg-gray-100 text-gray-500 font-bold text-sm">+91</span>
+                    <input
                       type="tel" name="phone" value={formData.phone} onChange={handleInputChange}
-                      placeholder="9876543210"
-                      maxLength={10}
+                      placeholder="9876543210" maxLength={10}
                       className={`w-full px-4 py-3 rounded-r-xl border bg-gray-50 focus:bg-white transition-all outline-none ${errors.phone ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-brand-green'}`}
                     />
                   </div>
@@ -380,14 +472,18 @@ export default function ChefSignup() {
               </div>
             </div>
 
-            {/* --- SECTION 2: Location Details --- */}
+            {/* SECTION 2: Location Details */}
             <div>
               <h2 className="text-xl font-bold text-gray-900 border-b border-gray-100 pb-3 mb-6">Location & Kitchen</h2>
+
+              {/* Geo status banner sits at the top of this section */}
+              <GeoBanner />
+
               <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
-                
+
                 <div className="space-y-1.5 md:col-span-2">
                   <label className="text-sm font-bold text-gray-700">City <span className="text-red-500">*</span></label>
-                  <input 
+                  <input
                     type="text" name="city" value={formData.city} onChange={handleInputChange}
                     placeholder="e.g. Pune"
                     className={`w-full px-4 py-3 rounded-xl border bg-gray-50 focus:bg-white transition-all outline-none ${errors.city ? 'border-red-300' : 'border-gray-200 focus:border-brand-green'}`}
@@ -397,7 +493,7 @@ export default function ChefSignup() {
 
                 <div className="space-y-1.5 md:col-span-2">
                   <label className="text-sm font-bold text-gray-700">Area / Locality <span className="text-red-500">*</span></label>
-                  <input 
+                  <input
                     type="text" name="area" value={formData.area} onChange={handleInputChange}
                     placeholder="e.g. Baner"
                     className={`w-full px-4 py-3 rounded-xl border bg-gray-50 focus:bg-white transition-all outline-none ${errors.area ? 'border-red-300' : 'border-gray-200 focus:border-brand-green'}`}
@@ -407,12 +503,9 @@ export default function ChefSignup() {
 
                 <div className="space-y-1.5 md:col-span-2">
                   <label className="text-sm font-bold text-gray-700">Pincode <span className="text-red-500">*</span></label>
-                  <input 
+                  <input
                     type="text" name="pincode" value={formData.pincode} onChange={handleInputChange}
-                    placeholder="411045"
-                    maxLength={6}
-                    inputMode="numeric"
-                    pattern="\d*"
+                    placeholder="411045" maxLength={6} inputMode="numeric" pattern="\d*"
                     className={`w-full px-4 py-3 rounded-xl border bg-gray-50 focus:bg-white transition-all outline-none ${errors.pincode ? 'border-red-300' : 'border-gray-200 focus:border-brand-green'}`}
                   />
                   {errors.pincode && <p className="text-xs font-bold text-red-500">{errors.pincode}</p>}
@@ -420,7 +513,7 @@ export default function ChefSignup() {
 
                 <div className="space-y-1.5 md:col-span-6">
                   <label className="text-sm font-bold text-gray-700">Full Kitchen Address <span className="text-red-500">*</span></label>
-                  <textarea 
+                  <textarea
                     name="fullAddress" value={formData.fullAddress} onChange={handleInputChange}
                     placeholder="Flat/House No, Building, Street..."
                     rows={2}
@@ -432,54 +525,35 @@ export default function ChefSignup() {
               </div>
             </div>
 
-            {/* --- SECTION 3: Culinary Profile --- */}
+            {/* SECTION 3: Culinary Profile */}
             <div>
               <h2 className="text-xl font-bold text-gray-900 border-b border-gray-100 pb-3 mb-6">Culinary Profile</h2>
-              
               <div className="space-y-6">
-                
-                {/* Dynamic Tag Input with Autocomplete for Cuisines */}
+
+                {/* Cuisines */}
                 <div className="space-y-2 relative">
                   <label className="text-sm font-bold text-gray-700">Cuisine Specialization <span className="text-red-500">*</span></label>
-                  <p className="text-xs text-gray-500 mb-2">Type a cuisine and click Add or press Enter (e.g. "Maharashtrian", "Baking")</p>
-                  
+                  <p className="text-xs text-gray-500 mb-2">Type a cuisine and click Add or press Enter</p>
                   <div className="flex gap-2 relative">
-                    <input 
-                      type="text" 
-                      value={cuisineInput}
-                      onChange={(e) => {
-                        setCuisineInput(e.target.value);
-                        setShowSuggestions(true);
-                      }}
+                    <input
+                      type="text" value={cuisineInput}
+                      onChange={(e) => { setCuisineInput(e.target.value); setShowSuggestions(true); }}
                       onFocus={() => setShowSuggestions(true)}
                       onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                       onKeyDown={handleCuisineKeyDown}
                       placeholder="Add a cuisine..."
                       className={`flex-1 px-4 py-3 rounded-xl border bg-gray-50 focus:bg-white transition-all outline-none ${errors.cuisines && formData.cuisines.length === 0 ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-brand-green'}`}
                     />
-                    <button 
-                      type="button"
-                      onClick={(e) => handleAddCuisine(e)}
-                      className="px-6 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-colors"
-                    >
-                      Add
-                    </button>
-
-                    {/* Autocomplete Dropdown */}
+                    <button type="button" onClick={(e) => handleAddCuisine(e)} className="px-6 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-colors">Add</button>
                     <AnimatePresence>
                       {showSuggestions && cuisineInput.trim() && filteredCuisines.length > 0 && (
-                        <motion.div 
-                          initial={{ opacity: 0, y: 5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 5 }}
+                        <motion.div
+                          initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }}
                           className="absolute top-full left-0 right-[90px] mt-2 bg-white border border-gray-100 rounded-xl shadow-xl z-10 max-h-48 overflow-y-auto"
                         >
                           {filteredCuisines.map(cuisine => (
-                            <div 
-                              key={cuisine}
-                              onClick={() => handleAddCuisine(null, cuisine)}
-                              className="px-4 py-2.5 hover:bg-brand-green/10 cursor-pointer text-sm font-medium text-gray-700 transition-colors border-b border-gray-50 last:border-0"
-                            >
+                            <div key={cuisine} onClick={() => handleAddCuisine(null, cuisine)}
+                              className="px-4 py-2.5 hover:bg-brand-green/10 cursor-pointer text-sm font-medium text-gray-700 transition-colors border-b border-gray-50 last:border-0">
                               {cuisine}
                             </div>
                           ))}
@@ -487,25 +561,15 @@ export default function ChefSignup() {
                       )}
                     </AnimatePresence>
                   </div>
-
-                  {/* Selected Tags Display */}
                   {formData.cuisines.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
                       <AnimatePresence>
                         {formData.cuisines.map(cuisine => (
-                          <motion.div
-                            key={cuisine}
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full text-sm font-bold text-gray-700 shadow-sm"
-                          >
+                          <motion.div key={cuisine} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full text-sm font-bold text-gray-700 shadow-sm">
                             {cuisine}
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveCuisine(cuisine)}
-                              className="w-4 h-4 rounded-full bg-gray-200 text-gray-500 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition-colors"
-                            >
+                            <button type="button" onClick={() => handleRemoveCuisine(cuisine)}
+                              className="w-4 h-4 rounded-full bg-gray-200 text-gray-500 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition-colors">
                               <span className="text-[10px] leading-none">✕</span>
                             </button>
                           </motion.div>
@@ -519,27 +583,15 @@ export default function ChefSignup() {
                 {/* Dietary Type */}
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-gray-700">Dietary Types You Cater To <span className="text-red-500">*</span></label>
-                  <p className="text-xs text-gray-500">Select all that apply. This helps customers filter by diet preference.</p>
+                  <p className="text-xs text-gray-500">Select all that apply.</p>
                   <div className="flex flex-wrap gap-3">
                     {DIETARY_TYPES.map(type => (
-                      <button
-                        key={type}
-                        type="button"
+                      <button key={type} type="button"
                         onClick={() => {
-                          setFormData(prev => ({
-                            ...prev,
-                            dietaryType: prev.dietaryType.includes(type)
-                              ? prev.dietaryType.filter(d => d !== type)
-                              : [...prev.dietaryType, type]
-                          }));
+                          setFormData(prev => ({ ...prev, dietaryType: prev.dietaryType.includes(type) ? prev.dietaryType.filter(d => d !== type) : [...prev.dietaryType, type] }));
                           if (errors.dietaryType) setErrors(prev => ({ ...prev, dietaryType: null }));
                         }}
-                        className={`px-4 py-2 rounded-full text-sm font-bold border transition-all ${
-                          formData.dietaryType.includes(type)
-                            ? 'bg-brand-green text-white border-brand-green shadow-sm'
-                            : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-brand-green/50'
-                        }`}
-                      >
+                        className={`px-4 py-2 rounded-full text-sm font-bold border transition-all ${formData.dietaryType.includes(type) ? 'bg-brand-green text-white border-brand-green shadow-sm' : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-brand-green/50'}`}>
                         {type === 'Veg' ? '🟢' : type === 'Non-Veg' ? '🔴' : '🌿'} {type}
                       </button>
                     ))}
@@ -553,46 +605,31 @@ export default function ChefSignup() {
                   <p className="text-xs text-gray-500">Select the services you offer to customers.</p>
                   <div className="flex flex-wrap gap-3">
                     {SERVICE_TYPES.map(type => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => {
-                          setFormData(prev => ({
-                            ...prev,
-                            serviceTypes: prev.serviceTypes.includes(type)
-                              ? prev.serviceTypes.filter(s => s !== type)
-                              : [...prev.serviceTypes, type]
-                          }));
-                        }}
-                        className={`px-4 py-2 rounded-full text-sm font-bold border transition-all ${
-                          formData.serviceTypes.includes(type)
-                            ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                            : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-gray-400'
-                        }`}
-                      >
+                      <button key={type} type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, serviceTypes: prev.serviceTypes.includes(type) ? prev.serviceTypes.filter(s => s !== type) : [...prev.serviceTypes, type] }))}
+                        className={`px-4 py-2 rounded-full text-sm font-bold border transition-all ${formData.serviceTypes.includes(type) ? 'bg-slate-900 text-white border-slate-900 shadow-sm' : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-gray-400'}`}>
                         {type}
                       </button>
                     ))}
                   </div>
                 </div>
 
+                {/* Experience */}
                 <div className="space-y-1.5 w-full md:w-1/2">
                   <label className="text-sm font-bold text-gray-700">Years of Experience <span className="text-red-500">*</span></label>
-                  <input 
+                  <input
                     type="number" name="experience" value={formData.experience} onChange={handleInputChange}
-                    placeholder="e.g. 5"
-                    min="0"
+                    placeholder="e.g. 5" min="0"
                     className={`w-full px-4 py-3 rounded-xl border bg-gray-50 focus:bg-white transition-all outline-none ${errors.experience ? 'border-red-300' : 'border-gray-200 focus:border-brand-green'}`}
                   />
                   {errors.experience && <p className="text-xs font-bold text-red-500">{errors.experience}</p>}
                 </div>
 
-
-                {/* Bio field — already exists, no change */}
+                {/* Bio */}
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-gray-700">Short Bio / About Me <span className="text-red-500">*</span></label>
                   <p className="text-xs text-gray-500">Tell customers a bit about your cooking journey, secret recipes, or hygiene practices.</p>
-                  <textarea 
+                  <textarea
                     name="bio" value={formData.bio} onChange={handleInputChange}
                     placeholder="I started cooking traditional Maharashtrian food 10 years ago..."
                     rows={4}
@@ -601,25 +638,21 @@ export default function ChefSignup() {
                   {errors.bio && <p className="text-xs font-bold text-red-500">{errors.bio}</p>}
                 </div>
 
-                {/* Kitchen Photo Upload — NEW, inside space-y-6 */}
+                {/* Kitchen Photo */}
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-gray-700">Kitchen Photo</label>
                   <p className="text-xs text-gray-500">Upload a photo of your kitchen. A clean, well-lit shot builds customer trust.</p>
                   <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-gray-50 border border-gray-200 rounded-2xl hover:bg-brand-green/5 hover:border-brand-green/30 transition-all group">
                     <div className="relative w-32 h-24 rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden shrink-0">
-                      {kitchenPhotoPreview ? (
-                        <img src={kitchenPhotoPreview} alt="Kitchen Preview" className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-3xl text-gray-400">🍳</span>
-                      )}
+                      {kitchenPhotoPreview
+                        ? <img src={kitchenPhotoPreview} alt="Kitchen Preview" className="w-full h-full object-cover" />
+                        : <span className="text-3xl text-gray-400">🍳</span>}
                       <input type="file" accept="image/*" onChange={handleKitchenPhotoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                     </div>
                     <div className="flex-1 text-center sm:text-left">
-                      {kitchenPhotoPreview ? (
-                        <p className="text-xs font-bold text-green-700 mb-2">✅ Kitchen photo uploaded</p>
-                      ) : (
-                        <p className="text-xs text-gray-500 mb-2">JPG, PNG · Max 5MB</p>
-                      )}
+                      {kitchenPhotoPreview
+                        ? <p className="text-xs font-bold text-green-700 mb-2">✅ Kitchen photo uploaded</p>
+                        : <p className="text-xs text-gray-500 mb-2">JPG, PNG · Max 5MB</p>}
                       {errors.kitchenPhoto && <p className="text-xs font-bold text-red-500">{errors.kitchenPhoto}</p>}
                     </div>
                     <div className="relative shrink-0">
@@ -631,24 +664,20 @@ export default function ChefSignup() {
                   </div>
                 </div>
 
-              </div>   {/* ← closes space-y-6 */}
-            </div>     {/* ← closes Section 3 */}
+              </div>
+            </div>
 
-
-            {/* --- SECTION 4: Identity Verification --- */}
+            {/* SECTION 4: Identity Verification */}
             <div>
               <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-6">
                 <h2 className="text-xl font-bold text-gray-900">Identity Verification</h2>
               </div>
-              
               <div className="space-y-4">
                 <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 relative group overflow-hidden transition-all hover:bg-brand-green/5 hover:border-brand-green/30">
                   <div className="flex flex-col sm:flex-row items-center gap-4">
-                    
                     <div className="w-12 h-12 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center shrink-0">
                       <span className="text-xl">📄</span>
                     </div>
-                    
                     <div className="flex-1 text-center sm:text-left">
                       <h3 className="text-sm font-bold text-gray-900 mb-1">Aadhar Card Verification</h3>
                       <p className="text-xs text-gray-500 max-w-sm mx-auto sm:mx-0">
@@ -656,48 +685,38 @@ export default function ChefSignup() {
                       </p>
                       {aadharFileName && (
                         <div className="mt-3 inline-flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-green-200 text-xs font-bold text-green-700 shadow-sm">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
                           {aadharFileName}
                         </div>
                       )}
                       {errors.aadhar && <p className="text-xs font-bold text-red-500 mt-2">{errors.aadhar}</p>}
                     </div>
-
                     <div className="shrink-0 mt-4 sm:mt-0 relative">
                       <button type="button" className="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 shadow-sm hover:border-gray-300 transition-all cursor-pointer">
                         {aadharFileName ? 'Change File' : 'Upload File'}
                       </button>
-                      <input 
-                        type="file" 
-                        accept="image/*,.pdf" 
-                        onChange={handleAadharUpload}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      />
+                      <input type="file" accept="image/*,.pdf" onChange={handleAadharUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                     </div>
-
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* --- SECTION 5: Account Security --- */}
+            {/* SECTION 5: Account Security */}
             <div>
               <h2 className="text-xl font-bold text-gray-900 border-b border-gray-100 pb-3 mb-6">Account Security</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
+
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-gray-700">Password <span className="text-red-500">*</span></label>
                   <div className="relative">
-                    <input 
+                    <input
                       type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleInputChange}
                       placeholder="••••••••"
                       className={`w-full px-4 py-3 pr-12 rounded-xl border bg-gray-50 focus:bg-white transition-all outline-none ${errors.password ? 'border-red-300' : 'border-gray-200 focus:border-brand-green'}`}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none z-10 cursor-pointer p-1"
-                    >
+                    <button type="button" onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none z-10 cursor-pointer p-1">
                       {showPassword ? <Eye /> : <EyeOff />}
                     </button>
                   </div>
@@ -707,16 +726,13 @@ export default function ChefSignup() {
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-gray-700">Confirm Password <span className="text-red-500">*</span></label>
                   <div className="relative">
-                    <input 
+                    <input
                       type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange}
                       placeholder="••••••••"
                       className={`w-full px-4 py-3 pr-12 rounded-xl border bg-gray-50 focus:bg-white transition-all outline-none ${errors.confirmPassword ? 'border-red-300' : 'border-gray-200 focus:border-brand-green'}`}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none z-10 cursor-pointer p-1"
-                    >
+                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none z-10 cursor-pointer p-1">
                       {showConfirmPassword ? <Eye /> : <EyeOff />}
                     </button>
                   </div>
@@ -727,24 +743,20 @@ export default function ChefSignup() {
             </div>
 
           </div>
-          
-          {/* Form Footer / Submit */}
+
+          {/* Footer / Submit */}
           <div className="bg-gray-50 px-8 py-6 sm:px-10 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-xs text-gray-500 text-center sm:text-left max-w-sm">
               By registering, you agree to Shantabai's <a href="#" className="text-brand-orange hover:underline">Terms of Service</a> and <a href="#" className="text-brand-orange hover:underline">Privacy Policy</a>.
             </p>
-            <button 
-              type="submit" 
-              disabled={isLoading}
-              className={`w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-white shadow-lg transition-all ${
-                isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-brand-green hover:bg-brand-green/90 hover:scale-[1.02] active:scale-[0.98]'
-              }`}
-            >
+            <button
+              type="submit" disabled={isLoading}
+              className={`w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-white shadow-lg transition-all ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-brand-green hover:bg-brand-green/90 hover:scale-[1.02] active:scale-[0.98]'}`}>
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                   </svg>
                   Processing...
                 </span>
@@ -752,7 +764,6 @@ export default function ChefSignup() {
             </button>
           </div>
         </motion.form>
-
       </div>
     </div>
   );
