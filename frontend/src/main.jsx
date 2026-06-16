@@ -3,9 +3,10 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
-
+import { LocationProvider } from "./context/LocationContext";
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
+    <LocationProvider>
     <BrowserRouter 
       future={{ 
         v7_startTransition: true, 
@@ -14,5 +15,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     >
       <App />
     </BrowserRouter>
+    </LocationProvider>
   </React.StrictMode>
 );

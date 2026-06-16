@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+
 import { motion } from 'framer-motion';
 import Hero from '../../components/home/Hero.jsx';
 import Categories from '../../components/home/Categories.jsx';
@@ -8,7 +9,7 @@ import CookCard from '../../components/home/CookCard.jsx';
 import ProviderCTA from '../../components/home/ProviderCTA.jsx';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
-
+import useGeoLocation from "../../hooks/useGeoLocation";
 // ─── New components ───────────────────────────────────────────────────────────
 import ChefSection from '../../components/chef/ChefSection.jsx';
 import AIConsultant from '../../components/ai/AIConsultant.jsx';
@@ -16,6 +17,7 @@ import AIConsultant from '../../components/ai/AIConsultant.jsx';
 // ─── Backend Food Mapper ──────────────────────────────────────────────────────
 const mapBackendFoodToCard = (backendFood) => {
   const isAvailable = backendFood.status === "available" && backendFood.quantity > 0;
+  
   return {
     id: backendFood._id,
     name: backendFood.name,
@@ -99,6 +101,7 @@ export default function HomePage() {
   const [error, setError] = useState(null);
   const [cooks, setCooks] = useState([]);
   const [cooksLoading, setCooksLoading] = useState(true);
+  useGeoLocation();
 
   useEffect(() => {
     const fetchFoods = async () => {
