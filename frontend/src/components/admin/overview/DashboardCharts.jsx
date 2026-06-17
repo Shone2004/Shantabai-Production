@@ -10,6 +10,15 @@ import {
 } from "recharts";
 
 export default function DashboardCharts({ historicalChartData }) {
+  // Fix: Do not attempt to render the chart until data exists to avoid -1 dimension errors
+  if (!historicalChartData || historicalChartData.length === 0) {
+    return (
+      <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm h-[300px] flex items-center justify-center text-slate-400 text-sm">
+        Loading chart data...
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 mb-6 gap-2">
@@ -29,9 +38,13 @@ export default function DashboardCharts({ historicalChartData }) {
         </div>
       </div>
       
-      <div className="h-64">
+      {/* Fix: Changed h-64 to an explicit h-[256px] and added min-h-0 to prevent flex/grid collapse */}
+      <div className="h-[256px] w-full min-h-0">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={historicalChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <LineChart 
+            data={historicalChartData} 
+            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
             <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
             <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />

@@ -27,7 +27,6 @@ export default function OverviewPage({
 }) {
   const isOverviewLoading = statsLoading || providersLoading || foodsLoading || usersLoading;
 
-  // Daily metrics computation
   const isToday = (dateString) => {
     if (!dateString) return false;
     const date = new Date(dateString);
@@ -42,20 +41,16 @@ export default function OverviewPage({
   const foodsAddedToday = foods.filter(f => isToday(f.createdAt)).length;
   const chefsRegisteredToday = providers.filter(p => isToday(p.createdAt)).length;
   
-  // Queue for pending chefs
   const pendingChefs = providers.filter(p => p.verificationStatus === "PENDING");
   
-  // Latest registered chefs
   const latestChefs = [...providers]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 5);
     
-  // Recently added foods
   const recentFoods = [...foods]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 5);
     
-  // Unified activities timeline
   const getActivityFeed = () => {
     const list = [];
     providers.forEach(p => {
@@ -88,7 +83,6 @@ export default function OverviewPage({
 
   const activityTimeline = getActivityFeed();
   
-  // Historical registrations & listings chart data
   const getHistoricalChartData = () => {
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const last6Months = [];
@@ -131,13 +125,11 @@ export default function OverviewPage({
   if (isOverviewLoading) {
     return (
       <div className="space-y-8 animate-pulse">
-        {/* KPI Cards Loading */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
           {[1, 2, 3, 4, 5, 6].map(i => (
             <div key={i} className="bg-white border border-slate-150 rounded-2xl p-5 h-24" />
           ))}
         </div>
-        {/* Main section loaders */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white border border-slate-150 rounded-3xl p-6 h-64" />
@@ -154,17 +146,19 @@ export default function OverviewPage({
 
   return (
     <div className="space-y-8 animate-fadeIn">
-      {/* KPI Cards Grid */}
       <StatsGrid
         stats={stats}
         foodsAddedToday={foodsAddedToday}
         chefsRegisteredToday={chefsRegisteredToday}
       />
 
-      {/* Operations Insights Split Layout */}
-      <DashboardCharts historicalChartData={historicalChartData} />
+      {/* CRITICAL FIX: Wrapped the chart in a container with a guaranteed height
+        This ensures ResponsiveContainer always has a valid size to measure.
+      */}
+      <div className="w-full h-[300px] min-h-[300px]">
+        <DashboardCharts historicalChartData={historicalChartData} />
+      </div>
 
-      {/* Recent Activity Table and Lists */}
       <RecentActivity
         latestChefs={latestChefs}
         recentFoods={recentFoods}

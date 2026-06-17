@@ -17,7 +17,7 @@ const mockBookings = [
     paymentStatus: 'Paid via UPI',
     image: avatar('Savita Home Cook'),
     tab: 'upcoming',
-    providerUserId: null // Mock booking
+    providerUserId: null
   },
   {
     id: 'BKG-002',
@@ -30,7 +30,7 @@ const mockBookings = [
     paymentStatus: 'Payment Pending',
     image: avatar('Rohit Event Chef'),
     tab: 'upcoming',
-    providerUserId: null // Mock booking
+    providerUserId: null
   },
   {
     id: 'BKG-003',
@@ -43,33 +43,7 @@ const mockBookings = [
     paymentStatus: 'Paid',
     image: avatar("Meena's Kitchen"),
     tab: 'completed',
-    providerUserId: null // Mock booking
-  },
-  {
-    id: 'BKG-004',
-    providerName: 'Chef Prakash',
-    serviceType: 'Sunday Special Lunch',
-    date: '31 May 2026',
-    time: '1:00 PM',
-    status: 'Completed',
-    price: '₹800',
-    paymentStatus: 'Paid via Card',
-    image: avatar('Chef Prakash'),
-    tab: 'completed',
-    providerUserId: null // Mock booking
-  },
-  {
-    id: 'BKG-005',
-    providerName: "Anjali's Tiffin",
-    serviceType: 'Monthly Tiffin Plan',
-    date: '01 Jun 2026',
-    time: '8:00 AM',
-    status: 'Cancelled',
-    price: '₹3,000/month',
-    paymentStatus: 'Refunded',
-    image: avatar("Anjali's Tiffin"),
-    tab: 'cancelled',
-    providerUserId: null // Mock booking
+    providerUserId: null
   }
 ];
 
@@ -80,106 +54,153 @@ export default function Bookings() {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatPartner, setChatPartner] = useState(null);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get('/bookings/customer');
-        if (res.data.success) {
-          const dbBookings = res.data.orders.map(order => ({
-            id: order._id,
-            providerName: order.provider?.kitchenName || 'Chef',
-            providerUserId: order.provider?.user,
-            serviceType: order.foodItem?.name || 'Home Cook Service',
-            date: new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-            time: new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-            status: order.status === 'COMPLETED' ? 'Completed' : (order.status === 'CANCELLED' ? 'Cancelled' : (order.status === 'PENDING' ? 'Pending' : 'Confirmed')),
-            price: `₹${order.totalPrice}`,
-            paymentStatus: order.paymentMethod === 'CASH_ON_PICKUP' ? 'Cash on Pickup' : 'Paid',
-            image: order.provider?.avatar || avatar(order.provider?.kitchenName || 'Chef'),
-            tab: order.status === 'COMPLETED' ? 'completed' : (order.status === 'CANCELLED' ? 'cancelled' : 'upcoming'),
-            rawOrder: order
-          }));
-
-          if (dbBookings.length > 0) {
-            setAllBookings(dbBookings);
-          } else {
-            setAllBookings(mockBookings);
-          }
-        } else {
-          setAllBookings(mockBookings);
-        }
-      } catch (err) {
-        console.error('Failed to fetch user bookings from API:', err);
+  // Core function to load transactions from API or LocalStorage fallback
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/bookings/customer');
+      if (res.data.success && res.data.orders && res.data.orders.length > 0) {
+        const dbBookings = res.data.orders.map(order => ({
+          id: order._id,
+          providerName: order.provider?.kitchenName || 'Chef',
+          providerUserId: order.provider?.user,
+          serviceType: order.foodItem?.name || 'Home Cook Service',
+          date: new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+          time: new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+          status: order.status === 'COMPLETED' ? 'Completed' : (order.status === 'CANCELLED' ? 'Cancelled' : (order.status === 'PENDING' ? 'Pending' : 'Confirmed')),
+          price: `₹${order.totalPrice}`,
+          paymentStatus: order.paymentMethod === 'CASH_ON_PICKUP' ? 'Cash on Pickup' : 'Paid',
+          image: order.provider?.avatar || avatar(order.provider?.kitchenName || 'Chef'),
+          tab: order.status === 'COMPLETED' ? 'completed' : (order.status === 'CANCELLED' ? 'cancelled' : 'upcoming'),
+          rawOrder: order
+        }));
+        setAllBookings(dbBookings);
+        localStorage.setItem('bookings', JSON.stringify(dbBookings));
+      } else {
         setAllBookings(mockBookings);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    fetchOrders();
-  }, [activeTab]);
-
-  const filteredBookings = allBookings.filter(
-    (booking) => booking.tab === activeTab
-  );
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'Confirmed':
-        return 'bg-green-50 text-green-600 border-green-100';
-      case 'Pending':
-        return 'bg-orange-50 text-orange-600 border-orange-100';
-      case 'Completed':
-        return 'bg-blue-50 text-blue-600 border-blue-100';
-      case 'Cancelled':
-        return 'bg-gray-100 text-gray-500 border-gray-200';
-      default:
-        return 'bg-gray-50 text-gray-600 border-gray-100';
+    } catch (err) {
+      console.error('Failed to fetch user bookings from API:', err);
+      const stored = JSON.parse(localStorage.getItem('bookings'));
+      setAllBookings(stored && stored.length > 0 ? stored : mockBookings);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Run once on component layout mount
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  // Broadcasts changes globally so the main dashboard triggers an instant update
+  const dispatchDashboardSync = (updatedData) => {
+    localStorage.setItem('bookings', JSON.stringify(updatedData));
+    window.dispatchEvent(new Event('storage-update'));
+  };
+
+  // Dynamic Cancel Handler (Using ESM Browser Safe Syntax)
   const handleCancelBooking = async (bookingId) => {
-    // Check if it's a real order or mock
     const isMock = mockBookings.some((m) => m.id === bookingId);
+    
+    if (!confirm("Are you sure you want to cancel this booking?")) return;
+
     if (!isMock) {
       try {
-        const res = await api.patch(`/bookings/provider/${bookingId}/status`, { status: 'CANCELLED' });
-        if (res.data.success) {
-          setAllBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'Cancelled', tab: 'cancelled' } : b));
+        // Hits your newly added backend route layout: /bookings/customer/:orderId/cancel
+        const res = await api.patch(`/bookings/customer/${bookingId}/cancel`, { 
+          status: 'CANCELLED' 
+        });
+        
+        if (res.data.success || res.status === 200) {
+          const updated = allBookings.map(b => 
+            b.id === bookingId ? { ...b, status: 'Cancelled', tab: 'cancelled' } : b
+          );
+          
+          setAllBookings(updated);
+          dispatchDashboardSync(updated);
+          alert('Booking cancelled successfully!');
         }
       } catch (err) {
-        console.error('Cancel order failed:', err);
-        alert('Failed to cancel order.');
+        console.error('Cancel request execution error:', err);
+        alert(
+          err.response?.data?.message || 
+          'Failed to securely update backend records. Please try again.'
+        );
       }
       return;
     }
 
+    // Mock data update logic
     const updatedBookings = allBookings.map((booking) => {
       if (booking.id === bookingId) {
         return {
           ...booking,
           status: 'Cancelled',
           tab: 'cancelled',
-          paymentStatus:
-            booking.paymentStatus === 'Paid'
-              ? 'Refunded'
-              : booking.paymentStatus,
+          paymentStatus: booking.paymentStatus === 'Paid' ? 'Refunded' : booking.paymentStatus,
         };
       }
       return booking;
     });
 
     setAllBookings(updatedBookings);
+    dispatchDashboardSync(updatedBookings);
+  };
 
-    const customBookings = updatedBookings.filter(
-      (booking) => !mockBookings.some((m) => m.id === booking.id)
-    );
+  // Comprehensive Review Handler (Includes Date & Time Details)
+  const handleLeaveReview = async (booking) => {
+    const reviewPayload = {
+      bookingId: booking.id,
+      providerName: booking.providerName,
+      serviceRendered: booking.serviceType,
+      transactionValue: booking.price,
+      completionDate: booking.date, 
+      completionTime: booking.time, 
+      submittedAt: new Date().toISOString()
+    };
 
-    localStorage.setItem(
-      'bookings',
-      JSON.stringify(customBookings)
-    );
+    const rating = prompt(`Leave a Review for ${reviewPayload.providerName}\nService: ${reviewPayload.serviceRendered}\nDate: ${reviewPayload.completionDate} at ${reviewPayload.completionTime}\n\nEnter Rating (1 to 5):`, "5");
+    if (!rating) return;
+    
+    const comment = prompt("Enter your review notes / comments:");
+    if (!comment) return;
+
+    try {
+      const res = await api.post('/reviews', { ...reviewPayload, rating, comment });
+      if (res.data.success) {
+        alert('Thank you! Your feedback has been securely posted.');
+      }
+    } catch (err) {
+      console.warn("API Review endpoint missing; logging structured transaction metadata:", reviewPayload);
+      alert(`Mock Review Saved Successfully!\n\nLogged Data:\n- Provider: ${reviewPayload.providerName}\n- Date: ${reviewPayload.completionDate}\n- Time: ${reviewPayload.completionTime}\n- Feedback: "${comment}" (${rating}⭐)`);
+    }
+  };
+
+  // Dynamic Rebooking Action
+  const handleRebook = async (booking) => {
+    try {
+      if (!booking.providerUserId) {
+        alert(`Rebooking Mock Feature: Initializing a new fresh request for "${booking.serviceType}" with ${booking.providerName}.`);
+        return;
+      }
+
+      const rebookPayload = {
+        providerId: booking.providerUserId,
+        items: [{ name: booking.serviceType, quantity: 1 }],
+        totalPrice: booking.price.replace(/[^\d]/g, ''), 
+        paymentMethod: booking.paymentStatus === 'Cash on Pickup' ? 'CASH_ON_PICKUP' : 'ONLINE'
+      };
+
+      const res = await api.post('/bookings', rebookPayload);
+      if (res.data.success) {
+        alert('Rebooked successfully! Check your upcoming tab.');
+        fetchOrders();
+      }
+    } catch (err) {
+      console.error('Rebooking process broke:', err);
+      alert('Could not execute rebook request.');
+    }
   };
 
   const handleOpenChat = (booking) => {
@@ -189,6 +210,20 @@ export default function Bookings() {
       role: 'PROVIDER'
     });
     setChatOpen(true);
+  };
+
+  const filteredBookings = allBookings.filter(
+    (booking) => booking.tab === activeTab
+  );
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'Confirmed': return 'bg-green-50 text-green-600 border-green-100';
+      case 'Pending': return 'bg-orange-50 text-orange-600 border-orange-100';
+      case 'Completed': return 'bg-blue-50 text-blue-600 border-blue-100';
+      case 'Cancelled': return 'bg-gray-100 text-gray-500 border-gray-200';
+      default: return 'bg-gray-50 text-gray-600 border-gray-100';
+    }
   };
 
   return (
@@ -348,10 +383,16 @@ export default function Bookings() {
 
                   {activeTab === 'completed' && (
                     <>
-                      <button className="flex-1 sm:flex-none px-5 py-2 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-colors cursor-pointer">
+                      <button 
+                        onClick={() => handleLeaveReview(booking)}
+                        className="flex-1 sm:flex-none px-5 py-2 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-colors cursor-pointer"
+                      >
                         Leave Review
                       </button>
-                      <button className="flex-1 sm:flex-none px-5 py-2 text-sm font-bold text-[#0A4D2B] bg-[#0A4D2B]/10 border border-transparent rounded-xl hover:bg-[#0A4D2B]/20 transition-colors cursor-pointer">
+                      <button 
+                        onClick={() => handleRebook(booking)}
+                        className="flex-1 sm:flex-none px-5 py-2 text-sm font-bold text-white bg-[#0A4D2B] rounded-xl hover:bg-[#07361e] transition-colors cursor-pointer"
+                      >
                         Rebook
                       </button>
                     </>
@@ -389,11 +430,6 @@ export default function Bookings() {
             <p className="text-gray-500 text-sm mb-6">
               You don't have any {activeTab} service appointments right now.
             </p>
-            {activeTab === 'upcoming' && (
-              <button className="bg-primary text-white font-bold px-6 py-2.5 rounded-xl hover:bg-primary/90 transition-colors shadow-sm cursor-pointer">
-                Find Services
-              </button>
-            )}
           </div>
         )}
       </div>

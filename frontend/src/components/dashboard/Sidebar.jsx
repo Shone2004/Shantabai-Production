@@ -9,7 +9,8 @@ import {
   LogOut,
   Menu,
   X,
-  Bell
+  Bell,
+  MessageSquare
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
@@ -35,16 +36,21 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     };
   }, [isOpen]);
 
-  const fetchUnreadCount = async () => {
+ const fetchUnreadCount = async () => {
     try {
       const res = await api.get("/chat/conversations");
       if (res.data.success) {
+        
+        // 👇 ADD THIS LINE HERE TO INSPECT YOUR CONVERSATION MODELS
+        console.log("🔍 SIDEBAR CONVO DATA TYPE CHECK:", res.data.conversations);
+
         let total = 0;
-        res.data.conversations.forEach((convo) => {
-          if (convo.type === "CUSTOMER_PROVIDER") {
-            total += convo.unreadCount || 0;
-          }
-        });
+        // NEW WAY (Allows both types to show up)
+res.data.conversations.forEach((convo) => {
+  if (convo.type === "CUSTOMER_PROVIDER" || convo.type === "BOOKING" || convo.type === "BOOKING_CHAT") {
+    total += convo.unreadCount || 0;
+  }
+});
         setUnreadCount(total);
       }
     } catch (err) {
@@ -66,19 +72,24 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     }
   };
 
-  useEffect(() => {
-    // Initial fetch
+useEffect(() => {
+    // Initial data fetch
     fetchUnreadCount();
     fetchSupportCount();
 
-    // Listen to socket events for real-time badge updates
-    const socket = getSocket();
+    // Pull unified socket reference layer safely
+    const socket = getSocket(user);
     if (!socket) return;
 
-    const handleReceiveMessage = (message) => {
+    // CATCH CUSTOM UNIFIED MESSAGE BROADCASTS
+    const handleCustomIncomingMessage = (event) => {
+      const message = event.detail;
       const userId = user?.id || user?._id;
+      
       if (userId && String(message.senderId) !== String(userId)) {
         const isChatActive = window.activeChatId && String(window.activeChatId) === String(message.conversationId);
+        
+        // Only tick up badge count if the user isn't currently looking at that specific chat section
         if (!isChatActive) {
           setUnreadCount((prev) => prev + 1);
         }
@@ -93,12 +104,13 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       fetchSupportCount();
     };
 
-    socket.on("receive_message", handleReceiveMessage);
+    // Bind seamlessly to the clean global window bus layer
+    window.addEventListener("socket_message_received", handleCustomIncomingMessage);
     socket.on("messages_read", handleMessagesRead);
     socket.on("support_notification", handleSupportNotification);
 
     return () => {
-      socket.off("receive_message", handleReceiveMessage);
+      window.removeEventListener("socket_message_received", handleCustomIncomingMessage);
       socket.off("messages_read", handleMessagesRead);
       socket.off("support_notification", handleSupportNotification);
     };
@@ -140,6 +152,8 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         return "Dashboard";
       case "find-services":
         return "Find Services";
+      case "chats":
+        return "Inbox Chats";
       case "bookings":
         return "My Bookings";
       case "favorites":
@@ -204,7 +218,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
               Main
             </h5>
             <div className="space-y-1">
-              {/* Home */}
+              {/* Home Link element */}
               <button
                 onClick={() => handleNavClick("", true, "/")}
                 className="flex items-center gap-3.5 w-full p-3 rounded-xl transition text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-slate-900 cursor-pointer"
@@ -213,7 +227,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                 <span>Home  </span>
               </button>
 
-              {/* Dashboard */}
+              {/* Dashboard Link element */}
               <button
                 onClick={() => handleNavClick("dashboard")}
                 className={`flex items-center gap-3.5 w-full p-3 rounded-xl transition text-xs font-bold cursor-pointer ${
@@ -226,7 +240,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                 <span>Dashboard </span>
               </button>
 
-              {/* Find Services */}
+              {/* Find Services Link element */}
               <button
                 onClick={() => handleNavClick("find-services")}
                 className={`flex items-center gap-3.5 w-full p-3 rounded-xl transition text-xs font-bold cursor-pointer ${
@@ -237,6 +251,24 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
               >
                 <Search size={18} />
                 <span>Find Cooks / Services</span>
+              </button>
+
+              {/* NEW ADDITION: Full Chats View Link Button Layout */}
+              <button
+                onClick={() => handleNavClick("chats")}
+                className={`flex items-center gap-3.5 w-full p-3 rounded-xl transition text-xs font-bold cursor-pointer ${
+                  activeTab === "chats"
+                    ? "bg-gradient-to-r from-emerald-800 to-brand-green text-white shadow-md shadow-emerald-800/15"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                <MessageSquare size={18} />
+                <span className="flex-1 text-left">Inbox Chats</span>
+                {unreadCount > 0 && (
+                  <span className="bg-rose-500 text-white text-[10px] font-black w-5.5 h-5.5 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
+                    {unreadCount}
+                  </span>
+                )}
               </button>
             </div>
           </div>

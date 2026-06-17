@@ -120,29 +120,43 @@ exports.getProviderOrders = async (req, res) => {
   }
 };
 
-// Update Order Status (Provider)
+// Update Order Status (Handles both Providers and Customers)
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { status } = req.body;
     const userId = req.user.id;
 
-    const provider = await ProviderProfile.findOne({ user: userId });
-    if (!provider) {
-      return res.status(404).json({ success: false, message: "Provider profile not found" });
-    }
-
-    const order = await Order.findOne({ _id: orderId, provider: provider._id });
+    // 1. Fetch the order first to inspect who owns it
+    const order = await Order.findById(orderId);
     if (!order) {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
 
+    let isAuthorized = false;
+
+    // Check A: Is this user the Customer who placed the order?
+    if (order.customer.toString() === userId) {
+      isAuthorized = true;
+    } else {
+      // Check B: Is this user the Provider managing this specific food listing?
+      const provider = await ProviderProfile.findOne({ user: userId });
+      if (provider && order.provider.toString() === provider._id.toString()) {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) {
+      return res.status(403).json({ success: false, message: "Not authorized to update this order" });
+    }
+
+    // 2. Validate the status string format
     const validStatuses = ["PENDING", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "COMPLETED", "CANCELLED"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ success: false, message: "Invalid status" });
     }
 
-    // Handle cancellation: restore inventory
+    // 3. Handle inventory stock adjustments back on cancel
     if (status === "CANCELLED" && order.status !== "CANCELLED") {
       const food = await FoodItem.findById(order.foodItem);
       if (food) {

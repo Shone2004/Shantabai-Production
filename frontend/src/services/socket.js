@@ -10,7 +10,6 @@ let socket = null;
 let currentUserGlobal = null;
 
 export const initSocket = (currentUser) => {
-  // Update the global user context reference on every login/refresh call
   if (currentUser) {
     currentUserGlobal = currentUser;
     console.log("⚡ Updated global user context for Socket.IO:", currentUserGlobal.name);
@@ -22,11 +21,11 @@ export const initSocket = (currentUser) => {
     return null;
   }
 
+  // If socket is already connected, just update the user context reference and return it
   if (socket && socket.connected) {
     return socket;
   }
 
-  // Strip /api from backend URL to get socket root
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000/api";
   const socketUrl = backendUrl.replace(/\/api\/?$/, "");
 
@@ -37,35 +36,34 @@ export const initSocket = (currentUser) => {
     transports: ["websocket", "polling"],
   });
 
-  // Request browser push notification permissions
   requestNotificationPermission();
 
   socket.on("connect", () => {
     console.log("⚡ Socket.IO connected successfully");
   });
 
-  // Global background listener for new message alerts
+  // Global background listener handles sound alerts and shifts out of the way for active chat boxes
   socket.on("receive_message", (message) => {
     const currentUserId = currentUserGlobal?._id || currentUserGlobal?.id;
-    console.log("📨 [Global Listener] Received message event:", {
+    
+    console.log("📨 [Global Service Listener] Message intercepted:", {
       messageId: message._id,
       senderId: message.senderId,
       currentUserId: currentUserId,
       activeChatId: window.activeChatId,
-      messageConvoId: message.conversationId,
     });
     
-    // Alert only if the message is from someone else
+    // Dispatches a native window system message event so your active UI component state can catch it instantly
+    const messageEvent = new CustomEvent("socket_message_received", { detail: message });
+    window.dispatchEvent(messageEvent);
+
     if (currentUserId && String(message.senderId) !== String(currentUserId)) {
       const isChatActive = window.activeChatId && String(window.activeChatId) === String(message.conversationId);
       
       if (!isChatActive) {
-        console.log("🔔 Triggering background message alerts (sound, flash, popup)...");
-        
-        // Trigger Audio Chime (Synth)
+        console.log("🔔 Triggering background message alerts...");
         playNotificationSound();
 
-        // Resolve generic display name
         const senderLabel =
           message.senderRole === "ADMIN"
             ? "Support Admin"
@@ -73,10 +71,7 @@ export const initSocket = (currentUser) => {
             ? "Chef"
             : "Customer";
 
-        // Flash Browser Tab Title
         startTitleFlash(senderLabel);
-
-        // Show HTML5 Push Notification
         showDesktopNotification(senderLabel, message.text);
       } else {
         console.log("🔕 Alert suppressed: Chat is active on screen.");
@@ -84,15 +79,12 @@ export const initSocket = (currentUser) => {
     }
   });
 
-  // Global background listener for support ticket alerts
   socket.on("support_notification", (notification) => {
     console.log("📨 [Global Support Listener] Support notification received:", notification);
     
-    // Check if user is currently viewing the active ticket
     const isCurrentTicketActive = window.activeTicketId && String(window.activeTicketId) === String(notification.ticketDbId);
     
     if (!isCurrentTicketActive) {
-      // Dispatch custom window event to trigger list reloading or local updates
       const event = new CustomEvent("support_notification_alert", { detail: notification });
       window.dispatchEvent(event);
     }

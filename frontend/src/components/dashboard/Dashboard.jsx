@@ -1,10 +1,12 @@
-import { useState } from "react";
+import React, { useState } from "react";
 
 import Sidebar from "../components/dashboard/Sidebar";
 import DashboardHome from "../components/dashboard/CustomerDash";
 import FindServices from "../components/dashboard/FindServices";
 import Bookings from "../components/dashboard/Bookings";
 import Favorites from "../components/dashboard/Favorites";
+// 1. IMPORT YOUR CHAT COMPONENT
+import ChatSection from "../chat/ChatSection" 
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -19,6 +21,10 @@ export default function Dashboard() {
 
       case "favorites":
         return <Favorites />;
+      
+      // 2. ADD THE CASE FOR CHATS
+      case "chats":
+        return <ChatSection />
 
       default:
         return <DashboardHome />;

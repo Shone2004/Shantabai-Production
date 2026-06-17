@@ -8,6 +8,8 @@ import FindServices from "../components/dashboard/FindServices";
 import Bookings from "../components/dashboard/Bookings";
 import Favorites from "../components/dashboard/Favorites";
 import CustomerSupport from "../components/customer/CustomerSupport";
+import ChatSection from "../components/chat/ChatSection";
+
 
 const CustomerDash = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -99,6 +101,13 @@ const CustomerDash = () => {
         {activeTab === "favorites" && (
           <div className="mt-8">
             <Favorites />
+          </div>
+        )}
+
+        {/* Chats view */}
+        {activeTab === "chats" && (
+          <div className="mt-8 h-full">
+            <ChatSection />
           </div>
         )}
 

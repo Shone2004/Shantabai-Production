@@ -11,14 +11,14 @@ const http = require("http");
 const connectDB = require("./config/db");
 const { initSocket } = require("./services/socketService");
 
-const authRoutes = require("./routes/auth.routes");
-const providerRoutes = require("./routes/provider.routes");
-const foodRoutes = require("./routes/food.routes");
-const adminRoutes = require("./routes/admin.routes");
-const bookingRoutes = require("./routes/booking.routes");
-const contactRoutes = require("./routes/contact.routes");
-const chatRoutes = require("./routes/chat.routes");
-const supportRoutes = require("./routes/support.routes");
+const authRoutes = require("./routes/auth.routes.js");
+const providerRoutes = require("./routes/provider.routes.js");
+const foodRoutes = require("./routes/food.routes.js");
+const adminRoutes = require("./routes/admin.routes.js");
+const bookingRoutes = require("./routes/booking.routes.js");
+const contactRoutes = require("./routes/contact.routes.js");
+const chatRoutes = require("./routes/chat.routes.js");
+const supportRoutes = require("./routes/support.routes.js");
 
 const app = express();
 const server = http.createServer(app);

@@ -1,3 +1,5 @@
+// admin.controller.js - COMPLETE FILE
+
 const User = require("../models/User");
 const ProviderProfile = require("../models/ProviderProfile");
 const FoodItem = require("../models/FoodItem");
@@ -61,17 +63,19 @@ const approveProvider = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const provider = await ProviderProfile.findById(id);
+    // FIX: Using findByIdAndUpdate bypasses unrelated validation errors on old documents
+    const provider = await ProviderProfile.findByIdAndUpdate(
+      id,
+      { verificationStatus: "APPROVED", isVerified: true },
+      { new: true, runValidators: false }
+    );
+
     if (!provider) {
       return res.status(404).json({
         success: false,
         message: "Provider profile not found",
       });
     }
-
-    provider.verificationStatus = "APPROVED";
-    provider.isVerified = true;
-    await provider.save();
 
     res.status(200).json({
       success: true,
@@ -94,17 +98,19 @@ const rejectProvider = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const provider = await ProviderProfile.findById(id);
+    // FIX: Using findByIdAndUpdate bypasses unrelated validation errors on old documents
+    const provider = await ProviderProfile.findByIdAndUpdate(
+      id,
+      { verificationStatus: "REJECTED", isVerified: false },
+      { new: true, runValidators: false }
+    );
+
     if (!provider) {
       return res.status(404).json({
         success: false,
         message: "Provider profile not found",
       });
     }
-
-    provider.verificationStatus = "REJECTED";
-    provider.isVerified = false;
-    await provider.save();
 
     res.status(200).json({
       success: true,
@@ -127,17 +133,19 @@ const suspendProvider = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const provider = await ProviderProfile.findById(id);
+    // FIX: Using findByIdAndUpdate bypasses unrelated validation errors on old documents
+    const provider = await ProviderProfile.findByIdAndUpdate(
+      id,
+      { verificationStatus: "SUSPENDED", isVerified: false },
+      { new: true, runValidators: false }
+    );
+
     if (!provider) {
       return res.status(404).json({
         success: false,
         message: "Provider profile not found",
       });
     }
-
-    provider.verificationStatus = "SUSPENDED";
-    provider.isVerified = false;
-    await provider.save();
 
     res.status(200).json({
       success: true,
@@ -187,17 +195,18 @@ const approveFood = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const food = await FoodItem.findById(id);
+    const food = await FoodItem.findByIdAndUpdate(
+      id,
+      { approvalStatus: "APPROVED", isApproved: true },
+      { new: true, runValidators: false }
+    );
+
     if (!food) {
       return res.status(404).json({
         success: false,
         message: "Food item not found",
       });
     }
-
-    food.approvalStatus = "APPROVED";
-    food.isApproved = true;
-    await food.save();
 
     res.status(200).json({
       success: true,
@@ -220,17 +229,18 @@ const rejectFood = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const food = await FoodItem.findById(id);
+    const food = await FoodItem.findByIdAndUpdate(
+      id,
+      { approvalStatus: "REJECTED", isApproved: false },
+      { new: true, runValidators: false }
+    );
+
     if (!food) {
       return res.status(404).json({
         success: false,
         message: "Food item not found",
       });
     }
-
-    food.approvalStatus = "REJECTED";
-    food.isApproved = false;
-    await food.save();
 
     res.status(200).json({
       success: true,
