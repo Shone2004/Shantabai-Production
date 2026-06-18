@@ -10,8 +10,10 @@ import {
   Menu,
   X,
   Bell,
-  MessageSquare
+  MessageSquare,
+  Crown
 } from "lucide-react";
+
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { getSocket } from "../../services/socket";
@@ -152,6 +154,8 @@ useEffect(() => {
         return "Dashboard";
       case "find-services":
         return "Find Services";
+      case "subscription":
+        return "Subscription";
       case "chats":
         return "Inbox Chats";
       case "bookings":
@@ -267,7 +271,7 @@ useEffect(() => {
                 {unreadCount > 0 && (
                   <span className="bg-rose-500 text-white text-[10px] font-black w-5.5 h-5.5 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
                     {unreadCount}
-                  </span>
+                  </span> 
                 )}
               </button>
             </div>
@@ -296,6 +300,22 @@ useEffect(() => {
                   </span>
                 )}
               </button>
+  <button
+    onClick={() => handleNavClick("subscription")}
+    className={`flex items-center gap-3.5 w-full p-3 rounded-xl transition text-xs font-bold cursor-pointer ${
+      activeTab === "subscription"
+        ? "bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-md"
+        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+    }`}
+  >
+    <Crown size={18} />
+    <span className="flex-1 text-left">Subscription</span>
+
+    <span className="bg-amber-100 text-amber-700 text-[9px] font-black px-2 py-1 rounded-full">
+      PRO
+    </span>
+  </button>
+
 
               {/* Favorites */}
               <button

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 import api from "../../services/api";
+import Subscription from "../dashboard/Subscription.jsx";
 import {
   LayoutDashboard,
   Utensils,
@@ -39,6 +40,7 @@ import {
   MessageSquare,
   Shield,
   Menu,
+  Crown,
 } from "lucide-react";
 import {
   AreaChart,
@@ -78,6 +80,12 @@ const SIDEBAR_NAV = [
   { id: "bookings",       label: "Bookings",       icon: CalendarDays,    comingSoon: false  },
   { id: "myfoods",        label: "My Foods",       icon: Utensils,        comingSoon: false },
   { id: "addfood",        label: "Add Food",       icon: PlusCircle,      comingSoon: false },
+   {
+    id: "subscription",
+    label: "Subscription",
+    icon: Crown,
+    comingSoon: false
+  },
   { id: "customer_chats", label: "Customer Chats", icon: MessageSquare,   comingSoon: false },
   { id: "admin_messages", label: "Admin Messages", icon: Shield,          comingSoon: false },
   { id: "earnings",       label: "Earnings",       icon: TrendingUp,      comingSoon: true  },
@@ -92,6 +100,7 @@ const BOTTOM_NAV = [
   { id: "bookings",  label: "Bookings", icon: CalendarDays,    isCenter: false },
   { id: "addfood",   label: "Add",      icon: PlusCircle,      isCenter: true  },
   { id: "myfoods",   label: "Foods",    icon: Utensils,        isCenter: false },
+  
   { id: "profile",   label: "Profile",  icon: User,            isCenter: false },
 ];
 
@@ -105,6 +114,7 @@ function getPageTitle(activePage, editingFoodId) {
     addfood: editingFoodId ? "Edit Food" : "Add Food",
     profile: "Profile",
     bookings: "Bookings",
+    subscription: "Subscription",
     customer_chats: "Customer Chats",
     admin_messages: "Admin Messages",
     earnings: "Earnings",
@@ -1759,6 +1769,9 @@ export default function ProviderDashboard() {
               {/* ══════════════════════════════
                   PAGE: PROFILE
               ══════════════════════════════ */}
+              {activePage === "subscription" && (
+  <Subscription />
+)}
               {activePage === "profile" && (
                 <div className="space-y-5 max-w-5xl animate-fade-in">
                   <div>

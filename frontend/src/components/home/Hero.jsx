@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Leaf, ShieldCheck, Soup, ShoppingBag, ArrowRight, Sparkles } from 'lucide-react';
-
 const LOCATIONS = [
   'Baner, Pune',
   'Kothrud, Pune',
@@ -10,11 +9,10 @@ const LOCATIONS = [
   'Andheri, Mumbai',
   'Bandra, Mumbai',
 ];
-
 const Hero = () => {
-  const [query, setQuery] = useState('');
+const [query, setQuery] = useState('');
 const [location, setLocation] = useState('Detecting location...');
-  const navigate = useNavigate();
+const navigate = useNavigate();
 
   const handleSearch = (e) => {
     if (e) e.preventDefault();

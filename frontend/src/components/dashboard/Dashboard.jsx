@@ -5,9 +5,8 @@ import DashboardHome from "../components/dashboard/CustomerDash";
 import FindServices from "../components/dashboard/FindServices";
 import Bookings from "../components/dashboard/Bookings";
 import Favorites from "../components/dashboard/Favorites";
-// 1. IMPORT YOUR CHAT COMPONENT
-import ChatSection from "../chat/ChatSection" 
-
+import ChatSection from "../chat/ChatSection";
+import Subscription from "../components/dashboard/Subscription";
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
 
@@ -15,7 +14,8 @@ export default function Dashboard() {
     switch (activeTab) {
       case "find-services":
         return <FindServices />;
-
+         case "subscription":
+  return <Subscription />;
       case "bookings":
         return <Bookings />;
 
