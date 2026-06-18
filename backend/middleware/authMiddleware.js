@@ -44,7 +44,7 @@ const authenticateUser = async (req, res, next) => {
     }
 
     // Fetch user from DB (excluding password)
-    const user = await User.findById(decoded.id).select("-password");
+    const user = await User.findById(decoded.id || decoded.user?.id || decoded._id).select("-password");
 
     if (!user) {
       return res.status(401).json({
@@ -55,6 +55,15 @@ const authenticateUser = async (req, res, next) => {
 
     // Attach user to request context
     req.user = user;
+    
+    // --- ADDED FOR COMPATIBILITY (DO NOT DELETE) ---
+    // Guarantees that req.user.id is explicitly stringified and accessible 
+    // for controllers tracking subscriptions via structural string matching
+    if (!req.user.id && req.user._id) {
+      req.user.id = req.user._id.toString();
+    }
+    // -----------------------------------------------
+
     next();
   } catch (error) {
     res.status(500).json({
