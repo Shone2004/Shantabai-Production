@@ -3,9 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Leaf, ShieldCheck, Soup, ShoppingBag, ArrowRight, ChevronDown } from 'lucide-react';
 
-// ─── IMPORT SUBSCRIBED FOOD LIST COMPONENT ───
-import SubscribedFoodList from '../home/SubscribedFoodList'; 
-
 const LOCATIONS = [
   'Andheri, Mumbai',
   'Bandra, Mumbai',
@@ -52,8 +49,52 @@ const Hero = () => {
 
   return (
     <>
-      {/* HERO HERO CONTAINER */}
-      <section className="relative bg-[#FAFBF8] overflow-hidden pt-4 sm:pt-8 lg:pt-10 pb-16 sm:pb-24 border-b border-gray-100">
+      {/* ── MOBILE CONTAINER (< lg) ── */}
+      <section className="block lg:hidden relative bg-[#FAFBF8] overflow-hidden pt-3 pb-3 border-b border-gray-100">
+        {/* Soft radial background glows */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
+          <div className="absolute -top-[100px] -right-[50px] w-[250px] h-[250px] bg-brand-green/[0.018] rounded-full blur-[60px]" />
+          <div className="absolute bottom-0 -left-[100px] w-[250px] h-[250px] bg-[#FAFBF8] rounded-full blur-[50px]" />
+        </div>
+
+        <div className="relative z-10 px-4">
+          {/* Premium Value Proposition */}
+          <div className="text-left mb-4">
+            <h1 className="text-[2rem] sm:text-4xl font-black text-gray-900 tracking-[-0.035em] leading-[0.95]">
+              Good food.<br />
+              <span className="text-[#0A4D2B]">Made nearby.</span>
+            </h1>
+            <p className="text-sm text-gray-500 font-semibold leading-relaxed mt-2.5 max-w-sm">
+              Prepared by trusted home cooks near you.
+            </p>
+          </div>
+
+          {/* Simple Mobile Search Bar */}
+          <form
+            onSubmit={handleSearch}
+            className="bg-white rounded-xl border border-gray-200 shadow-sm p-1 flex items-center gap-2 focus-within:border-brand-green/30 transition-all duration-300"
+          >
+            <Search className="w-4.5 h-4.5 text-gray-400 ml-2.5 shrink-0" />
+            <input
+              type="text"
+              placeholder="Search meals, kitchens, tiffins..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full bg-transparent text-xs sm:text-sm font-bold text-gray-800 placeholder-gray-400 focus:outline-none py-2"
+            />
+            <button
+              type="submit"
+              className="bg-[#0A4D2B] text-white p-2 rounded-lg flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform"
+              aria-label="Search"
+            >
+              <Search className="w-3.5 h-3.5" />
+            </button>
+          </form>
+        </div>
+      </section>
+
+      {/* ── DESKTOP CONTAINER (>= lg) ── */}
+      <section className="hidden lg:block relative bg-[#FAFBF8] overflow-hidden pt-10 pb-24 border-b border-gray-100">
 
         {/* ── Soft radial glows (depth) ── */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
@@ -375,9 +416,6 @@ const Hero = () => {
           </div>
         </div>
       </section>
-
-      {/* ─── PREMIUM PARTNER KITCHENS SECTION GRID FILTER ─── */}
-      {/* <SubscribedFoodList /> */}
     </>
   );
 };

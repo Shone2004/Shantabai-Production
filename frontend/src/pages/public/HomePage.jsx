@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-
 import { motion } from 'framer-motion';
 import Hero from '../../components/home/Hero.jsx';
 import Categories from '../../components/home/Categories.jsx';
@@ -14,6 +13,7 @@ import useGeoLocation from "../../hooks/useGeoLocation";
 import ChefSection from '../../components/chef/ChefSection.jsx';
 import AIConsultant from '../../components/ai/AIConsultant.jsx';
 import SubscribedFoodList from '../../components/home/SubscribedFoodList.jsx';
+import HeroCarousel from '../../components/home/HeroCarousel.jsx';
 
 // ─── Backend Food Mapper ──────────────────────────────────────────────────────
 const mapBackendFoodToCard = (backendFood) => {
@@ -55,9 +55,6 @@ const mapBackendFoodToCard = (backendFood) => {
   };
 };
 
-// (mockCooks removed — now loaded live from /api/providers)
-
-
 const cardVariants = {
   hidden:  { opacity: 0, y: 40, scale: 0.94 },
   visible: (i) => ({
@@ -86,14 +83,14 @@ const FOOTER_LINKS = {
     { label: 'FAQ',              to: '/faq'      },
     { label: 'Cookie Policy',    to: '/cookies'  },
   ],
-Explore: [
-  { label: 'Browse Food', to: '/food' },
-  { label: 'Find Cooks', to: '/search' },
-  { label: 'Become a Cook', to: '/chef-signup' },
-  { label: 'How it Works', to: '/how-it-works' },
-],
+  Explore: [
+    { label: 'Browse Food', to: '/food' },
+    { label: 'Find Cooks', to: '/search' },
+    { label: 'Become a Cook', to: '/chef-signup' },
+    { label: 'How it Works', to: '/how-it-works' },
+  ],
 };
-// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function HomePage() {
   const navigate = useNavigate();
   const [showAI, setShowAI] = useState(false);
@@ -147,47 +144,42 @@ export default function HomePage() {
     };
     fetchCooks();
   }, []);
-  // ...
+
   return (
     <div className="bg-white min-h-screen overflow-x-hidden">
 
-      {/* Hero */}
+      {/* Hero (contains Mobile Compact Search & Desktop search) */}
       <Hero />
 
-      <SubscribedFoodList />
-
-      {/* Trust Strip */}
-      <div className="bg-brand-green py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-0 divide-y sm:divide-y-0 sm:divide-x divide-white/10">
-          {TRUST_PILLARS.map((item, idx) => (
-            <div key={idx} className="flex items-center gap-3.5 px-4 sm:justify-center first:pt-0 pt-4 sm:pt-0">
-              <span className="text-2xl shrink-0">{item.emoji}</span>
-              <div className="text-left">
-                <p className="text-xs sm:text-sm font-extrabold text-white leading-tight">{item.title}</p>
-                <p className="text-[10px] sm:text-xs font-semibold text-white/60 leading-tight mt-0.5">{item.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto mt-6">
-
-        {/* ── Categories ── */}
+      {/* ── Categories (Moved Up) ── */}
+      <div className="max-w-7xl mx-auto mt-2 px-4 sm:px-6 lg:px-8">
         <SectionHeader title="What are you craving?" showSeeAll link="/food" />
         <Categories />
+      </div>
 
-        {/* ── Popular Near You ── */}
-        <div className="mt-14">
+      {/* ── Hero Carousel (Moved Up) ── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-5 mb-2">
+        <HeroCarousel />
+      </div>
+
+      {/* ── Recommended Partner Kitchens (Hidden on Mobile) ── */}
+      <div className="hidden lg:block">
+        <SubscribedFoodList />
+      </div>
+
+      <div className="max-w-7xl mx-auto">
+
+        {/* ── Popular Near You (Horizontal Scroll Carousel on Mobile/Tablet) ── */}
+        <div className="mt-6 md:mt-10">
           <SectionHeader
             title="Popular Near You"
             subtitle="Fresh picks from local kitchens this morning"
             showSeeAll link="/food"
           />
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-4 sm:px-6 lg:px-8 mt-6">
+            <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-6 hide-scrollbar">
               {[1, 2, 3, 4].map(n => (
-                <div key={n} className="bg-slate-50 border border-slate-100 rounded-2xl h-72 animate-pulse w-full max-w-[340px] mx-auto" />
+                <div key={n} className="bg-slate-50 border border-slate-100 rounded-2xl h-64 animate-pulse shrink-0 w-[180px] sm:w-[220px] lg:w-auto" />
               ))}
             </div>
           ) : error ? (
@@ -199,24 +191,56 @@ export default function HomePage() {
               🍲 No fresh local thalis or food items live right now.
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-14 px-4 sm:px-6 lg:px-8 mt-6 pb-6">
+            <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-6 hide-scrollbar">
               {foods.slice(0, 4).map((food, idx) => (
                 <motion.div key={food._id} custom={idx} variants={cardVariants} initial="hidden"
-                  whileInView="visible" viewport={{ once: true, margin: '-40px' }} className="flex justify-center w-full">
+                  whileInView="visible" viewport={{ once: true, margin: '-40px' }} className="shrink-0 w-[180px] sm:w-[220px] lg:w-auto flex justify-center">
                   <FoodCard food={mapBackendFoodToCard(food)} />
                 </motion.div>
               ))}
             </div>
           )}
         </div>
- 
-        {/* ── Trending Today ── */}
-        <div className="mt-6 bg-gray-50 py-10 rounded-[2.5rem] mx-2 sm:mx-6 lg:mx-8 mb-8 border border-gray-100">
+
+        {/* ── Premium Maharashtrian Food Banner (Editorial Break) ── */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-[28px] md:my-[32px]">
+          <div 
+            className="relative w-full aspect-[3/1] rounded-[24px] overflow-hidden shadow-xl border border-gray-100/10 flex items-center bg-[#021F12] group"
+            style={{ contentVisibility: 'auto' }}
+          >
+            {/* Background Image with slow hover scale */}
+            <img
+              src="/banners/maharashtrian_food_banner.png"
+              alt="Authentic Maharashtrian homemade food thali"
+              className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none opacity-100 transition-transform duration-[1500ms] ease-out group-hover:scale-[1.03]"
+              loading="lazy"
+            />
+
+            {/* Premium Dark Green Gradient Overlay with Backdrop Blur */}
+            <div className="absolute inset-y-0 left-0 w-[65%] sm:w-[50%] bg-gradient-to-r from-[#021F12]/92 via-[#021F12]/60 to-transparent backdrop-blur-[3px] pointer-events-none z-10" />
+
+            {/* Soft Vignette Overlay */}
+            <div className="absolute inset-0 shadow-[inset_0_0_80px_rgba(3,30,18,0.55)] pointer-events-none z-20" />
+
+            {/* Text Overlay Content */}
+            <div className="relative z-30 pl-6 pr-4 sm:pl-12 md:pl-16 lg:pl-20 text-white flex flex-col justify-center max-w-[65%] sm:max-w-[50%]">
+              <h2 className="text-lg sm:text-3xl md:text-4xl lg:text-5xl xl:text-[3.5rem] font-black tracking-[-0.035em] leading-[0.95] text-[#FAF6EE] select-text">
+                Aai Chya Hathacha Swaad. Ata Tumchya Jawal.
+              </h2>
+              <p className="text-[10px] sm:text-xs md:text-sm lg:text-base xl:text-lg text-[#EFE9DC]/90 font-medium mt-1.5 sm:mt-3.5 leading-snug select-text max-w-[85%] sm:max-w-[70%]">
+                Fresh homemade meals from trusted neighbourhood kitchens.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Trending Today (Horizontal Scroll Carousel on Mobile/Tablet) ── */}
+        <div className="mt-6 md:mt-10 bg-gray-50 py-8 md:py-10 rounded-2xl md:rounded-[2.5rem] mx-2 sm:mx-6 lg:mx-8 mb-8 border border-gray-100">
           <SectionHeader title="Trending Today 🔥" subtitle="Most ordered in the last 24 hours" showSeeAll link="/food" />
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-4 sm:px-6 lg:px-8 mt-6">
+            <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-6 hide-scrollbar">
               {[1, 2, 3, 4].map(n => (
-                <div key={n} className="bg-white border border-slate-100 rounded-2xl h-72 animate-pulse w-full max-w-[340px] mx-auto" />
+                <div key={n} className="bg-white border border-slate-100 rounded-2xl h-64 animate-pulse shrink-0 w-[180px] sm:w-[220px] lg:w-auto" />
               ))}
             </div>
           ) : error ? (
@@ -228,10 +252,10 @@ export default function HomePage() {
               🍲 No trending items right now. Check back soon!
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-14 px-4 sm:px-6 lg:px-8 mt-6 pb-6">
+            <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-6 hide-scrollbar">
               {foods.slice(4, 8).concat(foods.slice(0, Math.max(0, 4 - foods.length + 4))).slice(0, 4).map((food, idx) => (
                 <motion.div key={food._id} custom={idx} variants={cardVariants} initial="hidden"
-                  whileInView="visible" viewport={{ once: true, margin: '-40px' }} className="flex justify-center w-full">
+                  whileInView="visible" viewport={{ once: true, margin: '-40px' }} className="shrink-0 w-[180px] sm:w-[220px] lg:w-auto flex justify-center">
                   <FoodCard food={mapBackendFoodToCard(food)} />
                 </motion.div>
               ))}
@@ -239,13 +263,13 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* ── Nearby Home Cooks ── */}
-        <div className="mt-10">
+        {/* ── Nearby Home Cooks (Horizontal Scroll Carousel on Mobile/Tablet) ── */}
+        <div className="mt-6 md:mt-10">
           <SectionHeader title="Nearby Home Cooks" subtitle="Trusted kitchens just around the corner" showSeeAll link="/search" />
           {cooksLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 px-4 sm:px-6 lg:px-8 mt-2">
+            <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-6 hide-scrollbar">
               {[1,2,3,4].map(n => (
-                <div key={n} className="bg-slate-50 border border-slate-100 rounded-3xl h-48 animate-pulse" />
+                <div key={n} className="bg-slate-50 border border-slate-100 rounded-2xl h-[220px] animate-pulse shrink-0 w-[210px] sm:w-[240px] lg:w-auto" />
               ))}
             </div>
           ) : cooks.length === 0 ? (
@@ -253,10 +277,11 @@ export default function HomePage() {
               🍳 No verified home cooks registered yet. Check back soon!
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 px-4 sm:px-6 lg:px-8 mt-2">
+            <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-4 hide-scrollbar">
               {cooks.map((cook, idx) => (
                 <motion.div key={cook.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }} transition={{ duration: 0.45, delay: idx * 0.09 }}>
+                  viewport={{ once: true }} transition={{ duration: 0.45, delay: idx * 0.09 }}
+                  className="shrink-0 w-[210px] sm:w-[240px] lg:w-auto">
                   <CookCard cook={cook} />
                 </motion.div>
               ))}
@@ -264,8 +289,23 @@ export default function HomePage() {
           )}
         </div>
 
+        {/* ── Trust Strip (Relocated Lower Down) ── */}
+        <div className="bg-brand-green py-6 rounded-2xl md:rounded-[2rem] mx-2 sm:mx-6 lg:mx-8 mt-10 md:mt-14 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-0 divide-y sm:divide-y-0 sm:divide-x divide-white/10">
+            {TRUST_PILLARS.map((item, idx) => (
+              <div key={idx} className="flex items-center gap-3 px-4 sm:justify-center first:pt-0 pt-4 sm:pt-0">
+                <span className="text-xl sm:text-2xl shrink-0">{item.emoji}</span>
+                <div className="text-left">
+                  <p className="text-xs sm:text-sm font-extrabold text-white leading-tight">{item.title}</p>
+                  <p className="text-[10px] sm:text-xs font-semibold text-white/60 leading-tight mt-0.5">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* ── Trust & Safety Section (New) ── */}
-        <div className="my-16 bg-slate-50/50 border border-slate-100 py-12 px-6 sm:px-8 rounded-[2rem] mx-2 sm:mx-6 lg:mx-8">
+        <div className="mt-4 mb-10 bg-slate-50/50 border border-slate-100 py-8 md:py-12 px-6 sm:px-8 rounded-2xl md:rounded-[2rem] mx-2 sm:mx-6 lg:mx-8">
           <div className="text-center max-w-2xl mx-auto mb-10">
             <span className="text-[10px] uppercase font-black tracking-widest text-[#0A4D2B] bg-[#EBF3ED] px-3.5 py-1.5 rounded-full">
               Trust &amp; Safety
@@ -326,9 +366,9 @@ export default function HomePage() {
         <AIConsultant
           onClose={() => setShowAI(false)}
           onBookChef={(chef) => {
-  setShowAI(false);
-  navigate(`/provider/${chef.id}`);
-}}
+            setShowAI(false);
+            navigate(`/provider/${chef.id}`);
+          }}
         />
       )}
 
