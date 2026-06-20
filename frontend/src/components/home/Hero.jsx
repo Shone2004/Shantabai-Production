@@ -107,18 +107,18 @@ const Hero = () => {
                 className="inline-flex items-center gap-2 bg-[#EBF3ED] text-[#0A4D2B] text-[10px] font-black px-3.5 py-1.5 rounded-full mb-6 tracking-widest uppercase shadow-sm"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-brand-green animate-pulse" />
-                <span>Serving Pune &amp; Mumbai</span>
+                <span>Serving verified kitchens in Pune &amp; Mumbai</span>
               </motion.div>
 
               {/* Headline */}
               <motion.h1
                 variants={itemVariants}
-                className="text-4xl sm:text-5xl lg:text-[3.5rem] lg:leading-[1.12] font-black text-gray-900 tracking-tight mb-5"
+                className="text-4xl sm:text-5xl lg:text-[3.25rem] lg:leading-[1.15] font-black text-gray-900 tracking-tight mb-5"
               >
-                Taste the comfort of{' '}
-                <br className="hidden sm:block" />
+                Fresh home-cooked meals <br className="hidden sm:block" />
+                from{' '}
                 <span className="text-brand-green relative inline-block">
-                  home-cooked meals,
+                  trusted cooks
                   <svg
                     className="absolute -bottom-2.5 left-0 w-full"
                     viewBox="0 0 200 8"
@@ -135,62 +135,61 @@ const Hero = () => {
                     />
                   </svg>
                 </span>{' '}
-                <br className="hidden sm:block" />
-                prepared by your{' '}
-                <br className="hidden sm:block" />
-                neighbors.
+                near you.
               </motion.h1>
 
               {/* Subtext */}
               <motion.p
                 variants={itemVariants}
-                className="text-gray-500 text-sm sm:text-base font-medium mb-8 max-w-xl leading-relaxed"
+                className="text-gray-500 text-sm sm:text-base font-semibold mb-8 max-w-xl leading-relaxed"
               >
-                Discover nutritious, freshly prepared meals made by trusted home
-                cooks in your area. Easy self-pickup, real food and real people.
+                Discover verified home kitchens in your neighborhood. Nutritious, freshly prepared, small-batch meals made with love, ready for easy self-pickup.
               </motion.p>
 
               {/* Trust chips */}
               <motion.div
                 variants={itemVariants}
-                className="flex flex-wrap gap-x-8 gap-y-4 mb-8 justify-center lg:justify-start w-full"
+                className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:gap-x-4 sm:gap-y-2 mb-8 justify-center lg:justify-start w-full"
               >
                 {[
-                  { icon: Leaf,        title: 'Homemade',    sub: 'With Love'  },
-                  { icon: ShieldCheck, title: 'Verified',    sub: 'Home Cooks' },
-                  { icon: Soup,        title: 'Freshly',     sub: 'Prepared'   },
-                  { icon: ShoppingBag, title: 'Self Pickup', sub: 'Convenient' },
+                  { icon: Leaf,        title: '100% Homemade',    sub: 'Small batches'  },
+                  { icon: ShieldCheck, title: 'Verified Kitchens', sub: 'Hygiene checked' },
+                  { icon: Soup,        title: 'Fresh Daily',     sub: 'Cooked today'   },
+                  { icon: ShoppingBag, title: 'Easy Self-Pickup', sub: 'From neighbours' },
                 ].map(({ icon: Icon, title, sub }) => (
-                  <div key={title} className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#EBF3ED] flex items-center justify-center shrink-0">
-                      <Icon className="w-5 h-5 text-[#0A4D2B]" />
+                  <div key={title} className="flex items-center gap-2 bg-white py-1.5 px-3 rounded-xl border border-gray-100 shadow-sm shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-[#EBF3ED] flex items-center justify-center shrink-0">
+                      <Icon className="w-4 h-4 text-[#0A4D2B]" />
                     </div>
                     <div className="text-left leading-tight">
-                      <p className="text-sm font-bold   text-gray-800">{title}</p>
-                      <p className="text-xs font-medium text-gray-500">{sub}</p>
+                      <p className="text-xs font-black text-gray-800">{title}</p>
+                      <p className="text-[9px] font-semibold text-gray-400 mt-0.5">{sub}</p>
                     </div>
                   </div>
                 ))}
               </motion.div>
 
-              {/* Search bar */}
+              {/* Airbnb-style Search bar */}
               <motion.div variants={itemVariants} className="w-full max-w-2xl mb-8">
                 <form
                   onSubmit={handleSearch}
-                  className="bg-white rounded-[2rem] sm:rounded-full border border-gray-200 shadow-[0_10px_36px_rgba(0,0,0,0.04)] p-1.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 focus-within:border-brand-green/25 focus-within:shadow-[0_10px_40px_rgba(10,77,43,0.07)] transition-all duration-300"
+                  className="bg-white rounded-2xl sm:rounded-full border border-gray-200 shadow-[0_12px_42px_rgba(0,0,0,0.06)] p-1.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 focus-within:border-brand-green/30 focus-within:shadow-[0_12px_48px_rgba(10,77,43,0.08)] transition-all duration-300"
                 >
-                  {/* Custom Enhanced Dropdown Location */}
+                  {/* Location Selector */}
                   <div className="relative flex items-center w-full sm:w-48 shrink-0" ref={dropdownRef}>
                     <button
                       type="button"
                       onClick={() => setDropdownOpen(!dropdownOpen)}
-                      className="flex items-center justify-between w-full px-5 py-3 sm:border-r border-gray-100 text-left gap-2 cursor-pointer group"
+                      className="flex items-center justify-between w-full px-4 py-2 sm:border-r border-gray-100 text-left gap-2 cursor-pointer group"
                     >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <MapPin className="w-4 h-4 text-brand-green shrink-0" />
-                        <span className="text-sm font-bold text-gray-900 truncate">
-                          {location}
-                        </span>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <MapPin className="w-4.5 h-4.5 text-brand-green shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-[9px] uppercase font-black text-gray-400 leading-none mb-0.5 tracking-wider">Location</p>
+                          <p className="text-xs font-bold text-gray-800 truncate">
+                            {location}
+                          </p>
+                        </div>
                       </div>
                       <ChevronDown className={`w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-transform duration-200 shrink-0 ${dropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
@@ -198,11 +197,11 @@ const Hero = () => {
                     <AnimatePresence>
                       {dropdownOpen && (
                         <motion.div
-                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          initial={{ opacity: 0, y: 12, scale: 0.96 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          transition={{ duration: 0.15 }}
-                          className="absolute left-0 top-full mt-2 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl shadow-black/5 overflow-hidden z-50 p-2"
+                          exit={{ opacity: 0, y: 12, scale: 0.96 }}
+                          transition={{ duration: 0.15, ease: 'easeOut' }}
+                          className="absolute left-0 top-full mt-2.5 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl shadow-black/8 overflow-hidden z-50 p-2.5"
                         >
                           {/* Mumbai Subsection */}
                           <div className="mb-2">
@@ -217,7 +216,7 @@ const Hero = () => {
                                 }}
                                 className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 ${
                                   location === loc
-                                    ? 'text-brand-green bg-[#EBF3ED]'
+                                    ? 'text-brand-green bg-[#EBF3ED] font-bold'
                                     : 'text-gray-700 hover:bg-gray-50'
                                 }`}
                               >
@@ -240,7 +239,7 @@ const Hero = () => {
                                 }}
                                 className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 ${
                                   location === loc
-                                    ? 'text-brand-green bg-[#EBF3ED]'
+                                    ? 'text-brand-green bg-[#EBF3ED] font-bold'
                                     : 'text-gray-700 hover:bg-gray-50'
                                 }`}
                               >
@@ -255,24 +254,27 @@ const Hero = () => {
                   </div>
 
                   {/* Query */}
-                  <div className="flex-1 flex items-center px-4 gap-2.5 py-3 sm:py-0 min-w-0">
+                  <div className="flex-1 flex items-center px-4 gap-2 py-3 sm:py-0 min-w-0">
                     <Search className="w-4 h-4 text-gray-400 shrink-0" />
-                    <input
-                      type="text"
-                      placeholder="Search dishes, cuisines or home cooks..."
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      className="w-full bg-transparent text-sm font-semibold text-gray-900 placeholder-gray-400 focus:outline-none py-1.5"
-                    />
+                    <div className="w-full">
+                      <p className="text-[9px] uppercase font-black text-gray-400 leading-none mb-0.5 tracking-wider hidden sm:block">Search Dishes</p>
+                      <input
+                        type="text"
+                        placeholder="Try thalis, biryani, cakes..."
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        className="w-full bg-transparent text-xs font-bold text-gray-800 placeholder-gray-400 focus:outline-none py-1"
+                      />
+                    </div>
                   </div>
 
                   {/* Submit */}
                   <button
                     type="submit"
-                    className="bg-brand-green text-white px-7 py-3.5 rounded-full font-bold text-sm hover:bg-brand-green/90 hover:shadow-lg hover:shadow-brand-green/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                    className="bg-brand-green text-white px-6 py-3 rounded-full font-bold text-xs hover:bg-[#083a21] hover:shadow-lg hover:shadow-brand-green/20 active:scale-95 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                   >
                     <Search className="w-4 h-4" />
-                    <span>Search</span>
+                    <span className="hidden sm:inline">Search</span>
                   </button>
                 </form>
               </motion.div>
@@ -284,16 +286,16 @@ const Hero = () => {
               >
                 <button
                   onClick={() => navigate('/food')}
-                  className="px-8 py-4 bg-brand-green text-white font-bold rounded-full hover:bg-brand-green/90 hover:shadow-lg hover:shadow-brand-green/20 active:scale-[0.98] transition-all duration-200 cursor-pointer flex items-center gap-2 group text-sm"
+                  className="px-7 py-3.5 bg-brand-green text-white font-bold rounded-xl hover:bg-[#083a21] hover:shadow-lg hover:shadow-brand-green/20 active:scale-95 transition-all duration-200 cursor-pointer flex items-center gap-2 text-xs uppercase tracking-wider"
                 >
-                  <span>Browse Food</span>
+                  <span>Browse Meals</span>
                   <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </button>
                 <button
                   onClick={() => navigate('/search')}
-                  className="px-8 py-4 bg-white border border-[#0A4D2B]/30 text-[#0A4D2B] hover:border-[#0A4D2B]/60 font-bold rounded-full hover:shadow-md active:scale-[0.98] transition-all duration-200 cursor-pointer text-sm"
+                  className="px-7 py-3.5 bg-white border border-gray-200 text-gray-700 hover:border-gray-300 font-bold rounded-xl hover:shadow-sm active:scale-95 transition-all duration-200 cursor-pointer text-xs uppercase tracking-wider"
                 >
-                  Find Home Cooks
+                  Find Cooks
                 </button>
               </motion.div>
             </motion.div>

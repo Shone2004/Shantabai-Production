@@ -66,11 +66,11 @@ const cardVariants = {
   }),
 };
 
-const STATS = [
-  { emoji: '🏠', value: '500+',    label: 'Home Cooks'      },
-  { emoji: '🍱', value: '10,000+', label: 'Meals Served'    },
-  { emoji: '📍', value: '12+',     label: 'Neighbourhoods'  },
-  { emoji: '⭐', value: '4.8',     label: 'Avg Rating'      },
+const TRUST_PILLARS = [
+  { emoji: '🛡️', title: 'Verified Identity', desc: 'Secure cook verification' },
+  { emoji: '🏠', title: 'Kitchen Approved', desc: 'Hygiene & safety checked' },
+  { emoji: '🤝', title: 'Community Cooks', desc: 'Real local neighbours' },
+  { emoji: '🥗', title: 'Fresh Daily Listings', desc: 'Cooked fresh today' },
 ];
 
 const FOOTER_LINKS = {
@@ -132,8 +132,11 @@ export default function HomePage() {
             name: p.kitchenName || 'Home Cook',
             rating: (p.rating || 5.0).toFixed(1),
             orders: p.totalReviews > 0 ? `${p.totalReviews}+` : '10+',
-            distance: '—',
-            image: p.avatar || 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=400'
+            distance: '1.2 km away',
+            image: p.avatar || 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=400',
+            area: p.area ? `${p.area}, ${p.city || 'Pune'}` : 'Pune',
+            experience: p.experience ? `${p.experience} Yrs Exp` : 'Verified Chef',
+            specialities: p.specialities || []
           })));
         }
       } catch (err) {
@@ -153,15 +156,15 @@ export default function HomePage() {
 
       <SubscribedFoodList />
 
-      {/* Stats Strip */}
-      <div className="bg-brand-green">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-0 divide-y-2 sm:divide-y-0 sm:divide-x divide-white/10">
-          {STATS.map((s) => (
-            <div key={s.label} className="flex items-center gap-3 px-4 sm:justify-center first:pt-0 pt-4 sm:pt-0">
-              <span className="text-2xl">{s.emoji}</span>
-              <div>
-                <p className="text-lg font-black text-white leading-tight">{s.value}</p>
-                <p className="text-xs font-semibold text-white/60 leading-tight">{s.label}</p>
+      {/* Trust Strip */}
+      <div className="bg-brand-green py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-0 divide-y sm:divide-y-0 sm:divide-x divide-white/10">
+          {TRUST_PILLARS.map((item, idx) => (
+            <div key={idx} className="flex items-center gap-3.5 px-4 sm:justify-center first:pt-0 pt-4 sm:pt-0">
+              <span className="text-2xl shrink-0">{item.emoji}</span>
+              <div className="text-left">
+                <p className="text-xs sm:text-sm font-extrabold text-white leading-tight">{item.title}</p>
+                <p className="text-[10px] sm:text-xs font-semibold text-white/60 leading-tight mt-0.5">{item.desc}</p>
               </div>
             </div>
           ))}
@@ -261,8 +264,53 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* ── Chef Section ── */}
-        <div className="mt-14">
+        {/* ── Trust & Safety Section (New) ── */}
+        <div className="my-16 bg-slate-50/50 border border-slate-100 py-12 px-6 sm:px-8 rounded-[2rem] mx-2 sm:mx-6 lg:mx-8">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <span className="text-[10px] uppercase font-black tracking-widest text-[#0A4D2B] bg-[#EBF3ED] px-3.5 py-1.5 rounded-full">
+              Trust &amp; Safety
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight mt-4">
+              Wholesome food prepared with absolute trust
+            </h2>
+            <p className="text-sm text-gray-500 font-semibold mt-2">
+              We maintain strict verification and quality controls to ensure peace of mind with every order.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex gap-4">
+              <span className="text-3xl shrink-0">🛡️</span>
+              <div className="text-left">
+                <h4 className="text-sm font-extrabold text-gray-900 uppercase tracking-wider">Identity &amp; Kitchen Verified</h4>
+                <p className="text-xs text-gray-500 font-semibold leading-relaxed mt-1">
+                  Every home cook is government ID verified and their kitchen undergoes physical hygiene audits before active listing status.
+                </p>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex gap-4">
+              <span className="text-3xl shrink-0">🥗</span>
+              <div className="text-left">
+                <h4 className="text-sm font-extrabold text-gray-900 uppercase tracking-wider">Hygienic Home Kitchens</h4>
+                <p className="text-xs text-gray-500 font-semibold leading-relaxed mt-1">
+                  Meals are prepared in clean domestic kitchens in small batches. No commercial flavorings, additives, or recycled oils.
+                </p>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex gap-4">
+              <span className="text-3xl shrink-0">🤝</span>
+              <div className="text-left">
+                <h4 className="text-sm font-extrabold text-gray-900 uppercase tracking-wider">Neighbourhood Support</h4>
+                <p className="text-xs text-gray-500 font-semibold leading-relaxed mt-1">
+                  Real feedback and ratings from verified local customers. Support local women entrepreneurs and home cooks directly.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Chef Section (Dietary AI Consultant) ── */}
+        <div className="mt-8">
           <ChefSection
             onConsultAI={() => setShowAI(true)}
           />
