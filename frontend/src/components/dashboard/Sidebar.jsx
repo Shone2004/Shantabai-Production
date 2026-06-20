@@ -14,13 +14,11 @@ import {
   Crown
 } from "lucide-react";
 
-import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { getSocket } from "../../services/socket";
 import { useAuth } from "../../context/AuthContext";
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
-  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [supportCount, setSupportCount] = useState(0);
@@ -38,21 +36,22 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     };
   }, [isOpen]);
 
- const fetchUnreadCount = async () => {
+  const fetchUnreadCount = async () => {
     try {
       const res = await api.get("/chat/conversations");
       if (res.data.success) {
-        
-        // 👇 ADD THIS LINE HERE TO INSPECT YOUR CONVERSATION MODELS
         console.log("🔍 SIDEBAR CONVO DATA TYPE CHECK:", res.data.conversations);
 
         let total = 0;
-        // NEW WAY (Allows both types to show up)
-res.data.conversations.forEach((convo) => {
-  if (convo.type === "CUSTOMER_PROVIDER" || convo.type === "BOOKING" || convo.type === "BOOKING_CHAT") {
-    total += convo.unreadCount || 0;
-  }
-});
+        res.data.conversations.forEach((convo) => {
+          if (
+            convo.type === "CUSTOMER_PROVIDER" ||
+            convo.type === "BOOKING" ||
+            convo.type === "BOOKING_CHAT"
+          ) {
+            total += convo.unreadCount || 0;
+          }
+        });
         setUnreadCount(total);
       }
     } catch (err) {
@@ -74,24 +73,22 @@ res.data.conversations.forEach((convo) => {
     }
   };
 
-useEffect(() => {
-    // Initial data fetch
+  useEffect(() => {
     fetchUnreadCount();
     fetchSupportCount();
 
-    // Pull unified socket reference layer safely
     const socket = getSocket(user);
     if (!socket) return;
 
-    // CATCH CUSTOM UNIFIED MESSAGE BROADCASTS
     const handleCustomIncomingMessage = (event) => {
       const message = event.detail;
       const userId = user?.id || user?._id;
-      
+
       if (userId && String(message.senderId) !== String(userId)) {
-        const isChatActive = window.activeChatId && String(window.activeChatId) === String(message.conversationId);
-        
-        // Only tick up badge count if the user isn't currently looking at that specific chat section
+        const isChatActive =
+          window.activeChatId &&
+          String(window.activeChatId) === String(message.conversationId);
+
         if (!isChatActive) {
           setUnreadCount((prev) => prev + 1);
         }
@@ -106,7 +103,6 @@ useEffect(() => {
       fetchSupportCount();
     };
 
-    // Bind seamlessly to the clean global window bus layer
     window.addEventListener("socket_message_received", handleCustomIncomingMessage);
     socket.on("messages_read", handleMessagesRead);
     socket.on("support_notification", handleSupportNotification);
@@ -125,19 +121,18 @@ useEffect(() => {
 
   const handleLogoutClick = () => {
     logout();
-    navigate("/");
+    window.location.href = "/"; // Native browser redirect
   };
 
   const handleNavClick = (tabId, isRoute = false, routePath = "") => {
     if (isRoute) {
-      navigate(routePath);
+      window.location.href = routePath; // Native browser redirect instead of react-router
     } else {
       setActiveTab(tabId);
     }
-    setIsOpen(false); // Auto close drawer on item selection
+    setIsOpen(false); 
   };
 
-  // Helper: Get user initials for profile avatar fallback
   const getInitials = (name) => {
     if (!name) return "U";
     return name
@@ -169,20 +164,21 @@ useEffect(() => {
     }
   };
 
-  // Shared Sidebar Inner content (used in both desktop and mobile drawer)
   const renderSidebarContent = () => (
     <div className="flex flex-col h-full bg-white">
-      {/* Scrollable middle container */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
-        {/* Professional Branded Header */}
-        <div className="flex items-center gap-3 px-2">
+        {/* Native clickable redirect block — Fixed z-index added */}
+        <div 
+          onClick={() => handleNavClick("", true, "/")}
+          className="relative z-50 flex items-center gap-3 px-2 cursor-pointer group select-none"
+        >
           <img
             src="/logonavbar.png"
             alt="ShantaBai Logo"
-            className="h-12 w-auto object-contain flex-shrink-0"
+            className="h-12 w-auto object-contain flex-shrink-0 transition-transform duration-200 group-hover:scale-105"
           />
           <div>
-            <h1 className="text-lg font-black tracking-tight text-slate-800 leading-tight">
+            <h1 className="text-lg font-black tracking-tight text-slate-800 leading-tight transition-colors duration-200 group-hover:text-emerald-800">
               Shantabai
             </h1>
             <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mt-0.5">
@@ -216,22 +212,19 @@ useEffect(() => {
 
         {/* Navigation Link Groups */}
         <div className="space-y-6">
-          {/* GROUP: MAIN */}
           <div>
             <h5 className="px-2 text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">
               Main
             </h5>
             <div className="space-y-1">
-              {/* Home Link element */}
               <button
                 onClick={() => handleNavClick("", true, "/")}
                 className="flex items-center gap-3.5 w-full p-3 rounded-xl transition text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-slate-900 cursor-pointer"
               >
                 <Home size={18} />
-                <span>Home  </span>
+                <span>Home</span>
               </button>
 
-              {/* Dashboard Link element */}
               <button
                 onClick={() => handleNavClick("dashboard")}
                 className={`flex items-center gap-3.5 w-full p-3 rounded-xl transition text-xs font-bold cursor-pointer ${
@@ -241,10 +234,9 @@ useEffect(() => {
                 }`}
               >
                 <LayoutDashboard size={18} />
-                <span>Dashboard </span>
+                <span>Dashboard</span>
               </button>
 
-              {/* Find Services Link element */}
               <button
                 onClick={() => handleNavClick("find-services")}
                 className={`flex items-center gap-3.5 w-full p-3 rounded-xl transition text-xs font-bold cursor-pointer ${
@@ -257,7 +249,6 @@ useEffect(() => {
                 <span>Find Cooks / Services</span>
               </button>
 
-              {/* NEW ADDITION: Full Chats View Link Button Layout */}
               <button
                 onClick={() => handleNavClick("chats")}
                 className={`flex items-center gap-3.5 w-full p-3 rounded-xl transition text-xs font-bold cursor-pointer ${
@@ -271,19 +262,17 @@ useEffect(() => {
                 {unreadCount > 0 && (
                   <span className="bg-rose-500 text-white text-[10px] font-black w-5.5 h-5.5 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
                     {unreadCount}
-                  </span> 
+                  </span>
                 )}
               </button>
             </div>
           </div>
 
-          {/* GROUP: ORDERS */}
           <div>
             <h5 className="px-2 text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">
               Orders
             </h5>
             <div className="space-y-1">
-              {/* My Bookings */}
               <button
                 onClick={() => handleNavClick("bookings")}
                 className={`flex items-center gap-3.5 w-full p-3 rounded-xl transition text-xs font-bold cursor-pointer ${
@@ -300,24 +289,21 @@ useEffect(() => {
                   </span>
                 )}
               </button>
-  <button
-    onClick={() => handleNavClick("subscription")}
-    className={`flex items-center gap-3.5 w-full p-3 rounded-xl transition text-xs font-bold cursor-pointer ${
-      activeTab === "subscription"
-        ? "bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-md"
-        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-    }`}
-  >
-    <Crown size={18} />
-    <span className="flex-1 text-left">Subscription</span>
+              <button
+                onClick={() => handleNavClick("subscription")}
+                className={`flex items-center gap-3.5 w-full p-3 rounded-xl transition text-xs font-bold cursor-pointer ${
+                  activeTab === "subscription"
+                    ? "bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-md"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                <Crown size={18} />
+                <span className="flex-1 text-left">Subscription</span>
+                <span className="bg-amber-100 text-amber-700 text-[9px] font-black px-2 py-1 rounded-full">
+                  PRO
+                </span>
+              </button>
 
-    <span className="bg-amber-100 text-amber-700 text-[9px] font-black px-2 py-1 rounded-full">
-      PRO
-    </span>
-  </button>
-
-
-              {/* Favorites */}
               <button
                 onClick={() => handleNavClick("favorites")}
                 className={`flex items-center gap-3.5 w-full p-3 rounded-xl transition text-xs font-bold cursor-pointer ${
@@ -332,13 +318,11 @@ useEffect(() => {
             </div>
           </div>
 
-          {/* GROUP: HELP */}
           <div>
             <h5 className="px-2 text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">
               Help
             </h5>
             <div className="space-y-1">
-              {/* Support */}
               <button
                 onClick={() => handleNavClick("support")}
                 className={`flex items-center gap-3.5 w-full p-3 rounded-xl transition text-xs font-bold cursor-pointer ${
@@ -360,7 +344,6 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Fixed bottom Logout button */}
       <div className="p-4 border-t border-slate-100 bg-white">
         <button
           onClick={handleLogoutClick}
@@ -388,7 +371,8 @@ useEffect(() => {
           <img
             src="/logonavbar.png"
             alt="ShantaBai Logo"
-            className="h-9 w-auto object-contain"
+            className="h-9 w-auto object-contain cursor-pointer"
+            onClick={() => handleNavClick("", true, "/")}
           />
           <span className="font-extrabold text-sm text-slate-800 truncate max-w-[120px]">
             {getActiveTitle()}
@@ -414,7 +398,6 @@ useEffect(() => {
       </header>
 
       {/* 2. MOBILE DRAWER OVERLAY & CONTAINER */}
-      {/* Backdrop */}
       <div
         className={`fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 lg:hidden transition-opacity duration-300 ${
           isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
@@ -422,13 +405,11 @@ useEffect(() => {
         onClick={() => setIsOpen(false)}
       />
 
-      {/* Slide-in Drawer container */}
       <aside
         className={`fixed inset-y-0 left-0 w-[80%] max-w-[280px] bg-white z-50 lg:hidden flex flex-col h-full shadow-2xl transition-transform duration-300 ease-in-out transform ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Close Button overlay inside drawer */}
         <div className="absolute top-4 right-4 z-30">
           <button
             onClick={() => setIsOpen(false)}
@@ -439,7 +420,6 @@ useEffect(() => {
           </button>
         </div>
 
-        {/* Render Inner content */}
         <div className="flex-1 h-full overflow-hidden">
           {renderSidebarContent()}
         </div>

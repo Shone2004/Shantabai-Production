@@ -28,19 +28,8 @@ import {
   Star,
   CalendarDays,
   LifeBuoy,
-  ToggleLeft,
-  X,
-  Clock,
-  Package,
-  ArrowUpRight,
-  Wallet,
-  Award,
-  ChevronDown,
-  BarChart2,
-  MessageSquare,
-  Shield,
-  Menu,
-  Crown,
+  ToggleLeft,X,Clock,Package,ArrowUpRight,Wallet,Award,  ChevronDown,
+BarChart2, MessageSquare, Shield, Menu,  Crown,
 } from "lucide-react";
 import {
   AreaChart,
@@ -54,6 +43,19 @@ import ChefBookings from "./ChefBookings";
 import CustomerChats from "./CustomerChats";
 import AdminChat from "./AdminChat";
 import { getSocket } from "../../services/socket";
+
+const getStatusBadge = (rawStatus) => {
+    const status = String(rawStatus || 'PENDING').toUpperCase();
+    const styles = {
+      PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
+      ACCEPTED: 'bg-blue-50 text-blue-700 border-blue-200',
+      PREPARING: 'bg-purple-50 text-purple-700 border-purple-200',
+      READY_FOR_PICKUP: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      COMPLETED: 'bg-slate-50 text-slate-700 border-slate-200',
+      CANCELLED: 'bg-rose-50 text-rose-700 border-rose-200',
+    };
+    return `px-3 py-1 rounded-full text-xs font-bold border tracking-wide uppercase ${styles[status] || styles.PENDING}`;
+  };
 
 // ─── Constants (unchanged) ──────────────────────────────────────────────────
 const CUISINE_TYPES = [
@@ -635,25 +637,27 @@ export default function ProviderDashboard() {
        
 {/* Logo */}
 {/* Logo */}
-<div className="px-5 py-4 border-b border-white/5 flex-shrink-0">
-  <div className="flex items-center gap-3">
-    <img
-      src="/logonavbar.png"
-      alt="Shantabai"
-      className="h-14 w-auto object-contain flex-shrink-0"
-    />
+<button 
+  type="button"
+  onClick={() => window.location.href = "/"}
+  className="w-full px-5 py-4 border-b border-white/5 flex-shrink-0 flex items-center gap-3 cursor-pointer group select-none bg-transparent text-left border-0 outline-none focus:outline-none"
+>
+  <img
+    src="/logonavbar.png"
+    alt="Shantabai"
+    className="h-14 w-auto object-contain flex-shrink-0 transition-transform duration-200 group-hover:scale-103"
+  />
 
-    <div>
-      <h1 className="text-sm font-black text-white leading-none tracking-tight">
-        Shantabai <span className="text-[#10D876]"></span>
-      </h1>
+  <div>
+    <h1 className="text-sm font-black text-white leading-none tracking-tight transition-colors duration-200 group-hover:text-[#10D876]">
+      Shantabai
+    </h1>
 
-      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">
-        AAPKI SEVA, HAMARA VADA
-      </p>
-    </div>
+    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+      AAPKI SEVA, HAMARA VADA
+    </p>
   </div>
-</div>
+</button>
           {/* Profile Mini-Card */}
           <div className="px-4 py-3 mx-3 mt-4 mb-2 rounded-xl bg-white/[0.04] border border-white/5 flex items-center gap-3 flex-shrink-0">
             <div className="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center font-black text-white text-base flex-shrink-0">

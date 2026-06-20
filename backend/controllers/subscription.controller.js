@@ -56,7 +56,7 @@ exports.createSubscription = async (req, res) => {
   }
 };
 
-// @desc    Verify incoming Razorpay webhook / token payload
+/// @desc    Verify incoming Razorpay webhook / token payload
 exports.verifyPayment = async (req, res) => {
   const { planType, razorpay_payment_id, razorpay_subscription_id, razorpay_signature } = req.body;
   const userId = req.user.id;
@@ -72,8 +72,9 @@ exports.verifyPayment = async (req, res) => {
 
   try {
     // 999999 acts as 'Unlimited' listings allocation
-    const totalListings = planType === "PREMIUM" ? 999999 : 999999; 
+    const totalListings = 999999; 
 
+    // 1. Update subscription ledger record
     await UserKitchen.findOneAndUpdate(
       { userId },
       {
@@ -84,8 +85,20 @@ exports.verifyPayment = async (req, res) => {
       }
     );
 
+    // 2. ─── CRITICAL BRIDGE SYNCHRONIZATION ───
+    // Update the Profile that the Food Items populate on the frontend feed
+    const ProviderProfile = require("../models/ProviderProfile");
+    await ProviderProfile.findOneAndUpdate(
+      { user: userId },
+      {
+        isSubscribed: true,
+        subscriptionPlan: planType // Stores "GROWTH" or "PREMIUM"
+      }
+    );
+
     res.json({ success: true, message: "Subscription upgraded successfully!" });
   } catch (err) {
+    console.error("Payment sync database error:", err);
     res.status(500).json({ error: "Internal database update error" });
   }
 };

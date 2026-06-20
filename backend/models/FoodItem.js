@@ -172,6 +172,14 @@ foodItemSchema.virtual("availabilityDetails").get(function () {
   };
 });
 
+// ─── NEW: VIRTUAL PROPERTY FOR AUTOMATIC SUBSCRIPTION DETECTION ───
+foodItemSchema.virtual("isSubscribedChef").get(function () {
+  if (this.provider && typeof this.provider === "object") {
+    return !!(this.provider.isSubscribed || this.provider.subscriptionPlan === "premium");
+  }
+  return false;
+});
+
 // Indexes
 foodItemSchema.index({ provider: 1 });
 foodItemSchema.index({ category: 1 });

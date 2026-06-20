@@ -1,21 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Crown, CheckCircle, Sparkles, Loader2 } from "lucide-react";
 
-// Utility helper to inject Razorpay checkout script cleanly onto the DOM
-const loadRazorpayScript = () => {
-  return new Promise((resolve) => {
-    if (window.Razorpay) {
-      resolve(true);
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-};
-
 export default function Subscription() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -49,7 +34,15 @@ export default function Subscription() {
       }
 
       const data = await response.json();
-      setKitchenData(data);
+      
+      // ─── SUPPORT BOTH WRAPPED & UNWRAPPED BACKEND SCHEMAS ───
+      if (data.success && data.stats) {
+        setKitchenData(data.stats);
+      } else if (data.success && data.subscription) {
+        setKitchenData(data.subscription);
+      } else {
+        setKitchenData(data);
+      }
     } catch (err) {
       console.error("Subscription retrieval error:", err);
     } finally {
@@ -57,15 +50,13 @@ export default function Subscription() {
     }
   };
 
-  // --- REPLACED: TEMPORARY POPUP MOCK UPGRADE LOGIC ---
-  const handleUpgrade = async (planType) => {
-    if (planType === kitchenData?.planType) return;
+  const handleUpgrade = async (planTypeTarget) => {
+    if (planTypeTarget === currentPlanType) return;
 
     setActionLoading(true);
 
-    // Create a temporary simulated checkout interactive window prompt
     const confirmPayment = window.confirm(
-      `[MOCK CHECKOUT]\n\nWould you like to simulate a successful payment processing flow for the ${planType} tier (₹${planType === 'GROWTH' ? '299' : '499'})?`
+      `[MOCK CHECKOUT]\n\nWould you like to simulate a successful payment processing flow for the ${planTypeTarget} tier (₹${planTypeTarget === 'GROWTH' ? '299' : '499'})?`
     );
 
     if (!confirmPayment) {
@@ -74,25 +65,24 @@ export default function Subscription() {
     }
 
     try {
-      // Dispatch validation payload straight to backend mock-enabled routing path
       const verifyResponse = await fetch(`${API_BASE_URL}/verify-payment`, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          planType,
-          razorpay_payment_id: "mock_pay_" + Math.random().toString(36).substr(2, 9),
-          razorpay_subscription_id: "mock_sub_" + Math.random().toString(36).substr(2, 9),
-          razorpay_signature: "mock_signature_passed", // Special string key to bypass crypto on backend
+          planType: planTypeTarget,
+          razorpay_payment_id: "mock_pay_" + Math.random().toString(36).substring(2, 11),
+          razorpay_subscription_id: "mock_sub_" + Math.random().toString(36).substring(2, 11),
+          razorpay_signature: "mock_signature_passed", 
         }),
       });
 
       const verifyData = await verifyResponse.json();
 
       if (verifyData.success) {
-        alert(`Success! Your account has been temporarily upgraded to ${planType}.`);
-        fetchSubscriptionStatus(); // Instantly pull updated database allocations
+        alert(`Success! Your account has been temporarily upgraded to ${planTypeTarget}.`);
+        await fetchSubscriptionStatus(); 
       } else {
-        alert("Mock checkout verification rejected by server.");
+        alert(verifyData.message || "Mock checkout verification rejected by server.");
       }
     } catch (err) {
       console.error("Mock processing runtime error:", err);
@@ -101,7 +91,6 @@ export default function Subscription() {
       setActionLoading(false);
     }
   };
-  // --- END OF REPLACED SECTION ---
 
   if (loading) {
     return (
@@ -112,7 +101,11 @@ export default function Subscription() {
     );
   }
 
-  const { usedListings, totalListings, planType } = kitchenData || { usedListings: 0, totalListings: 20, planType: "FREE" };
+  // ─── SAFE DESTRUCTURING WITH SANITIZED FALLBACKS ───
+  const usedListings = kitchenData?.usedListings ?? 0;
+  const totalListings = kitchenData?.totalListings ?? 20;
+  const currentPlanType = String(kitchenData?.planType || "FREE").toUpperCase();
+
   const isUnlimited = totalListings > 1000;
   const percentage = isUnlimited ? 100 : Math.min((usedListings / totalListings) * 100, 100);
 
@@ -132,21 +125,21 @@ export default function Subscription() {
               CURRENT PLAN
             </span>
             <h2 className="text-2xl font-black mt-3">
-              {planType.charAt(0) + planType.slice(1).toLowerCase()} Plan
+              {currentPlanType.charAt(0) + currentPlanType.slice(1).toLowerCase()} Plan
             </h2>
             <p className="text-slate-500 mt-1">
-              {planType === "FREE" ? "Start selling your homemade food today" : "Enjoy premium distribution advantages"}
+              {currentPlanType === "FREE" ? "Start selling your homemade food today" : "Enjoy premium distribution advantages"}
             </p>
           </div>
 
-          {planType === "FREE" && (
+          {currentPlanType !== "PREMIUM" && (
             <button
               disabled={actionLoading}
-              onClick={() => handleUpgrade("GROWTH")}
+              onClick={() => handleUpgrade(currentPlanType === "FREE" ? "GROWTH" : "PREMIUM")}
               className="bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:scale-105 transition disabled:opacity-50 flex items-center gap-2"
             >
               {actionLoading && <Loader2 className="animate-spin w-4 h-4" />}
-              Upgrade Now
+              {currentPlanType === "FREE" ? "Upgrade to Growth" : "Upgrade to Premium"}
             </button>
           )}
         </div>
@@ -169,7 +162,7 @@ export default function Subscription() {
           <p className="text-xs text-slate-500 mt-2">
             {isUnlimited 
               ? "Your upgraded privileges grant you unlimited listings." 
-              : `You have ${totalListings - usedListings} menu slots available before hitting limit parameters.`}
+              : `You have ${Math.max(0, totalListings - usedListings)} menu slots available before hitting limit parameters.`}
           </p>
         </div>
       </div>
@@ -177,7 +170,7 @@ export default function Subscription() {
       {/* Plans Comparison Deck */}
       <div className="grid lg:grid-cols-3 gap-6 items-start">
         {/* Tier: Free */}
-        <div className={`bg-white rounded-3xl border p-8 transition-all ${planType === "FREE" ? "border-emerald-500 ring-4 ring-emerald-500/10" : "border-slate-200"}`}>
+        <div className={`bg-white rounded-3xl border p-8 transition-all ${currentPlanType === "FREE" ? "border-emerald-500 ring-4 ring-emerald-500/10" : "border-slate-200"}`}>
           <h3 className="text-2xl font-black text-slate-900">Free</h3>
           <div className="mt-4">
             <span className="text-5xl font-black text-slate-900">₹0</span>
@@ -195,12 +188,12 @@ export default function Subscription() {
             </li>
           </ul>
           <button disabled className="mt-8 w-full border border-slate-200 py-3 rounded-xl font-bold bg-slate-50 text-slate-400 cursor-not-allowed">
-            {planType === "FREE" ? "Active Account Default" : "Standard Tier Locked"}
+            {currentPlanType === "FREE" ? "Active Account Default" : "Standard Tier Locked"}
           </button>
         </div>
 
         {/* Tier: Growth */}
-        <div className={`relative rounded-3xl p-8 text-white shadow-xl transition transform hover:scale-[1.02] ${planType === "GROWTH" ? "bg-slate-900 ring-4 ring-emerald-400" : "bg-gradient-to-br from-emerald-500 to-green-600"}`}>
+        <div className={`relative rounded-3xl p-8 text-white shadow-xl transition transform hover:scale-[1.02] ${currentPlanType === "GROWTH" ? "bg-slate-900 ring-4 ring-emerald-400" : "bg-gradient-to-br from-emerald-500 to-green-600"}`}>
           <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-xs font-black px-4 py-1 rounded-full uppercase tracking-wider">
             Most Popular
           </div>
@@ -218,17 +211,17 @@ export default function Subscription() {
             <li className="flex items-center gap-2">✓ Dynamic Priority Placement</li>
           </ul>
           <button
-            disabled={actionLoading || planType === "GROWTH"}
+            disabled={actionLoading || currentPlanType === "GROWTH"}
             onClick={() => handleUpgrade("GROWTH")}
             className="mt-8 w-full bg-white text-emerald-600 disabled:bg-slate-800 disabled:text-slate-500 py-3 rounded-xl font-black shadow-md transition active:translate-y-0.5 flex items-center justify-center gap-2"
           >
-            {actionLoading && planType === "FREE" && <Loader2 className="animate-spin w-4 h-4 text-emerald-600" />}
-            {planType === "GROWTH" ? "Current Subscription" : "Upgrade to Growth"}
+            {actionLoading && currentPlanType === "FREE" && <Loader2 className="animate-spin w-4 h-4 text-emerald-600" />}
+            {currentPlanType === "GROWTH" ? "Current Subscription" : "Upgrade to Growth"}
           </button>
         </div>
 
         {/* Tier: Premium */}
-        <div className={`bg-white rounded-3xl border-2 p-8 relative transition-all ${planType === "PREMIUM" ? "border-emerald-500 ring-4 ring-emerald-500/10" : "border-yellow-400"}`}>
+        <div className={`bg-white rounded-3xl border-2 p-8 relative transition-all ${currentPlanType === "PREMIUM" ? "border-emerald-500 ring-4 ring-emerald-500/10" : "border-yellow-400"}`}>
           <div className="absolute top-6 right-6">
             <Crown className="text-yellow-500 w-6 h-6" />
           </div>
@@ -253,12 +246,12 @@ export default function Subscription() {
             </li>
           </ul>
           <button
-            disabled={actionLoading || planType === "PREMIUM"}
+            disabled={actionLoading || currentPlanType === "PREMIUM"}
             onClick={() => handleUpgrade("PREMIUM")}
             className="mt-8 w-full bg-yellow-500 hover:bg-yellow-600 disabled:bg-slate-100 disabled:text-slate-400 text-white py-3 rounded-xl font-black transition shadow-sm flex items-center justify-center gap-2"
           >
-            {actionLoading && planType !== "PREMIUM" && <Loader2 className="animate-spin w-4 h-4" />}
-            {planType === "PREMIUM" ? "Current Subscription" : "Go Premium Elite"}
+            {actionLoading && currentPlanType !== "PREMIUM" && <Loader2 className="animate-spin w-4 h-4" />}
+            {currentPlanType === "PREMIUM" ? "Current Subscription" : "Go Premium Elite"}
           </button>
         </div>
       </div>

@@ -179,34 +179,41 @@ const getAllFoods = async (req, res) => {
     const { category, mealType, isVeg, providerId, search } = req.query;
     const query = {};
     const now = new Date();
+    
     // Only return non-expired listings
     query.expiryAt = { $gt: now };
 
-    // No approval filter — approved chefs' foods are always visible
+    if (category) query.category = category;
+    if (mealType) query.mealType = mealType;
+    if (isVeg !== undefined) query.isVeg = isVeg === "true";
+    if (providerId) query.provider = providerId;
+    if (search) query.$text = { $search: search };
 
-    if (category) {
-      query.category = category;
-    }
-
-    if (mealType) {
-      query.mealType = mealType;
-    }
-
-    if (isVeg !== undefined) {
-      query.isVeg = isVeg === "true";
-    }
-
-    if (providerId) {
-      query.provider = providerId;
-    }
-
-    if (search) {
-      query.$text = { $search: search };
-    }
-
+    // Populating provider profile completely with both legacy and new field variants
     const foodItems = await FoodItem.find(query).populate({
       path: "provider",
-      select: "kitchenName tagline city area startingPrice rating isAvailable",
+      select: "kitchenName tagline city area startingPrice rating isAvailable isSubscribed subscriptionPlan planType subscriptionStatus",
+    });
+
+    res.status(200).json({
+      success: true,
+      count: foodItems.length,
+      foodItems,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error fetching food items",
+      error: error.message,
+    });
+  }
+};
+
+    // ─── CRITICAL UPDATE FOR AUTOMATIC RECOMMENDATIONS ───
+    // We explicitly pull subscription indicators inside the 'select' string
+    const foodItems = await FoodItem.find(query).populate({
+      path: "provider",
+      select: "kitchenName tagline city area startingPrice rating isAvailable isSubscribed subscriptionPlan",
     });
 
     res.status(200).json({
@@ -230,9 +237,10 @@ const getFoodById = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Pull subscription status fields here too for deep individual page logic
     const foodItem = await FoodItem.findById(id).populate({
       path: "provider",
-      select: "kitchenName tagline bio experience rating startingPrice city area fullAddress",
+      select: "kitchenName tagline bio experience rating startingPrice city area fullAddress isSubscribed subscriptionPlan",
     });
 
     if (!foodItem) {
@@ -262,6 +270,7 @@ const getFoodById = async (req, res) => {
     });
   }
 };
+
 
 // @desc    Get all food items for logged-in provider
 // @route   GET /api/foods/me

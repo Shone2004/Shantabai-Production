@@ -13,6 +13,7 @@ import useGeoLocation from "../../hooks/useGeoLocation";
 // ─── New components ───────────────────────────────────────────────────────────
 import ChefSection from '../../components/chef/ChefSection.jsx';
 import AIConsultant from '../../components/ai/AIConsultant.jsx';
+import SubscribedFoodList from '../../components/home/SubscribedFoodList.jsx';
 
 // ─── Backend Food Mapper ──────────────────────────────────────────────────────
 const mapBackendFoodToCard = (backendFood) => {
@@ -149,6 +150,8 @@ export default function HomePage() {
 
       {/* Hero */}
       <Hero />
+
+      <SubscribedFoodList />
 
       {/* Stats Strip */}
       <div className="bg-brand-green">
