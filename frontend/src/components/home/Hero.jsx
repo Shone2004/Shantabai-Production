@@ -375,7 +375,7 @@ const Hero = () => {
       </section>
 
       {/* ─── PREMIUM PARTNER KITCHENS SECTION GRID FILTER ─── */}
-      <SubscribedFoodList />
+      {/* <SubscribedFoodList /> */}
     </>
   );
 };

@@ -9,6 +9,10 @@ const {
   updateFoodItem,
   deleteFoodItem,
   getProviderStats,
+  addReviewToFood,
+  addReviewToProvider,
+  getFoodReviews,
+  deleteReview,
 } = require("../controllers/food.controller");
 
 const { authenticateUser } = require("../middleware/authMiddleware");
@@ -16,21 +20,92 @@ const { allowRoles } = require("../middleware/roleMiddleware");
 const { verifyProviderApproved } = require("../middleware/verifyProviderApproved");
 const upload = require("../middleware/uploadMiddleware");
 
-// Protected Routes that collide with /:id (define first with inline middleware)
-router.get("/stats", authenticateUser, allowRoles("PROVIDER"), verifyProviderApproved, getProviderStats);
-router.get("/me", authenticateUser, allowRoles("PROVIDER"), verifyProviderApproved, getMyFoodItems);
+const providerOnly = [
+  authenticateUser,
+  allowRoles("PROVIDER"),
+  verifyProviderApproved,
+];
 
-// Public Routes
+
+// ==========================================
+// PUBLIC ROUTES
+// ==========================================
+
+// Get all foods
 router.get("/", getAllFoods);
+
+// Get single food
 router.get("/:id", getFoodById);
 
-// Protected Routes (Required Authentication and PROVIDER role)
-router.use(authenticateUser);
-router.use(allowRoles("PROVIDER"));
-router.use(verifyProviderApproved);
+// Get food reviews
+router.get("/:id/reviews", getFoodReviews);
 
-router.post("/", upload.array("images", 5), createFoodItem);
-router.put("/:id", upload.array("images", 5), updateFoodItem);
-router.delete("/:id", deleteFoodItem);
+
+// ==========================================
+// AUTHENTICATED USER ROUTES
+// ==========================================
+
+// Add review to food
+router.post(
+  "/:id/review",
+  authenticateUser,
+  addReviewToFood
+);
+
+// Add review to provider
+router.post(
+  "/provider/:providerId/review",
+  authenticateUser,
+  addReviewToProvider
+);
+
+// Delete own review
+router.delete(
+  "/:foodId/review/:reviewId",
+  authenticateUser,
+  deleteReview
+);
+
+
+// ==========================================
+// PROVIDER ROUTES
+// ==========================================
+
+// Get provider's foods
+router.get(
+  "/me",
+  ...providerOnly,
+  getMyFoodItems
+);
+
+// Provider stats
+router.get(
+  "/stats",
+  ...providerOnly,
+  getProviderStats
+);
+
+// Create food
+router.post(
+  "/",
+  ...providerOnly,
+  upload.array("images", 5),
+  createFoodItem
+);
+
+// Update food
+router.put(
+  "/:id",
+  ...providerOnly,
+  upload.array("images", 5),
+  updateFoodItem
+);
+
+// Delete food
+router.delete(
+  "/:id",
+  ...providerOnly,
+  deleteFoodItem
+);
 
 module.exports = router;

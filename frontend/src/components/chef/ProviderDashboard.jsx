@@ -248,7 +248,9 @@ export default function ProviderDashboard() {
     oilLevel: "Normal",
     spiceLevel: "Medium",
     deliveryOption: "Both",
-    startingPrice: 0
+    startingPrice: 0,
+    rating: 0,        
+    reviews: [],
   });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState("");
@@ -1598,6 +1600,7 @@ export default function ProviderDashboard() {
                           </div>
                         </div>
                       </div>
+              
 
                       {/* Form Actions */}
                       <div className="flex flex-col-reverse sm:flex-row gap-3 justify-end pt-1">

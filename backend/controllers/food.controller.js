@@ -45,7 +45,7 @@ const formatTime12h = (timeStr) => {
 
   const suffix = hours >= 12 ? "PM" : "AM";
   hours = hours % 12;
-  hours = hours ? hours : 12; // 0 becomes 12
+  hours = hours ? hours : 12;
   return `${hours}:${minutes} ${suffix}`;
 };
 
@@ -53,6 +53,9 @@ const formatTime12h = (timeStr) => {
 // @route   POST /api/foods
 // @access  Private (Provider only)
 const createFoodItem = async (req, res) => {
+  console.log("=== CREATE FOOD HIT ===");
+  console.log("REQ USER:", req.user);
+  console.log("REQ BODY:", req.body);
   try {
     const {
       name,
@@ -74,7 +77,6 @@ const createFoodItem = async (req, res) => {
       endTime,
     } = req.body;
 
-    // Find the provider profile for the logged-in user
     const providerProfile = await ProviderProfile.findOne({ user: req.user._id });
     if (!providerProfile) {
       return res.status(403).json({
@@ -90,14 +92,11 @@ const createFoodItem = async (req, res) => {
       });
     }
 
-    // Compute expiry date and legacy time window format
     const computedExpiryAt = parseDateTime(serviceDate, endTime);
     const computedTimeWindow = `${formatTime12h(startTime)} - ${formatTime12h(endTime)}`;
 
-    // Handle Image Uploads to Cloudinary (Base64 from body or Buffers from Multer)
     let uploadedImages = [];
-    
-    // 1. Process base64 images from request body
+
     if (images && Array.isArray(images)) {
       for (const img of images) {
         try {
@@ -109,7 +108,6 @@ const createFoodItem = async (req, res) => {
       }
     }
 
-    // 2. Process binary files if uploaded via Multer
     if (req.files && Array.isArray(req.files)) {
       for (const file of req.files) {
         try {
@@ -120,8 +118,7 @@ const createFoodItem = async (req, res) => {
         }
       }
     }
-    
-    // If a single file was uploaded via req.file
+
     if (req.file) {
       try {
         const url = await uploadToCloudinary(req.file.buffer, "shantabai/foods");
@@ -163,10 +160,12 @@ const createFoodItem = async (req, res) => {
       foodItem,
     });
   } catch (error) {
+    console.error("=== CREATE FOOD ERROR ===", error);
     res.status(500).json({
       success: false,
       message: "Server error creating food item",
       error: error.message,
+      stack: error.stack,
     });
   }
 };
@@ -179,8 +178,7 @@ const getAllFoods = async (req, res) => {
     const { category, mealType, isVeg, providerId, search } = req.query;
     const query = {};
     const now = new Date();
-    
-    // Only return non-expired listings
+
     query.expiryAt = { $gt: now };
 
     if (category) query.category = category;
@@ -189,7 +187,6 @@ const getAllFoods = async (req, res) => {
     if (providerId) query.provider = providerId;
     if (search) query.$text = { $search: search };
 
-    // Populating provider profile completely with both legacy and new field variants
     const foodItems = await FoodItem.find(query).populate({
       path: "provider",
       select: "kitchenName tagline city area startingPrice rating isAvailable isSubscribed subscriptionPlan planType subscriptionStatus",
@@ -209,24 +206,136 @@ const getAllFoods = async (req, res) => {
   }
 };
 
-    // ─── CRITICAL UPDATE FOR AUTOMATIC RECOMMENDATIONS ───
-    // We explicitly pull subscription indicators inside the 'select' string
-    const foodItems = await FoodItem.find(query).populate({
-      path: "provider",
-      select: "kitchenName tagline city area startingPrice rating isAvailable isSubscribed subscriptionPlan",
-    });
+
+
+// @desc    Get reviews of a food item
+// @route   GET /api/foods/:id/reviews
+// @access  Public
+
+const getFoodReviews = async (req, res) => {
+  try {
+    const foodItem = await FoodItem.findById(req.params.id)
+      .select("reviews averageRating");
+
+    if (!foodItem) {
+      return res.status(404).json({
+        success: false,
+        message: "Food item not found",
+      });
+    }
 
     res.status(200).json({
       success: true,
-      count: foodItems.length,
-      foodItems,
+      averageRating: foodItem.averageRating,
+      totalReviews: foodItem.reviews.length,
+      reviews: foodItem.reviews.sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      ),
     });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch reviews",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Delete own review
+// @route   DELETE /api/foods/:foodId/review/:reviewId
+// @access  Private
+
+const deleteReview = async (req, res) => {
+  try {
+    const { foodId, reviewId } = req.params;
+
+    const foodItem = await FoodItem.findById(foodId);
+
+    if (!foodItem) {
+      return res.status(404).json({
+        success: false,
+        message: "Food item not found",
+      });
+    }
+
+    const review = foodItem.reviews.id(reviewId);
+
+    if (!review) {
+      return res.status(404).json({
+        success: false,
+        message: "Review not found",
+      });
+    }
+
+    if (
+      review.user.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized",
+      });
+    }
+
+    foodItem.reviews.pull(reviewId);
+
+    const totalRating = foodItem.reviews.reduce(
+      (sum, review) => sum + review.rating,
+      0
+    );
+
+    foodItem.averageRating =
+      foodItem.reviews.length > 0
+        ? totalRating / foodItem.reviews.length
+        : 0;
+
+    await foodItem.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Review deleted successfully",
+    });
+
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Server error fetching food items",
       error: error.message,
     });
+  }
+};
+
+// @desc    Add a review to a provider
+// @route   POST /api/providers/:id/review
+// @access  Private (Registered users)
+const addReviewToProvider = async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+    const { id } = req.params;
+
+    const profile = await ProviderProfile.findById(id);
+    if (!profile) return res.status(404).json({ success: false, message: "Provider not found" });
+
+    const newReview = {
+      user: req.user._id,
+      userName: req.user.name,
+      rating: Number(rating),
+      comment,
+      date: new Date(),
+    };
+
+    profile.reviews.push(newReview);
+    profile.rating = calculateAverageRating(profile.reviews);
+    await profile.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Review added successfully",
+      rating: profile.rating,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error adding review", error: error.message });
   }
 };
 
@@ -237,7 +346,6 @@ const getFoodById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Pull subscription status fields here too for deep individual page logic
     const foodItem = await FoodItem.findById(id).populate({
       path: "provider",
       select: "kitchenName tagline bio experience rating startingPrice city area fullAddress isSubscribed subscriptionPlan",
@@ -270,7 +378,6 @@ const getFoodById = async (req, res) => {
     });
   }
 };
-
 
 // @desc    Get all food items for logged-in provider
 // @route   GET /api/foods/me
@@ -332,7 +439,6 @@ const updateFoodItem = async (req, res) => {
       });
     }
 
-    // Providers cannot reactivate or extend expired listings
     const now = new Date();
     if (foodItem.expiryAt && foodItem.expiryAt <= now) {
       return res.status(400).json({
@@ -341,7 +447,6 @@ const updateFoodItem = async (req, res) => {
       });
     }
 
-    // Recompute expiry details if scheduling details are updated
     if (updateData.serviceDate || updateData.startTime || updateData.endTime) {
       const serviceDate = updateData.serviceDate || foodItem.serviceDate;
       const startTime = updateData.startTime || foodItem.startTime;
@@ -351,11 +456,9 @@ const updateFoodItem = async (req, res) => {
       updateData.timeWindow = `${formatTime12h(startTime)} - ${formatTime12h(endTime)}`;
     }
 
-    // Prevent direct overrides of administrative status flags
     delete updateData.isApproved;
     delete updateData.approvalStatus;
 
-    // Handle Image Updates if sent
     if (updateData.images && Array.isArray(updateData.images)) {
       let updatedImages = [];
       for (const img of updateData.images) {
@@ -369,7 +472,6 @@ const updateFoodItem = async (req, res) => {
       updateData.images = updatedImages;
     }
 
-    // Process file uploads if sent via Multer multipart form
     if (req.files && Array.isArray(req.files) && req.files.length > 0) {
       let uploadedFiles = [];
       for (const file of req.files) {
@@ -380,10 +482,8 @@ const updateFoodItem = async (req, res) => {
           console.error("Cloudinary upload failed for file during update:", uploadError.message);
         }
       }
-      // If the request also had text images URLs, append them
       updateData.images = [...(updateData.images || foodItem.images), ...uploadedFiles];
     }
-
 
     if (updateData.quantity !== undefined && updateData.status === undefined) {
       updateData.status = updateData.quantity > 0 ? "available" : "out";
@@ -453,6 +553,76 @@ const deleteFoodItem = async (req, res) => {
   }
 };
 
+// @desc    Add a review to a specific food item
+// @route   POST /api/foods/:id/review
+// @access  Private (Registered users)
+const addReviewToFood = async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+
+    const foodItem = await FoodItem.findById(req.params.id).populate("provider");
+
+    if (!foodItem) {
+      return res.status(404).json({
+        success: false,
+        message: "Food not found",
+      });
+    }
+
+    if (
+      foodItem.provider?.user?.toString() ===
+      req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Providers cannot review their own food items.",
+      });
+    }
+
+    const alreadyReviewed = foodItem.reviews.find(
+      (r) => r.user.toString() === req.user._id.toString()
+    );
+
+    if (alreadyReviewed) {
+      alreadyReviewed.rating = Number(rating);
+      alreadyReviewed.comment = comment;
+      alreadyReviewed.createdAt = new Date();
+    } else {
+      foodItem.reviews.push({
+        user: req.user._id,
+        userName: req.user.name,
+        rating: Number(rating),
+        comment,
+        createdAt: new Date(),
+      });
+    }
+
+    const totalRating = foodItem.reviews.reduce(
+      (sum, review) => sum + review.rating,
+      0
+    );
+
+    foodItem.averageRating =
+      totalRating / foodItem.reviews.length;
+
+    await foodItem.save();
+
+    res.status(200).json({
+      success: true,
+      message: alreadyReviewed
+        ? "Review updated successfully"
+        : "Review added successfully",
+      averageRating: foodItem.averageRating,
+      reviews: foodItem.reviews,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
 // @desc    Get dashboard statistics for a provider
 // @route   GET /api/foods/stats
 // @access  Private (Provider only)
@@ -491,8 +661,7 @@ const getProviderStats = async (req, res) => {
       error: error.message,
     });
   }
-};
-
+}
 module.exports = {
   createFoodItem,
   getAllFoods,
@@ -501,4 +670,8 @@ module.exports = {
   updateFoodItem,
   deleteFoodItem,
   getProviderStats,
-};
+  addReviewToProvider,
+  addReviewToFood,
+  getFoodReviews,
+  deleteReview,
+}
