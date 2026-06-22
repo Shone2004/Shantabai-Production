@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useDeferredValue } from 'react';
 import axios from 'axios';
 
-// Saved fallback mock data so your layout never renders empty cards!
+// Fallback high-fidelity mock datasets
 const initialFoodsFallback = [
   {
     _id: "mock-1",
@@ -14,8 +14,8 @@ const initialFoodsFallback = [
     images: ["https://images.pexels.com/photos/9609844/pexels-photo-9609844.jpeg"],
     bringContainer: true,
     prepTime: 45,
-    timeWindow: "09/06/26 - 10am : 11am",
-    provider: { kitchenName: "Chef Meena", area: "Kothrud, Pune" }
+    timeWindow: "10:00 AM - 11:00 AM",
+    provider: { kitchenName: "Chef Meena", area: "Kothrud" }
   },
   {
     _id: "mock-2",
@@ -28,8 +28,8 @@ const initialFoodsFallback = [
     images: ["https://images.pexels.com/photos/1624487/pexels-photo-1624487.jpeg"],
     bringContainer: true,
     prepTime: 60,
-    timeWindow: "09/06/26 - 12pm : 2pm",
-    provider: { kitchenName: "Chef Priya", area: "Wakad, Pune" }
+    timeWindow: "12:00 PM - 02:00 PM",
+    provider: { kitchenName: "Chef Priya", area: "Wakad" }
   },
   {
     _id: "mock-3",
@@ -42,8 +42,8 @@ const initialFoodsFallback = [
     images: ["https://images.pexels.com/photos/616354/pexels-photo-616354.jpeg"],
     bringContainer: false,
     prepTime: 30,
-    timeWindow: "09/06/26 - 7pm : 9pm",
-    provider: { kitchenName: "Chef Rohit", area: "Baner, Pune" }
+    timeWindow: "07:00 PM - 09:00 PM",
+    provider: { kitchenName: "Chef Rohit", area: "Baner" }
   },
   {
     _id: "mock-4",
@@ -56,14 +56,14 @@ const initialFoodsFallback = [
     images: ["https://images.pexels.com/photos/5560763/pexels-photo-5560763.jpeg"],
     bringContainer: false,
     prepTime: 15,
-    timeWindow: "09/06/26 - 8am : 10am",
-    provider: { kitchenName: "Anjali Kitchen", area: "Hinjewadi, Pune" }
+    timeWindow: "08:00 AM - 10:00 AM",
+    provider: { kitchenName: "Anjali Kitchen", area: "Hinjewadi" }
   }
 ];
 
 const availableChefs = [
   {
-    id: 1,
+    id: "chef-1",
     name: "Chef Meena",
     cuisine: "Maharashtrian Specialist",
     rating: 4.9,
@@ -71,11 +71,11 @@ const availableChefs = [
     location: "Kothrud, Pune",
     image: "https://images.pexels.com/photos/887827/pexels-photo-887827.jpeg",
     distance: "0.9 Km",
-    availableHours: "10am : 4pm",
+    availableHours: "10:00 AM - 04:00 PM",
     instantBooking: true
   },
   {
-    id: 2,
+    id: "chef-2",
     name: "Chef Rohit",
     cuisine: "Continental Expert",
     rating: 4.8,
@@ -83,11 +83,11 @@ const availableChefs = [
     location: "Baner, Pune",
     image: "https://images.pexels.com/photos/3771120/pexels-photo-3771120.jpeg",
     distance: "2.1 Km",
-    availableHours: "08am : 11pm",
+    availableHours: "08:00 AM - 11:00 PM",
     instantBooking: true
   },
   {
-    id: 3,
+    id: "chef-3",
     name: "Chef Priya",
     cuisine: "North Indian & Tiffin",
     rating: 4.7,
@@ -95,19 +95,184 @@ const availableChefs = [
     location: "Wakad, Pune",
     image: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg",
     distance: "1.4 Km",
-    availableHours: "11am : 09pm",
+    availableHours: "11:00 AM - 09:00 PM",
     instantBooking: false
   }
 ];
 
+/**
+ * High-Fidelity Details & Reservation Modal Sheet
+ */
+function DetailsModal({ show, onClose, data, type, onConfirm }) {
+  const [quantityToReserve, setQuantityToReserve] = useState(1);
+
+  useEffect(() => {
+    if (show) setQuantityToReserve(1);
+  }, [show, data]);
+
+  if (!show || !data) return null;
+
+  const isOutOfStock = type === "food" && (data.status === "out" || data.quantity <= 0);
+  const totalPrice = type === "food" ? data.price * quantityToReserve : 0;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={onClose} />
+      
+      <div className="relative w-full max-w-lg bg-white rounded-[2rem] shadow-2xl overflow-hidden border border-slate-100 transform transition-all animate-slideUp">
+        {/* Banner Graphic Header Layer */}
+        <div className="relative h-60 w-full bg-slate-100">
+          <img 
+            src={data.images?.[0] || data.image || "https://images.pexels.com/photos/2474658/pexels-photo-2474658.jpeg"} 
+            alt={data.name} 
+            className="w-full h-full object-cover" 
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
+          <button 
+            onClick={onClose}
+            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur-md flex items-center justify-center text-sm font-bold transition-all"
+          >
+            ✕
+          </button>
+          <div className="absolute bottom-5 left-6 right-6 text-white">
+            <p className="text-[10px] font-black tracking-widest text-emerald-400 uppercase mb-1">
+              {type === "chef" ? data.cuisine : `By ${data.provider?.kitchenName || 'Home Kitchen'}`}
+            </p>
+            <h2 className="text-2xl font-black tracking-tight leading-tight">{data.name}</h2>
+          </div>
+        </div>
+
+        {/* Content Details Block Layout */}
+        <div className="p-6 space-y-5">
+          <div className="space-y-3 text-slate-600">
+            {type === "chef" ? (
+              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <div>
+                  <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Location</span>
+                  <p className="font-semibold text-slate-800 mt-0.5 text-sm">📍 {data.location}</p>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Rating Score</span>
+                  <p className="font-semibold text-slate-800 mt-0.5 text-sm">⭐ {data.rating} / 5.0</p>
+                </div>
+                <div className="col-span-2 pt-3 border-t border-slate-200/60">
+                  <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Service Schedule</span>
+                  <p className="font-semibold text-slate-800 mt-0.5 text-sm">🕒 {data.availableHours}</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-slate-600 text-sm leading-relaxed">{data.description}</p>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">Unit Cost</span>
+                    <span className="font-extrabold text-slate-900 text-sm">₹{data.price} <span className="text-xs font-medium text-slate-400">/{data.pricePer || "serving"}</span></span>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">Prep Lead Time</span>
+                    <span className="font-extrabold text-slate-900 text-sm">⏳ {data.prepTime || 30} mins</span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-emerald-50/40 rounded-xl border border-emerald-100/50 text-xs space-y-1.5 text-slate-700">
+                  <div className="flex justify-between"><span className="text-slate-400 font-medium">Pickup/Delivery window:</span> <span className="font-bold text-slate-800">{data.timeWindow}</span></div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400 font-medium">Available Inventory:</span> 
+                    <span className={`font-black ${isOutOfStock ? "text-rose-600" : "text-emerald-800"}`}>
+                      {data.quantity} servings left
+                    </span>
+                  </div>
+                </div>
+
+                {data.bringContainer && (
+                  <div className="text-[11px] text-amber-800 bg-amber-50/60 border border-amber-200/50 p-3 rounded-xl flex gap-2.5 items-start">
+                    <span className="text-xs mt-0.5">⚠️</span>
+                    <p className="font-medium leading-normal">Please arrange to bring or hand over a clean personal tiffin/meal container upon order collection.</p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Dynamic Portions Controls Matrix */}
+          {type === "food" && !isOutOfStock && (
+            <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-xs font-extrabold text-slate-800">Portions to reserve</span>
+                <span className="text-[10px] text-slate-400 font-medium">Adjust quantity requirements</span>
+              </div>
+              <div className="flex items-center gap-3 bg-white p-1 rounded-xl shadow-sm border border-slate-200/80">
+                <button
+                  type="button"
+                  onClick={() => setQuantityToReserve(prev => Math.max(1, prev - 1))}
+                  disabled={quantityToReserve <= 1}
+                  className="w-8 h-8 rounded-lg bg-slate-50 font-black text-slate-700 flex items-center justify-center transition hover:bg-slate-100 disabled:opacity-30"
+                >
+                  —
+                </button>
+                <span className="text-sm font-black text-slate-900 min-w-[20px] text-center">{quantityToReserve}</span>
+                <button
+                  type="button"
+                  onClick={() => setQuantityToReserve(prev => Math.min(data.quantity, prev + 1))}
+                  disabled={quantityToReserve >= data.quantity}
+                  className="w-8 h-8 rounded-lg bg-slate-50 font-black text-slate-700 flex items-center justify-center transition hover:bg-slate-100 disabled:opacity-30"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Dynamic Structural Operational Buttons array */}
+          <div className="flex gap-3 pt-1">
+            <button
+              onClick={onClose}
+              type="button"
+              className="flex-1 py-3 border border-slate-200 hover:bg-slate-50 font-bold text-xs rounded-xl text-slate-600 transition"
+            >
+              Close
+            </button>
+            <button
+              onClick={() => {
+                if (type === "food") {
+                  onConfirm(data._id, quantityToReserve);
+                } else {
+                  onClose();
+                  window.location.href = `mailto:support@platform.com?subject=Inquiry regarding ${encodeURIComponent(data.name)}`;
+                }
+              }}
+              disabled={isOutOfStock}
+              className={`flex-[2] py-3 text-white rounded-xl font-bold text-xs tracking-wide transition-all shadow-md ${
+                isOutOfStock 
+                  ? "bg-slate-300 shadow-none cursor-not-allowed text-slate-500" 
+                  : "bg-emerald-700 hover:bg-emerald-800 shadow-emerald-950/10"
+              }`}
+            >
+              {isOutOfStock ? "Out of Stock" : type === "food" ? `Confirm Checkout • ₹${totalPrice}` : "Inquire Availability"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function FindServices() {
   const [searchQuery, setSearchQuery] = useState("");
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const [activeTab, setActiveTab] = useState("chefs");
   const [showModal, setShowModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   
   const [foods, setFoods] = useState(initialFoodsFallback);
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+
+  const triggerToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type: "success" }), 4000);
+  };
 
   useEffect(() => {
     fetchLiveFoods();
@@ -121,293 +286,244 @@ export default function FindServices() {
         setFoods(response.data.foodItems);
       }
     } catch (err) {
-      console.log("Backend offline or unreachable. Displaying fallback local card templates.");
+      console.log("Using system standard fallback localized structures.");
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredChefs = availableChefs.filter(
-    (chef) =>
-      chef.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      chef.cuisine.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      chef.location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredChefs = useMemo(() => {
+    const query = deferredSearchQuery.trim().toLowerCase();
+    if (!query) return availableChefs;
+    return availableChefs.filter(
+      (chef) =>
+        chef.name.toLowerCase().includes(query) ||
+        chef.cuisine.toLowerCase().includes(query) ||
+        chef.location.toLowerCase().includes(query)
+    );
+  }, [deferredSearchQuery]);
 
-  const filteredFoods = foods.filter(
-    (food) =>
-      food.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      food.provider?.kitchenName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      food.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredFoods = useMemo(() => {
+    const query = deferredSearchQuery.trim().toLowerCase();
+    if (!query) return foods;
+    return foods.filter(
+      (food) =>
+        food.name?.toLowerCase().includes(query) ||
+        food.provider?.kitchenName?.toLowerCase().includes(query) ||
+        food.description?.toLowerCase().includes(query)
+    );
+  }, [foods, deferredSearchQuery]);
 
   const handleReserveFood = async (foodItemId, count) => {
     const selectedFood = foods.find(f => f._id === foodItemId);
-    const providerName = selectedFood?.provider?.kitchenName || 'Home Kitchen';
-    const foodName = selectedFood?.name || 'Delicious Meal';
-    const unitPrice = selectedFood?.price || 0;
+    if (!selectedFood) return;
+
+    const providerName = selectedFood.provider?.kitchenName || 'Home Kitchen';
+    const foodName = selectedFood.name || 'Gourmet Dish';
+    const unitPrice = selectedFood.price || 0;
     
-    const createNewLocalBookingObject = (idPrefix) => ({
-      id: `${idPrefix}-${Math.floor(1000 + Math.random() * 9000)}`,
-      providerName: providerName,
-      serviceType: `${foodName} (${count} servings)`,
-      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+    const generateHydratedBookingRecord = (sourceTag) => ({
+      id: `${sourceTag}-${Math.floor(100000 + Math.random() * 900000)}`,
+      providerName,
+      serviceType: `${foodName} (${count} Servings)`,
+      date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
       time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       status: 'Confirmed',
       price: `₹${unitPrice * count}`,
-      paymentStatus: 'Paid via Wallet/API',
-      image: `https://ui-avatars.com/api/?name=${encodeURIComponent(providerName)}&background=f43f5e&color=fff&size=128`,
-      tab: 'upcoming'
+      paymentStatus: 'Settled via Wallet'
     });
 
+    // Simulated local fallback pipeline loop
     if (String(foodItemId).startsWith('mock-')) {
       setFoods(prev => prev.map(f => f._id === foodItemId ? { ...f, quantity: Math.max(0, f.quantity - count) } : f));
       
-      const existing = JSON.parse(localStorage.getItem('bookings')) || [];
-      existing.push(createNewLocalBookingObject('MCK'));
-      localStorage.setItem('bookings', JSON.stringify(existing));
+      const currentLogs = JSON.parse(localStorage.getItem('bookings')) || [];
+      currentLogs.push(generateHydratedBookingRecord('MCK'));
+      localStorage.setItem('bookings', JSON.stringify(currentLogs));
 
-      alert("Reservation Simulation Successful (Mock Template Mode)!");
+      triggerToast(`Successfully reserved ${count} portions of ${foodName}!`, "success");
       setShowModal(false);
       return;
     }
 
     try {
-      const payload = {
-        foodItemId: foodItemId,
-        quantity: count,
-        customerNote: "Ordered via web application dashboard portal."
-      };
-      const response = await axios.post('/api/orders', payload);
+      const response = await axios.post('/api/orders', { foodItemId, quantity: count });
       if (response.data?.success) {
-        const existing = JSON.parse(localStorage.getItem('bookings')) || [];
-        existing.push(createNewLocalBookingObject('BKG'));
-        localStorage.setItem('bookings', JSON.stringify(existing));
+        const currentLogs = JSON.parse(localStorage.getItem('bookings')) || [];
+        currentLogs.push(generateHydratedBookingRecord('BKG'));
+        localStorage.setItem('bookings', JSON.stringify(currentLogs));
 
-        alert("Reservation created successfully!");
+        triggerToast("Order registration validated and confirmed!", "success");
         setShowModal(false);
         fetchLiveFoods();
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Could not complete live registration booking.");
+      triggerToast(err.response?.data?.message || "Failed to process database registration checkout transaction.", "error");
     }
   };
 
-  function DetailsModal({ show, onClose, data, type, onConfirm }) {
-    const [quantityToReserve, setQuantityToReserve] = useState(1);
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto pb-20 space-y-8 animate-fadeIn text-slate-800">
+      {/* Dynamic Native System Toast System */}
+      {toast.show && (
+        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-xl border text-xs font-bold tracking-wide animate-slideUp backdrop-blur-md ${
+          toast.type === "error" ? "bg-rose-50 text-rose-900 border-rose-200" : "bg-emerald-50 text-emerald-950 border-emerald-200"
+        }`}>
+          <span>{toast.type === "error" ? "✕" : "✓"}</span>
+          {toast.message}
+        </div>
+      )}
 
-    useEffect(() => {
-      if (show) setQuantityToReserve(1);
-    }, [show, data]);
-
-    if (!show || !data) return null;
-
-    const isOutOfStock = type === "food" && (data.status === "out" || data.quantity <= 0);
-
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-        <div className="relative w-[90%] md:w-[500px] bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all duration-300 scale-100">
-          <img 
-            src={data.images?.[0] || data.image || "https://images.pexels.com/photos/2474658/pexels-photo-2474658.jpeg"} 
-            alt={data.name} 
-            className="w-full h-56 object-cover" 
-          />
-          <div className="p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-1">{data.name}</h2>
-            <p className="text-gray-500 mb-3">
-              {type === "chef" ? data.cuisine : `By ${data.provider?.kitchenName || 'Home Kitchen'}`}
-            </p>
-
-            <div className="space-y-2 text-sm text-gray-700">
-              {type === "chef" ? (
-                <>
-                  <p>📍 {data.location}</p>
-                  <p>⭐ Rating: {data.rating}</p>
-                  <p>💰 Price: {data.price}</p>
-                </>
-              ) : (
-                <>
-                  <p>{data.description}</p>
-                  <p>💰 Price: ₹{data.price} ({data.pricePer || "per serving"})</p>
-                  <p>⏳ Prep Time: {data.prepTime || 30} mins</p>
-                  <p>📦 Pickup Window: {data.timeWindow || "Flexible Today"}</p>
-                  <p className={`font-bold ${isOutOfStock ? "text-red-500" : "text-blue-600"}`}>
-                    📊 Portions Available: {data.quantity} left
-                  </p>
-                  {data.bringContainer && (
-                    <p className="text-xs text-orange-600 bg-orange-50 border border-orange-100 p-2 rounded-xl mt-1 font-medium">
-                      ⚠️ Note: Please bring your own container to pick up this specific meal option.
-                    </p>
-                  )}
-                </>
-              )}
-            </div>
-
-            {type === "food" && !isOutOfStock && (
-              <div className="mt-5 p-3 bg-gray-50 border border-gray-200 rounded-2xl flex items-center justify-between">
-                <span className="text-sm font-bold text-gray-800">Select Quantity:</span>
-                <div className="flex items-center gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setQuantityToReserve(prev => Math.max(1, prev - 1))}
-                    disabled={quantityToReserve <= 1}
-                    className="w-8 h-8 rounded-xl bg-white border border-gray-300 font-bold text-gray-700 flex items-center justify-center transition"
-                  >
-                    —
-                  </button>
-                  <span className="text-base font-black text-gray-900 min-w-[20px] text-center">{quantityToReserve}</span>
-                  <button
-                    type="button"
-                    onClick={() => setQuantityToReserve(prev => Math.min(data.quantity, prev + 1))}
-                    disabled={quantityToReserve >= data.quantity}
-                    className="w-8 h-8 rounded-xl bg-white border border-gray-300 font-bold text-gray-700 flex items-center justify-center transition"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <button
-              onClick={() => {
-                if (type === "food") {
-                  onConfirm(data._id, quantityToReserve);
-                } else {
-                  onClose();
-                }
-              }}
-              disabled={isOutOfStock}
-              className={`mt-6 w-full py-3 text-white rounded-2xl font-bold transition-all ${isOutOfStock ? "bg-gray-400 cursor-not-allowed" : "bg-black hover:bg-gray-800"}`}
-            >
-              {isOutOfStock ? "Out of Stock" : type === "food" ? `Confirm Order (${quantityToReserve})` : "Pay"}
-            </button>
-          </div>
+      {/* Header Matrix Section Component */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Marketplace Finder</h1>
+          <p className="text-slate-400 text-xs sm:text-sm font-medium mt-0.5">Explore premium active home chefs and micro-kitchen operations around Pune.</p>
+        </div>
+        
+        <div className="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200/60 self-start sm:self-auto">
+          <button
+            onClick={() => { setActiveTab("chefs"); setSearchQuery(""); }}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "chefs" ? "bg-white text-emerald-950 shadow-sm" : "text-slate-400 hover:text-slate-800"}`}
+          >
+            👨‍🍳 Chefs
+          </button>
+          <button
+            onClick={() => { setActiveTab("foods"); setSearchQuery(""); }}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "foods" ? "bg-white text-emerald-950 shadow-sm" : "text-slate-400 hover:text-slate-800"}`}
+          >
+            🍽️ Live Menus
+          </button>
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="p-8 max-w-7xl mx-auto pb-12">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Discover Services in Pune</h1>
-        <p className="text-gray-500">Find the perfect home chef or freshly prepared food for your needs.</p>
-      </div>
-
-      {/* Search Bar */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 mb-8">
-        <div className="relative">
+      {/* Search Layout Box */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 sm:p-4">
+        <div className="relative flex items-center">
+          <span className="absolute left-4 text-slate-400 text-sm pointer-events-none">🔍</span>
           <input
             type="text"
-            placeholder="Search chefs, cuisines, foods..."
+            placeholder={activeTab === "chefs" ? "Search cooks by name, cuisine specialties, areas..." : "Search menu items by dishes, keywords, kitchens..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-4 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-10 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600/10 focus:border-emerald-700 transition-all text-slate-800 placeholder-slate-400"
           />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery("")} className="absolute right-4 text-xs font-bold text-slate-400 hover:text-slate-600 bg-slate-200/50 w-5 h-5 rounded-full flex items-center justify-center">×</button>
+          )}
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-4 mb-8">
-        <button
-          onClick={() => setActiveTab("chefs")}
-          className={`px-6 py-3 rounded-2xl font-bold transition-all ${activeTab === "chefs" ? "bg-black text-white shadow-lg" : "bg-white border border-gray-200 text-gray-700"}`}
-        >
-          👨‍🍳 Available Chefs
-        </button>
-        <button
-          onClick={() => setActiveTab("foods")}
-          className={`px-6 py-3 rounded-2xl font-bold transition-all ${activeTab === "foods" ? "bg-green-600 text-white shadow-lg" : "bg-white border border-gray-200 text-gray-700"}`}
-        >
-          🍽️ Available Foods
-        </button>
-      </div>
-
-      {loading && <div className="text-center py-6 text-gray-400 animate-pulse">Syncing active menus...</div>}
-
-      {/* CHEFS TAB */}
-      {activeTab === "chefs" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filteredChefs.map((chef) => (
-            <div key={chef.id} className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-lg flex flex-col">
-              <div className="relative w-full h-40 overflow-hidden">
-                <img src={chef.image} alt={chef.name} className="w-full h-full object-cover" />
-                <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-lg text-sm font-bold text-gray-900">{chef.price}</div>
+      {/* Primary Grid Layout Frame */}
+      <div>
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, idx) => (
+              <div key={idx} className="bg-white rounded-2xl p-4 border border-slate-100 space-y-4 animate-pulse">
+                <div className="bg-slate-100 h-40 w-full rounded-xl" />
+                <div className="h-4 bg-slate-100 rounded w-2/3" />
+                <div className="h-3 bg-slate-100 rounded w-1/2" />
+                <div className="h-9 bg-slate-100 rounded w-full" />
               </div>
-              <div className="p-3.5 flex flex-col flex-grow gap-2.5">
-                <div>
-                  <h3 className="text-base font-bold text-gray-900 truncate uppercase">{chef.name}</h3>
-                  <div className="inline-block border border-gray-900 bg-gray-50 px-2 py-0.5 mt-1 rounded-md font-bold text-[11px] text-gray-700 uppercase">BY: {chef.cuisine}</div>
-                </div>
-                <div className="space-y-1.5 text-xs text-gray-600 font-medium pt-2 border-t border-gray-100">
-                  <p>📍 {chef.location}</p>
-                  <div className="flex justify-between">
-                    <span>🚗 {chef.distance}</span>
-                    <span className="text-orange-500 font-bold">★ {chef.rating}</span>
+            ))}
+          </div>
+        ) : activeTab === "chefs" ? (
+          filteredChefs.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {filteredChefs.map((chef) => (
+                <div key={chef.id} className="group bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col">
+                  <div className="relative w-full h-44 overflow-hidden bg-slate-50">
+                    <img src={chef.image} alt={chef.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                    <span className="absolute top-3 right-3 bg-slate-950/80 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[10px] font-black text-white tracking-wide">
+                      {chef.price}
+                    </span>
+                  </div>
+                  
+                  <div className="p-4 flex flex-col flex-grow gap-4">
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-bold text-slate-900 truncate tracking-tight group-hover:text-emerald-800 transition-colors">{chef.name}</h3>
+                      <span className="inline-block border border-emerald-100 bg-emerald-50 px-2 py-0.5 mt-1.5 rounded-md font-extrabold text-[9px] text-emerald-800 uppercase tracking-wider">
+                        {chef.cuisine}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5 text-xs text-slate-500 pt-3 border-t border-slate-100 font-medium mt-auto">
+                      <p className="flex items-center gap-1.5 truncate"><span>📍</span> {chef.location}</p>
+                      <div className="flex justify-between items-center bg-slate-50 px-2 py-1.5 rounded-lg text-[10px]">
+                        <span className="text-slate-500 font-bold">🚗 {chef.distance} away</span>
+                        <span className="text-amber-600 font-black flex items-center gap-0.5">★ {chef.rating}</span>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={() => { setSelectedItem(chef); setShowModal(true); }} 
+                      className="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-all shadow-sm"
+                    >
+                      Book Professional Profile
+                    </button>
                   </div>
                 </div>
-                <button onClick={() => { setSelectedItem(chef); setShowModal(true); }} className="w-full mt-auto py-2 rounded-xl bg-black text-white text-xs font-bold">
-                  Book Chef 👨‍🍳
-                </button>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          ) : (
+            <div className="text-center py-16 bg-white rounded-2xl border border-slate-100 text-slate-400 text-xs font-medium">No professional culinary profiles match your search criteria.</div>
+          )
+        ) : (
+          filteredFoods.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {filteredFoods.map((food) => {
+                const isOutOfStock = food.status === "out" || food.quantity <= 0;
+                return (
+                  <div key={food._id} className="group bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col">
+                    <div className="relative w-full h-44 overflow-hidden bg-slate-50">
+                      <img src={food.images?.[0]} alt={food.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                      <span className="absolute top-3 right-3 bg-emerald-900 px-2.5 py-1 rounded-lg text-[10px] font-black text-white shadow-sm">
+                        ₹{food.price}
+                      </span>
+                    </div>
 
-      {/* FOODS TAB */}
-      {activeTab === "foods" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filteredFoods.map((food) => {
-            const isOutOfStock = food.status === "out" || food.quantity <= 0;
-            return (
-              <div key={food._id} className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-lg flex flex-col">
-                <div className="relative w-full h-40 overflow-hidden">
-                  <img 
-                    src={food.images?.[0] || "https://images.pexels.com/photos/2474658/pexels-photo-2474658.jpeg"} 
-                    alt={food.name} 
-                    className="w-full h-full object-cover" 
-                  />
-                  <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-lg text-sm font-bold text-gray-900">₹{food.price}</div>
-                </div>
-                <div className="p-3.5 flex flex-col flex-grow gap-2.5">
-                  <div>
-                    <h3 className="text-base font-bold text-gray-900 truncate uppercase">{food.name}</h3>
-                    <div className="inline-block border border-gray-900 bg-gray-50 px-2 py-0.5 mt-1 rounded-md font-bold text-[11px] text-gray-700 uppercase">
-                      BY: {food.provider?.kitchenName || 'Home Kitchen'}
+                    <div className="p-4 flex flex-col flex-grow gap-4">
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-bold text-slate-900 truncate tracking-tight group-hover:text-emerald-800 transition-colors">{food.name}</h3>
+                        <span className="inline-block border border-slate-200 bg-slate-50 px-2 py-0.5 mt-1.5 rounded-md font-extrabold text-[9px] text-slate-500 uppercase tracking-wider">
+                          👩‍🍳 {food.provider?.kitchenName} ({food.provider?.area})
+                        </span>
+                      </div>
+
+                      <div className="space-y-2 mt-auto pt-3 border-t border-slate-100">
+                        <div className={`flex items-center justify-between text-[10px] px-2 py-1.5 rounded-lg font-bold border ${
+                          isOutOfStock ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-emerald-50/60 text-emerald-800 border-emerald-100/30'
+                        }`}>
+                          <span>Stock Availability:</span>
+                          <span>{isOutOfStock ? "Sold Out" : `${food.quantity} left`}</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => { setSelectedItem(food); setShowModal(true); }}
+                        disabled={isOutOfStock}
+                        className={`w-full py-2.5 rounded-xl text-white text-xs font-bold transition-all ${
+                          isOutOfStock ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" : "bg-emerald-700 hover:bg-emerald-800 shadow-sm"
+                        }`}
+                      >
+                        {isOutOfStock ? "Out of Stock" : "Reserve Portion 🍽️"}
+                      </button>
                     </div>
                   </div>
-                  <div className="space-y-1.5 text-xs text-gray-600 font-medium pt-2 border-t border-gray-100">
-                    <p>📍 {food.provider?.area || 'Pune Region'}</p>
-                    <div className={`flex items-center justify-between text-[11px] px-2 py-1 rounded-lg border font-bold ${isOutOfStock ? 'bg-red-50 text-red-800 border-red-100' : 'bg-blue-50 text-blue-800 border-blue-100'}`}>
-                      <span>📊 Quantities:</span>
-                      <span>{food.quantity} servings left</span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => { setSelectedItem(food); setShowModal(true); }}
-                    disabled={isOutOfStock}
-                    className={`w-full mt-auto py-2 rounded-xl text-white text-xs font-bold transition-all ${isOutOfStock ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}
-                  >
-                    {isOutOfStock ? "Out of Stock ❌" : "Reserve Food 🍽️"}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-16 bg-white rounded-2xl border border-slate-100 text-slate-400 text-xs font-medium">No live meal options align with current query filters.</div>
+          )
+        )}
+      </div>
 
+      {/* Managed Isolated Modal Mounting Core Context Portal */}
       <DetailsModal
         show={showModal}
-        onClose={() => setShowModal(false)}
-        data={
-          selectedItem 
-            ? (activeTab === "foods" ? foods.find(f => f._id === selectedItem._id) : selectedItem)
-            : null
-        }
+        onClose={() => { setShowModal(false); setSelectedItem(null); }}
+        data={selectedItem}
         type={activeTab === "chefs" ? "chef" : "food"}
         onConfirm={handleReserveFood}
       />
