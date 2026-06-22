@@ -227,7 +227,7 @@ export default function HomePage() {
         </div>
 
         {/* ── Trending Today (Horizontal Scroll Carousel on Mobile/Tablet) ── */}
-        <div className="mt-3 md:mt-10 bg-gray-50 py-8 md:py-10 rounded-2xl md:rounded-[2.5rem] mx-2 sm:mx-6 lg:mx-8 mb-8 border border-gray-100">
+        <div className="mt-3 mb-3 md:mt-10 md:mb-8 bg-gray-50 pt-4 pb-4 md:py-10 rounded-2xl md:rounded-[2.5rem] mx-2 sm:mx-6 lg:mx-8 border border-gray-100">
           <SectionHeader title="Trending Today 🔥" subtitle="Most ordered in the last 24 hours" showSeeAll link="/food" />
           {loading ? (
             <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-0 md:mt-6 hide-scrollbar">

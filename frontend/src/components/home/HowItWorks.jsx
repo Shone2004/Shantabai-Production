@@ -35,53 +35,61 @@ const STEPS = [
 
 export default function HowItWorks() {
   return (
-    <section className="bg-gradient-to-b from-[#FAF8F4] via-[#FCFAF6] to-[#FAF8F4] pt-6 pb-6 md:pt-20 md:pb-12 relative overflow-hidden border-y border-gray-100/50">
+    <section className="bg-gradient-to-b from-[#FAF8F4] via-[#FCFAF6] to-[#FAF8F4] pt-4 pb-3 md:pt-20 md:pb-12 relative overflow-hidden border-y border-gray-100/50">
       
       {/* Background radial soft light overlay */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.7)_0%,transparent_100%)] pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto">
         
+        {/* Divider above header */}
+        <div className="w-full flex justify-center mt-0.5 mb-2.5 md:mb-6">
+          <div className="w-12 h-[1px] bg-brand-green/20 relative">
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#0A4D2B]" />
+          </div>
+        </div>
+
         {/* Section Header */}
-        <div className="px-4 sm:px-6 lg:px-8 text-center max-w-2xl mx-auto mb-12 md:mb-16">
-          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight tracking-tight">
+        <div className="px-4 sm:px-6 lg:px-8 text-center max-w-2xl mx-auto mb-3 md:mb-16">
+          <span className="text-[10px] sm:text-xs font-black tracking-[0.2em] text-[#0A4D2B] uppercase block mb-1">
+            How It Works
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-black text-[#0F172A] leading-tight tracking-tight mt-1">
             How Shantabai Works
           </h2>
-          <p className="text-xs sm:text-sm text-gray-500 font-semibold mt-2 leading-relaxed">
+          <p className="text-xs sm:text-sm text-gray-500 font-semibold mt-2 leading-relaxed max-w-[230px] sm:max-w-md mx-auto">
             Your homemade meal journey in five simple steps.
           </p>
         </div>
 
         {/* ── Mobile Layout (Swipeable Carousel) ── */}
         <div className="md:hidden">
-          <div className="snap-x snap-mandatory flex overflow-x-auto gap-5 hide-scrollbar px-6 pb-8 relative z-10">
+          <div className="snap-x snap-mandatory flex overflow-x-auto gap-4 hide-scrollbar px-6 pb-4 relative z-10">
             {STEPS.map((step, idx) => (
               <div 
                 key={idx} 
-                className="snap-center shrink-0 w-[290px] h-[430px] bg-white rounded-[28px] border border-gray-100/80 p-5 shadow-[0_8px_30px_rgba(0,0,0,0.02)] flex flex-col items-center justify-between text-center relative overflow-hidden group"
+                className="snap-center shrink-0 w-[260px] h-[260px] bg-white rounded-2xl border border-gray-100/80 p-4 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col items-center justify-between text-center relative overflow-hidden group"
               >
-                {/* 1. Large Illustration: 60-70% of card height (~265px) */}
-                <div className="w-full h-[265px] flex items-center justify-center bg-[#FAF8F4]/60 rounded-2xl overflow-hidden shrink-0">
-                  <img
-                    src={step.img}
-                    alt={step.title}
-                    className="h-full w-full object-contain p-3 select-none pointer-events-none transition-transform duration-300 group-hover:scale-105"
-                    loading="lazy"
-                  />
-                </div>
+                {/* 1. Illustration: 60-70% of card height (~150px) */}
+                <img
+                  src={step.img}
+                  alt={step.title}
+                  className="h-[145px] w-auto object-contain select-none pointer-events-none transition-transform duration-300 group-hover:scale-105 shrink-0"
+                  loading="lazy"
+                />
 
                 {/* 2. Step Info */}
-                <div className="flex flex-col items-center mt-3 flex-grow justify-start">
+                <div className="flex flex-col items-center mt-2 flex-grow justify-start">
                   {/* Step Number */}
-                  <span className="text-sm font-extrabold text-brand-green tracking-wide">
+                  <span className="text-[11px] font-extrabold text-brand-green tracking-wide">
                     {step.num}
                   </span>
                   {/* Step Title */}
-                  <h4 className="text-base font-extrabold text-gray-900 mt-1 leading-tight">
+                  <h4 className="text-sm font-extrabold text-gray-900 mt-0.5 leading-tight">
                     {step.title}
                   </h4>
                   {/* Description */}
-                  <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1 max-w-[90%]">
+                  <p className="text-[11px] text-slate-500 font-semibold leading-snug mt-0.5 max-w-[95%]">
                     {step.desc}
                   </p>
                 </div>

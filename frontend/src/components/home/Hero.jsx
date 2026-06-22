@@ -109,9 +109,18 @@ const Hero = () => {
               }}
             />
 
-            <h1 className="relative z-10 text-[2rem] sm:text-4xl font-black text-gray-900 tracking-[-0.035em] leading-[0.95]">
-              Good food.<br />
-              <span className="text-[#0A4D2B]">Made nearby.</span>
+            <h1 
+              className="relative z-10 text-[2.25rem] sm:text-5xl font-black tracking-[-0.05em] leading-[0.95]"
+              style={{
+                fontFamily: '"Plus Jakarta Sans", sans-serif'
+              }}
+            >
+              <span className="block text-[#0F172A]" style={{ textShadow: '0 1px 1px rgba(15, 23, 42, 0.08)' }}>Good food.</span>
+              <span 
+                className="block bg-gradient-to-r from-[#0C4E2D] to-[#198754] bg-clip-text text-transparent filter drop-shadow-[0_1px_1px_rgba(12,78,45,0.12)] pb-1"
+              >
+                Made nearby.
+              </span>
             </h1>
             <p className="relative z-10 text-sm text-gray-500 font-semibold leading-relaxed mt-0.5 max-w-sm">
               Prepared by trusted home cooks near you.
@@ -249,29 +258,17 @@ const Hero = () => {
               {/* Headline */}
               <motion.h1
                 variants={itemVariants}
-                className="text-4xl sm:text-5xl lg:text-[3.25rem] lg:leading-[1.15] font-black text-gray-900 tracking-tight mb-5"
+                className="text-center lg:text-left text-[3rem] sm:text-[4rem] lg:text-[4.75rem] font-black tracking-[-0.05em] leading-[0.95] mb-5"
+                style={{
+                  fontFamily: '"Plus Jakarta Sans", sans-serif'
+                }}
               >
-                Fresh home-cooked meals <br className="hidden sm:block" />
-                from{' '}
-                <span className="text-brand-green relative inline-block">
-                  trusted cooks
-                  <svg
-                    className="absolute -bottom-2.5 left-0 w-full"
-                    viewBox="0 0 200 8"
-                    fill="none"
-                    preserveAspectRatio="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M2 6 Q50 2 100 5 Q150 8 198 4"
-                      stroke="#0A4D2B"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      fill="none"
-                    />
-                  </svg>
-                </span>{' '}
-                near you.
+                <span className="block text-[#0F172A]" style={{ textShadow: '0 1px 1px rgba(15, 23, 42, 0.08)' }}>Good food.</span>
+                <span 
+                  className="block bg-gradient-to-r from-[#0C4E2D] to-[#198754] bg-clip-text text-transparent filter drop-shadow-[0_1px_1.5px_rgba(12,78,45,0.12)] pb-1.5"
+                >
+                  Made nearby.
+                </span>
               </motion.h1>
 
               {/* Subtext */}
