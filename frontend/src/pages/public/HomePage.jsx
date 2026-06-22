@@ -10,10 +10,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import useGeoLocation from "../../hooks/useGeoLocation";
 // ─── New components ───────────────────────────────────────────────────────────
-import ChefSection from '../../components/chef/ChefSection.jsx';
 import AIConsultant from '../../components/ai/AIConsultant.jsx';
 import SubscribedFoodList from '../../components/home/SubscribedFoodList.jsx';
 import HeroCarousel from '../../components/home/HeroCarousel.jsx';
+import HowItWorks from '../../components/home/HowItWorks.jsx';
 
 // ─── Backend Food Mapper ──────────────────────────────────────────────────────
 const mapBackendFoodToCard = (backendFood) => {
@@ -63,37 +63,29 @@ const cardVariants = {
   }),
 };
 
-const TRUST_PILLARS = [
-  { emoji: '🛡️', title: 'Verified Identity', desc: 'Secure cook verification' },
-  { emoji: '🏠', title: 'Kitchen Approved', desc: 'Hygiene & safety checked' },
-  { emoji: '🤝', title: 'Community Cooks', desc: 'Real local neighbours' },
-  { emoji: '🥗', title: 'Fresh Daily Listings', desc: 'Cooked fresh today' },
-];
+// Trust pillars removed in favor of How It Works section
 
 const FOOTER_LINKS = {
   Company: [
     { label: 'About Us',  to: '/about'        },
-    { label: 'Careers',   to: '/careers'      },
     { label: 'Contact',   to: '/contact'      },
-    { label: 'Blog',      to: '/blog'         },
   ],
   Legal: [
     { label: 'Privacy Policy',   to: '/privacy'  },
     { label: 'Terms of Service', to: '/terms'    },
     { label: 'FAQ',              to: '/faq'      },
-    { label: 'Cookie Policy',    to: '/cookies'  },
   ],
   Explore: [
     { label: 'Browse Food', to: '/food' },
     { label: 'Find Cooks', to: '/search' },
     { label: 'Become a Cook', to: '/chef-signup' },
-    { label: 'How it Works', to: '/how-it-works' },
   ],
 };
 
 export default function HomePage() {
   const navigate = useNavigate();
   const [showAI, setShowAI] = useState(false);
+  const [expandedFooterGroup, setExpandedFooterGroup] = useState(null);
   const [foods, setFoods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -289,77 +281,27 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* ── Trust Strip (Relocated Lower Down) ── */}
-        <div className="bg-brand-green py-6 rounded-2xl md:rounded-[2rem] mx-2 sm:mx-6 lg:mx-8 mt-10 md:mt-14 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-0 divide-y sm:divide-y-0 sm:divide-x divide-white/10">
-            {TRUST_PILLARS.map((item, idx) => (
-              <div key={idx} className="flex items-center gap-3 px-4 sm:justify-center first:pt-0 pt-4 sm:pt-0">
-                <span className="text-xl sm:text-2xl shrink-0">{item.emoji}</span>
-                <div className="text-left">
-                  <p className="text-xs sm:text-sm font-extrabold text-white leading-tight">{item.title}</p>
-                  <p className="text-[10px] sm:text-xs font-semibold text-white/60 leading-tight mt-0.5">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Trust & Safety Section (New) ── */}
-        <div className="mt-4 mb-10 bg-slate-50/50 border border-slate-100 py-8 md:py-12 px-6 sm:px-8 rounded-2xl md:rounded-[2rem] mx-2 sm:mx-6 lg:mx-8">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <span className="text-[10px] uppercase font-black tracking-widest text-[#0A4D2B] bg-[#EBF3ED] px-3.5 py-1.5 rounded-full">
-              Trust &amp; Safety
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight mt-4">
-              Wholesome food prepared with absolute trust
-            </h2>
-            <p className="text-sm text-gray-500 font-semibold mt-2">
-              We maintain strict verification and quality controls to ensure peace of mind with every order.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex gap-4">
-              <span className="text-3xl shrink-0">🛡️</span>
-              <div className="text-left">
-                <h4 className="text-sm font-extrabold text-gray-900 uppercase tracking-wider">Identity &amp; Kitchen Verified</h4>
-                <p className="text-xs text-gray-500 font-semibold leading-relaxed mt-1">
-                  Every home cook is government ID verified and their kitchen undergoes physical hygiene audits before active listing status.
-                </p>
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex gap-4">
-              <span className="text-3xl shrink-0">🥗</span>
-              <div className="text-left">
-                <h4 className="text-sm font-extrabold text-gray-900 uppercase tracking-wider">Hygienic Home Kitchens</h4>
-                <p className="text-xs text-gray-500 font-semibold leading-relaxed mt-1">
-                  Meals are prepared in clean domestic kitchens in small batches. No commercial flavorings, additives, or recycled oils.
-                </p>
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex gap-4">
-              <span className="text-3xl shrink-0">🤝</span>
-              <div className="text-left">
-                <h4 className="text-sm font-extrabold text-gray-900 uppercase tracking-wider">Neighbourhood Support</h4>
-                <p className="text-xs text-gray-500 font-semibold leading-relaxed mt-1">
-                  Real feedback and ratings from verified local customers. Support local women entrepreneurs and home cooks directly.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Chef Section (Dietary AI Consultant) ── */}
-        <div className="mt-8">
-          <ChefSection
-            onConsultAI={() => setShowAI(true)}
-          />
-        </div>
+        {/* ── How Shantabai Works Section (Premium Journey Timeline) ── */}
+        <HowItWorks />
 
         {/* ── Provider CTA ── */}
         <ProviderCTA />
 
       </div>
+
+      {/* Floating Assistant Button */}
+      <button 
+        onClick={() => setShowAI(true)}
+        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-[#0C4E2D]/85 hover:bg-[#0C4E2D] text-white shadow-[0_4px_16px_rgba(12,78,45,0.15)] hover:shadow-[0_6px_20px_rgba(12,78,45,0.22)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center group"
+        aria-label="Ask Shantabai"
+      >
+        <svg className="w-5.5 h-5.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742h.01m3.992 0h.01M9 16.5h6M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        <span className="absolute right-14 scale-0 group-hover:scale-100 transition-all duration-200 bg-gray-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-md select-none pointer-events-none">
+          Ask Shantabai
+        </span>
+      </button>
 
       {/* ── AI Consultant Modal ── */}
       {showAI && (
@@ -378,9 +320,11 @@ export default function HomePage() {
         viewport={{ once: true }} transition={{ duration: 0.7 }}
         className="bg-gray-950 text-white mt-10"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-8">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-10 border-b border-white/8 pb-10 mb-8">
-            <div className="md:col-span-2 space-y-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-6 md:pt-14 md:pb-8">
+          <div className="flex flex-col md:flex-row md:justify-between gap-8 md:gap-10 border-b border-white/8 pb-8 md:pb-10 mb-6 md:mb-8">
+            
+            {/* Top Brand Block */}
+            <div className="space-y-4 md:max-w-xs shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 bg-brand-green rounded-xl flex items-center justify-center">
                   <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -390,7 +334,8 @@ export default function HomePage() {
                 <span className="text-xl font-extrabold tracking-tight">Shantabai</span>
               </div>
               <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                Empowering home chefs and bringing fresh, healthy, affordable meals to your doorstep. Ghar ka khana, pyar ka swaad.
+                Homemade food from trusted kitchens near you.<br />
+                Ghar ka khana, pyar ka swaad.
               </p>
               <div className="flex gap-3 pt-1">
                 {[
@@ -406,23 +351,51 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
-            {Object.entries(FOOTER_LINKS).map(([group, links]) => (
-              <div key={group}>
-                <h4 className="font-bold text-sm text-white mb-4 tracking-wide">{group}</h4>
-                <ul className="space-y-2.5">
-                  {links.map((l) => (
-                    <li key={l.label}>
-                      <Link to={l.to} className="text-gray-400 text-sm hover:text-white transition-colors duration-150 font-medium">
-                        {l.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+
+            {/* Accordions Section */}
+            <div className="flex flex-col md:flex-row gap-4 md:gap-14 lg:gap-20 flex-grow md:justify-end">
+              {Object.entries(FOOTER_LINKS).map(([group, links]) => {
+                const isExpanded = expandedFooterGroup === group;
+                return (
+                  <div key={group} className="border-b border-white/8 md:border-b-0 pb-3 md:pb-0">
+                    
+                    {/* Accordion Header / Button */}
+                    <button
+                      onClick={() => {
+                        setExpandedFooterGroup(isExpanded ? null : group);
+                      }}
+                      className="w-full md:w-auto flex justify-between items-center text-left py-2 md:py-0 focus:outline-none cursor-pointer group/btn"
+                    >
+                      <h4 className="font-bold text-sm text-white md:mb-4 tracking-wide group-hover/btn:text-brand-green md:group-hover/btn:text-white transition-colors">
+                        {group}
+                      </h4>
+                      {/* Accordion Symbol (+ / -) only visible on mobile */}
+                      <span className="text-gray-400 font-extrabold text-sm md:hidden select-none">
+                        {isExpanded ? '−' : '+'}
+                      </span>
+                    </button>
+
+                    {/* Links List */}
+                    <ul className={`space-y-2.5 mt-2 md:mt-0 ${isExpanded ? 'block' : 'hidden md:block'}`}>
+                      {links.map((l) => (
+                        <li key={l.label}>
+                          <Link to={l.to} className="text-gray-400 text-sm hover:text-white transition-colors duration-150 font-medium">
+                            {l.label}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+
+                  </div>
+                );
+              })}
+            </div>
+
           </div>
+          
+          {/* Bottom Copyright */}
           <div className="flex flex-col sm:flex-row justify-between items-center gap-3 text-gray-500 text-xs">
-            <p>© 2026 Shantabai. All rights reserved. Made with ❤️ by UNEXPECTED SOLUTIONS</p>
+            <p>© 2026 Shantabai</p>
             <p className="font-medium">🇮🇳 Proudly Indian</p>
           </div>
         </div>
