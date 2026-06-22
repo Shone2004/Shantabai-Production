@@ -23,8 +23,17 @@ export default function FoodCard({
                 <h4 className="font-extrabold text-slate-900 truncate text-xs">{f.name}</h4>
                 <span className={`inline-flex shrink-0 w-2 h-2 rounded-full ${f.isVeg ? "bg-green-500" : "bg-red-500"}`} title={f.isVeg ? "Veg" : "Non-Veg"} />
               </div>
-              <p className="text-[10px] text-slate-500 font-bold mt-0.5 truncate">{f.provider?.kitchenName || "Unknown Kitchen"}</p>
-              <div className="flex items-center gap-2 mt-1">
+<div className="flex items-center gap-1 mt-1">
+  <span className="text-amber-500 text-xs">⭐</span>
+
+  <span className="text-[11px] font-bold text-slate-700">
+    {f.averageRating?.toFixed(1) || "0.0"}
+  </span>
+
+  <span className="text-[10px] text-slate-400">
+    ({f.reviews?.length || 0})
+  </span>
+</div>              <div className="flex items-center gap-2 mt-1">
                 <span className="bg-slate-100 text-slate-650 text-[9px] px-1.5 py-0.5 rounded-md font-bold">{f.category}</span>
                 <span className="text-slate-900 font-black text-xs">₹{f.price}</span>
               </div>

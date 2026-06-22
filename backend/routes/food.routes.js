@@ -13,6 +13,7 @@ const {
   addReviewToProvider,
   getFoodReviews,
   deleteReview,
+  getFoodHistory,
 } = require("../controllers/food.controller");
 
 const { authenticateUser } = require("../middleware/authMiddleware");
@@ -33,6 +34,13 @@ const providerOnly = [
 
 // Get all foods
 router.get("/", getAllFoods);
+
+// Provider food history
+router.get(
+  "/provider/history",
+  ...providerOnly,
+  getFoodHistory
+);
 
 // Get single food
 router.get("/:id", getFoodById);

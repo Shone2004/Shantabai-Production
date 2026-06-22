@@ -508,6 +508,41 @@ const updateFoodItem = async (req, res) => {
   }
 };
 
+// @desc Get food history of logged-in chef
+// @route GET /api/foods/provider/history
+// @access Private (Provider)
+
+const getFoodHistory = async (req, res) => {
+  try {
+    const providerProfile = await ProviderProfile.findOne({
+      user: req.user._id,
+    });
+
+    if (!providerProfile) {
+      return res.status(404).json({
+        success: false,
+        message: "Provider profile not found",
+      });
+    }
+
+    const foods = await FoodItem.find({
+      provider: providerProfile._id,
+    })
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: foods.length,
+      foods,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 // @desc    Delete a food item
 // @route   DELETE /api/foods/:id
 // @access  Private (Provider only)
@@ -674,4 +709,5 @@ module.exports = {
   addReviewToFood,
   getFoodReviews,
   deleteReview,
+  getFoodHistory,
 }

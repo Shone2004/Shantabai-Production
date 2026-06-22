@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Send, MessageSquare, Loader2, Check, CheckCheck, Search } from "lucide-react";
+import { Send, MessageSquare, Loader2, Check, CheckCheck, Search, X } from "lucide-react";
 import api from "../../services/api";
 import { getSocket } from "../../services/socket";
 import { useAuth } from "../../context/AuthContext";
@@ -320,26 +320,48 @@ export default function ChatSection() {
       <div className={`flex-1 flex flex-col bg-slate-50 min-w-0 ${!activeConvo ? 'hidden md:flex' : 'flex'}`}>
         {activeConvo ? (
           <>
-            {/* Header section */}
-            <div className="bg-white border-b border-slate-200 p-4 flex items-center gap-3 h-16 shadow-2xs">
-              <button 
-                onClick={() => setActiveConvo(null)}
-                className="md:hidden mr-1 p-2 hover:bg-slate-50 rounded-lg text-slate-500"
-              >
-                ← Back
-              </button>
-              <div className="w-9 h-9 rounded-full bg-slate-900 text-white font-extrabold flex items-center justify-center flex-shrink-0">
-                {getPartnerDetails(activeConvo).name.charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <h3 className="text-xs font-extrabold text-slate-800 leading-tight">
-                  {getPartnerDetails(activeConvo).kitchenName || getPartnerDetails(activeConvo).name}
-                </h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
-                  {getPartnerDetails(activeConvo).role === "PROVIDER" ? "Chef / Cook Profile" : "Client Account"}
-                </p>
-              </div>
-            </div>
+{/* Header section */}
+<div className="bg-white border-b border-slate-200 p-4 flex items-center justify-between h-16 shadow-2xs">
+
+  <div className="flex items-center gap-3">
+    <button
+      onClick={() => setActiveConvo(null)}
+      className="md:hidden mr-1 p-2 hover:bg-slate-50 rounded-lg text-slate-500"
+    >
+      ← Back
+    </button>
+
+    <div className="w-9 h-9 rounded-full bg-slate-900 text-white font-extrabold flex items-center justify-center flex-shrink-0">
+      {getPartnerDetails(activeConvo).name.charAt(0).toUpperCase()}
+    </div>
+
+    <div>
+      <h3 className="text-xs font-extrabold text-slate-800 leading-tight">
+        {getPartnerDetails(activeConvo).kitchenName ||
+          getPartnerDetails(activeConvo).name}
+      </h3>
+
+      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+        {getPartnerDetails(activeConvo).role === "PROVIDER"
+          ? "Chef / Cook Profile"
+          : "Client Account"}
+      </p>
+    </div>
+  </div>
+
+  {/* Close Chat Button */}
+  <button
+    onClick={() => {
+      setActiveConvo(null);
+      setMessages([]);
+    }}
+    className="p-2 rounded-full hover:bg-red-50 text-slate-500 hover:text-red-600 transition-all"
+    title="Close Chat"
+  >
+    <X className="w-5 h-5" />
+  </button>
+
+</div>
 
             {/* Content list body layout container frame */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0 flex flex-col">

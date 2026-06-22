@@ -78,7 +78,7 @@ exports.getCustomerOrders = async (req, res) => {
     const customerId = req.user.id;
     const orders = await Order.find({ customer: customerId })
       .populate("provider", "kitchenName fullAddress phone avatar user")
-      .populate("foodItem", "name images category bringContainer")
+      .populate("foodItem")
       .sort({ createdAt: -1 });
 
     res.status(200).json({

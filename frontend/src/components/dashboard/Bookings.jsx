@@ -61,19 +61,57 @@ export default function Bookings() {
       const res = await api.get('/bookings/customer');
       if (res.data.success && res.data.orders && res.data.orders.length > 0) {
         const dbBookings = res.data.orders.map(order => ({
-          id: order._id,
-          providerName: order.provider?.kitchenName || 'Chef',
-          providerUserId: order.provider?.user,
-          serviceType: order.foodItem?.name || 'Home Cook Service',
-          date: new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-          time: new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-          status: order.status === 'COMPLETED' ? 'Completed' : (order.status === 'CANCELLED' ? 'Cancelled' : (order.status === 'PENDING' ? 'Pending' : 'Confirmed')),
-          price: `₹${order.totalPrice}`,
-          paymentStatus: order.paymentMethod === 'CASH_ON_PICKUP' ? 'Cash on Pickup' : 'Paid',
-          image: order.provider?.avatar || avatar(order.provider?.kitchenName || 'Chef'),
-          tab: order.status === 'COMPLETED' ? 'completed' : (order.status === 'CANCELLED' ? 'cancelled' : 'upcoming'),
-          rawOrder: order
-        }));
+  id: order._id,
+  providerName: order.provider?.kitchenName || 'Chef',
+  providerUserId: order.provider?.user,
+
+  // ADD THESE
+  foodItemId: order.foodItem?._id,
+  quantity: order.quantity,
+  customerNote: order.customerNote,
+
+  serviceType: order.foodItem?.name || 'Home Cook Service',
+
+  date: new Date(order.createdAt).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  }),
+
+  time: new Date(order.createdAt).toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit'
+  }),
+
+  status:
+    order.status === 'COMPLETED'
+      ? 'Completed'
+      : order.status === 'CANCELLED'
+      ? 'Cancelled'
+      : order.status === 'PENDING'
+      ? 'Pending'
+      : 'Confirmed',
+
+  price: `₹${order.totalPrice}`,
+  paymentStatus:
+    order.paymentMethod === 'CASH_ON_PICKUP'
+      ? 'Cash on Pickup'
+      : 'Paid',
+
+  image:
+    order.provider?.avatar ||
+    avatar(order.provider?.kitchenName || 'Chef'),
+
+  tab:
+    order.status === 'COMPLETED'
+      ? 'completed'
+      : order.status === 'CANCELLED'
+      ? 'cancelled'
+      : 'upcoming',
+
+  rawOrder: order
+}));
+
         setAllBookings(dbBookings);
         localStorage.setItem('bookings', JSON.stringify(dbBookings));
       } else {
@@ -177,31 +215,41 @@ export default function Bookings() {
     }
   };
 
-  // Dynamic Rebooking Action
-  const handleRebook = async (booking) => {
-    try {
-      if (!booking.providerUserId) {
-        alert(`Rebooking Mock Feature: Initializing a new fresh request for "${booking.serviceType}" with ${booking.providerName}.`);
-        return;
-      }
-
-      const rebookPayload = {
-        providerId: booking.providerUserId,
-        items: [{ name: booking.serviceType, quantity: 1 }],
-        totalPrice: booking.price.replace(/[^\d]/g, ''), 
-        paymentMethod: booking.paymentStatus === 'Cash on Pickup' ? 'CASH_ON_PICKUP' : 'ONLINE'
-      };
-
-      const res = await api.post('/bookings', rebookPayload);
-      if (res.data.success) {
-        alert('Rebooked successfully! Check your upcoming tab.');
-        fetchOrders();
-      }
-    } catch (err) {
-      console.error('Rebooking process broke:', err);
-      alert('Could not execute rebook request.');
+const handleRebook = async (booking) => {
+  try {
+    if (!booking.foodItemId) {
+      alert("Unable to rebook this item.");
+      return;
     }
-  };
+
+    const confirmed = window.confirm(
+      `Rebook "${booking.serviceType}" from ${booking.providerName}?`
+    );
+
+    if (!confirmed) return;
+
+    const res = await api.post("/bookings", {
+      foodItemId: booking.foodItemId,
+      quantity: booking.quantity || 1,
+      customerNote: booking.customerNote || ""
+    });
+
+    if (res.data.success) {
+      alert("Booking created successfully!");
+
+      await fetchOrders();
+
+      setActiveTab("upcoming");
+    }
+  } catch (err) {
+    console.error("Rebook Error:", err);
+
+    alert(
+      err.response?.data?.message ||
+      "Failed to rebook."
+    );
+  }
+};
 
   const handleOpenChat = (booking) => {
     setChatPartner({
