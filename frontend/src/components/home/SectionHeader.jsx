@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom';
 
 const SectionHeader = ({ title, subtitle, showSeeAll = true, link = '/food' }) => {
   return (
-    <div className="flex justify-between items-end px-4 sm:px-6 lg:px-8 pt-2 mb-6">
+    <div className="flex justify-between items-end px-4 sm:px-6 lg:px-8 pt-0 md:pt-2 mb-2 md:mb-6">
       <div>
         <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight leading-tight">
           {title}
         </h2>
         {subtitle && (
-          <p className="text-sm text-gray-400 font-medium mt-0.5">{subtitle}</p>
+          <p className="text-sm text-gray-400 font-medium mt-1 md:mt-0.5">{subtitle}</p>
         )}
       </div>
 

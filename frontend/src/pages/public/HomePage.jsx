@@ -150,7 +150,7 @@ export default function HomePage() {
       </div>
 
       {/* ── Hero Carousel (Moved Up) ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-5 mb-2">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-3 md:mt-5 mb-0">
         <HeroCarousel />
       </div>
 
@@ -162,14 +162,14 @@ export default function HomePage() {
       <div className="max-w-7xl mx-auto">
 
         {/* ── Popular Near You (Horizontal Scroll Carousel on Mobile/Tablet) ── */}
-        <div className="mt-6 md:mt-10">
+        <div className="mt-3 md:mt-10">
           <SectionHeader
             title="Popular Near You"
             subtitle="Fresh picks from local kitchens this morning"
             showSeeAll link="/food"
           />
           {loading ? (
-            <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-6 hide-scrollbar">
+            <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-0 md:mt-6 hide-scrollbar">
               {[1, 2, 3, 4].map(n => (
                 <div key={n} className="bg-slate-50 border border-slate-100 rounded-2xl h-64 animate-pulse shrink-0 w-[180px] sm:w-[220px] lg:w-auto" />
               ))}
@@ -183,7 +183,7 @@ export default function HomePage() {
               🍲 No fresh local thalis or food items live right now.
             </div>
           ) : (
-            <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-6 hide-scrollbar">
+            <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-1 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-0 md:mt-6 hide-scrollbar">
               {foods.slice(0, 4).map((food, idx) => (
                 <motion.div key={food._id} custom={idx} variants={cardVariants} initial="hidden"
                   whileInView="visible" viewport={{ once: true, margin: '-40px' }} className="shrink-0 w-[180px] sm:w-[220px] lg:w-auto flex justify-center">
@@ -195,7 +195,7 @@ export default function HomePage() {
         </div>
 
         {/* ── Premium Maharashtrian Food Banner (Editorial Break) ── */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-[28px] md:my-[32px]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-3 mb-0 md:my-[32px]">
           <div 
             className="relative w-full aspect-[3/1] rounded-[24px] overflow-hidden shadow-xl border border-gray-100/10 flex items-center bg-[#021F12] group"
             style={{ contentVisibility: 'auto' }}
@@ -227,10 +227,10 @@ export default function HomePage() {
         </div>
 
         {/* ── Trending Today (Horizontal Scroll Carousel on Mobile/Tablet) ── */}
-        <div className="mt-6 md:mt-10 bg-gray-50 py-8 md:py-10 rounded-2xl md:rounded-[2.5rem] mx-2 sm:mx-6 lg:mx-8 mb-8 border border-gray-100">
+        <div className="mt-3 md:mt-10 bg-gray-50 py-8 md:py-10 rounded-2xl md:rounded-[2.5rem] mx-2 sm:mx-6 lg:mx-8 mb-8 border border-gray-100">
           <SectionHeader title="Trending Today 🔥" subtitle="Most ordered in the last 24 hours" showSeeAll link="/food" />
           {loading ? (
-            <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-6 hide-scrollbar">
+            <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-0 md:mt-6 hide-scrollbar">
               {[1, 2, 3, 4].map(n => (
                 <div key={n} className="bg-white border border-slate-100 rounded-2xl h-64 animate-pulse shrink-0 w-[180px] sm:w-[220px] lg:w-auto" />
               ))}
@@ -244,7 +244,7 @@ export default function HomePage() {
               🍲 No trending items right now. Check back soon!
             </div>
           ) : (
-            <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-6 hide-scrollbar">
+            <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-1 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-0 md:mt-6 hide-scrollbar">
               {foods.slice(4, 8).concat(foods.slice(0, Math.max(0, 4 - foods.length + 4))).slice(0, 4).map((food, idx) => (
                 <motion.div key={food._id} custom={idx} variants={cardVariants} initial="hidden"
                   whileInView="visible" viewport={{ once: true, margin: '-40px' }} className="shrink-0 w-[180px] sm:w-[220px] lg:w-auto flex justify-center">
@@ -256,10 +256,10 @@ export default function HomePage() {
         </div>
 
         {/* ── Nearby Home Cooks (Horizontal Scroll Carousel on Mobile/Tablet) ── */}
-        <div className="mt-6 md:mt-10">
+        <div className="mt-3 md:mt-10">
           <SectionHeader title="Nearby Home Cooks" subtitle="Trusted kitchens just around the corner" showSeeAll link="/search" />
           {cooksLoading ? (
-            <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-6 hide-scrollbar">
+            <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-0 md:mt-6 hide-scrollbar">
               {[1,2,3,4].map(n => (
                 <div key={n} className="bg-slate-50 border border-slate-100 rounded-2xl h-[220px] animate-pulse shrink-0 w-[210px] sm:w-[240px] lg:w-auto" />
               ))}
@@ -269,7 +269,7 @@ export default function HomePage() {
               🍳 No verified home cooks registered yet. Check back soon!
             </div>
           ) : (
-            <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-4 hide-scrollbar">
+            <div className="flex lg:grid lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto lg:overflow-x-visible pb-0 lg:pb-0 px-4 sm:px-6 lg:px-8 mt-0 md:mt-4 hide-scrollbar">
               {cooks.map((cook, idx) => (
                 <motion.div key={cook.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }} transition={{ duration: 0.45, delay: idx * 0.09 }}

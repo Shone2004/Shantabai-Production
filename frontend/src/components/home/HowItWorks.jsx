@@ -35,7 +35,7 @@ const STEPS = [
 
 export default function HowItWorks() {
   return (
-    <section className="bg-gradient-to-b from-[#FAF8F4] via-[#FCFAF6] to-[#FAF8F4] pt-12 pb-6 md:pt-20 md:pb-12 relative overflow-hidden border-y border-gray-100/50">
+    <section className="bg-gradient-to-b from-[#FAF8F4] via-[#FCFAF6] to-[#FAF8F4] pt-6 pb-6 md:pt-20 md:pb-12 relative overflow-hidden border-y border-gray-100/50">
       
       {/* Background radial soft light overlay */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.7)_0%,transparent_100%)] pointer-events-none" />

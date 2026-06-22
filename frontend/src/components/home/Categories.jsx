@@ -29,7 +29,7 @@ const Categories = () => {
   };
 
   return (
-    <div className="relative py-4 overflow-x-auto hide-scrollbar">
+    <div className="relative pt-0 pb-0 md:py-4 overflow-x-auto hide-scrollbar">
       {/* Fade-out hint on right edge */}
       <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent z-10" />
 

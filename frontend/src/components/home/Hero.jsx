@@ -50,21 +50,70 @@ const Hero = () => {
   return (
     <>
       {/* ── MOBILE CONTAINER (< lg) ── */}
-      <section className="block lg:hidden relative bg-[#FAFBF8] overflow-hidden pt-3 pb-3 border-b border-gray-100">
-        {/* Soft radial background glows */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
-          <div className="absolute -top-[100px] -right-[50px] w-[250px] h-[250px] bg-brand-green/[0.018] rounded-full blur-[60px]" />
-          <div className="absolute bottom-0 -left-[100px] w-[250px] h-[250px] bg-[#FAFBF8] rounded-full blur-[50px]" />
-        </div>
+      <section 
+        className="block lg:hidden relative overflow-hidden pt-1.5 pb-0 border-b border-gray-100"
+        style={{
+          background: 'radial-gradient(circle at top right, rgba(12, 78, 45, 0.09), transparent 45%), linear-gradient(180deg, #FAF8F4 0%, #FFFFFF 100%)'
+        }}
+      >
+        {/* 1. Decorative Graphics (Line Illustrations) */}
+        <svg
+          className="absolute pointer-events-none select-none text-brand-green z-0"
+          style={{
+            top: '2%',
+            left: '4%',
+            width: '210px',
+            height: '210px',
+            opacity: 0.06
+          }}
+          viewBox="0 0 100 100"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="0.8"
+          aria-hidden="true"
+        >
+          <path d="M50,15 C35,30 32,55 45,75 C52,85 62,82 68,72 C76,60 70,30 50,15 Z" />
+          <path d="M50,15 C48,40 50,60 45,75" strokeWidth="0.5" />
+        </svg>
+
+        <svg
+          className="absolute pointer-events-none select-none text-brand-green z-0"
+          style={{
+            bottom: '4%',
+            right: '-25px',
+            width: '230px',
+            height: '230px',
+            opacity: 0.06
+          }}
+          viewBox="0 0 120 120"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="0.8"
+          aria-hidden="true"
+        >
+          <circle cx="60" cy="60" r="50" />
+          <circle cx="60" cy="60" r="40" strokeDasharray="3 3" />
+          <circle cx="60" cy="60" r="30" />
+        </svg>
 
         <div className="relative z-10 px-4">
           {/* Premium Value Proposition */}
-          <div className="text-left mb-4">
-            <h1 className="text-[2rem] sm:text-4xl font-black text-gray-900 tracking-[-0.035em] leading-[0.95]">
+          <div className="text-left mb-2 relative">
+            
+            {/* 2. Ambient Glow (Behind mobile heading) */}
+            <div 
+              className="absolute -top-4 -right-12 w-[260px] h-[260px] rounded-full pointer-events-none z-0" 
+              style={{
+                background: 'rgba(12, 78, 45, 0.08)',
+                filter: 'blur(90px)'
+              }}
+            />
+
+            <h1 className="relative z-10 text-[2rem] sm:text-4xl font-black text-gray-900 tracking-[-0.035em] leading-[0.95]">
               Good food.<br />
               <span className="text-[#0A4D2B]">Made nearby.</span>
             </h1>
-            <p className="text-sm text-gray-500 font-semibold leading-relaxed mt-2.5 max-w-sm">
+            <p className="relative z-10 text-sm text-gray-500 font-semibold leading-relaxed mt-0.5 max-w-sm">
               Prepared by trusted home cooks near you.
             </p>
           </div>
@@ -94,42 +143,79 @@ const Hero = () => {
       </section>
 
       {/* ── DESKTOP CONTAINER (>= lg) ── */}
-      <section className="hidden lg:block relative bg-[#FAFBF8] overflow-hidden pt-10 pb-24 border-b border-gray-100">
+      <section 
+        className="hidden lg:block relative overflow-hidden pt-10 pb-24 border-b border-gray-100"
+        style={{
+          background: 'radial-gradient(circle at top right, rgba(12, 78, 45, 0.09), transparent 45%), linear-gradient(180deg, #FAF8F4 0%, #FFFFFF 100%)'
+        }}
+      >
 
-        {/* ── Soft radial glows (depth) ── */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
-          <div className="absolute -top-[260px] -right-[60px]  w-[520px] h-[520px] bg-brand-green/[0.025]  rounded-full blur-[90px]" />
-          <div className="absolute  bottom-0    -left-[160px]  w-[440px] h-[440px] bg-brand-orange/[0.018] rounded-full blur-[75px]"  />
-          <div className="absolute  top-[30%]    left-[16%]    w-[300px] h-[300px] bg-amber-50/[0.6]       rounded-full blur-[80px]"  />
-          <div className="absolute  top-[42%]    right-[3%]    w-[360px] h-[360px] bg-brand-green/[0.018]  rounded-full blur-[100px]" />
-        </div>
-
-        {/* ── Thin decorative SVG curves ── */}
+        {/* 1. Decorative Graphics (Line Illustrations) */}
         <svg
-          className="absolute inset-0 w-full h-full pointer-events-none z-0"
-          viewBox="0 0 1440 780"
+          className="absolute pointer-events-none select-none text-brand-green z-0"
+          style={{
+            top: '4%',
+            left: '8%',
+            width: '320px',
+            height: '320px',
+            opacity: 0.06
+          }}
+          viewBox="0 0 100 100"
           fill="none"
-          preserveAspectRatio="none"
+          stroke="currentColor"
+          strokeWidth="0.8"
           aria-hidden="true"
         >
-          <path d="M-60,180 C180,100 240,470 60,570"
-            stroke="#0A4D2B" strokeWidth="1.1" strokeOpacity="0.05" fill="none" />
-          <path d="M880,20 C1230,85 1380,450 920,760"
-            stroke="#0A4D2B" strokeWidth="1.3" strokeOpacity="0.05" fill="none" />
-          <path d="M770,320 C830,115 1170,55 1270,255 C1370,455 1120,610 920,695"
-            stroke="#0A4D2B" strokeWidth="1.1" strokeOpacity="0.055"
-            strokeDasharray="4 5" fill="none" />
+          <path d="M50,15 C35,30 32,55 45,75 C52,85 62,82 68,72 C76,60 70,30 50,15 Z" />
+          <path d="M50,15 C48,40 50,60 45,75" strokeWidth="0.5" />
+          <path d="M49,32 C42,36 38,42 48,46" strokeWidth="0.4" />
+          <path d="M49,45 C56,49 58,54 47,59" strokeWidth="0.4" />
+          <path d="M47,58 C41,62 38,68 45,72" strokeWidth="0.4" />
         </svg>
 
-        {/* ── Dot-grid accent (far-left) ── */}
-        <div
-          className="absolute left-3 top-[44%] -translate-y-1/2 w-12 h-24 opacity-[0.07] pointer-events-none z-0"
-          aria-hidden="true"
+        <svg
+          className="absolute pointer-events-none select-none text-brand-green z-0"
           style={{
-            backgroundImage:  'radial-gradient(#0A4D2B 1.4px, transparent 1.4px)',
-            backgroundSize:   '10px 10px',
+            bottom: '8%',
+            left: '34%',
+            width: '340px',
+            height: '340px',
+            opacity: 0.06
           }}
-        />
+          viewBox="0 0 120 120"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="0.8"
+          aria-hidden="true"
+        >
+          <circle cx="60" cy="60" r="50" />
+          <circle cx="60" cy="60" r="40" strokeDasharray="3 3" />
+          <circle cx="60" cy="60" r="30" />
+          <path d="M52,50 C55,48 65,48 68,50" strokeWidth="0.5" />
+          <path d="M48,60 C53,58 67,58 72,60" strokeWidth="0.5" />
+          <path d="M54,70 C57,68 63,68 66,70" strokeWidth="0.5" />
+        </svg>
+
+        <svg
+          className="absolute pointer-events-none select-none text-brand-green z-0"
+          style={{
+            top: '32%',
+            right: '44%',
+            width: '240px',
+            height: '240px',
+            opacity: 0.05,
+            transform: 'rotate(25deg)'
+          }}
+          viewBox="0 0 100 100"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="0.8"
+          aria-hidden="true"
+        >
+          <path d="M45,20 C38,20 36,32 45,42 C54,32 52,20 45,20 Z" />
+          <path d="M45,42 C45,55 48,70 47,82" strokeWidth="1.2" />
+          <circle cx="47" cy="82" r="1.5" fill="currentColor" />
+        </svg>
 
         {/* ── Main layout ── */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -140,8 +226,17 @@ const Hero = () => {
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="lg:col-span-6 flex flex-col items-center lg:items-start text-center lg:text-left z-20"
+              className="lg:col-span-6 flex flex-col items-center lg:items-start text-center lg:text-left z-20 relative"
             >
+              
+              {/* 2. Ambient Glow (Behind desktop heading) */}
+              <div 
+                className="absolute top-[40px] left-[160px] w-[260px] h-[260px] rounded-full pointer-events-none z-0" 
+                style={{
+                  background: 'rgba(12, 78, 45, 0.08)',
+                  filter: 'blur(90px)'
+                }}
+              />
               {/* Badge */}
               <motion.div
                 variants={itemVariants}
