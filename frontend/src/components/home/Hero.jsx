@@ -77,17 +77,17 @@ const Hero = () => {
         </svg>
 
         <svg
-          className="absolute pointer-events-none select-none text-brand-green z-0"
+          className="absolute pointer-events-none select-none z-0"
           style={{
-            bottom: '4%',
-            right: '-25px',
-            width: '230px',
-            height: '230px',
-            opacity: 0.06
+            bottom: '-10px',
+            right: '-40px',
+            width: '260px',
+            height: '260px',
+            opacity: 0.08
           }}
           viewBox="0 0 120 120"
           fill="none"
-          stroke="currentColor"
+          stroke="rgba(12, 78, 45, 0.12)"
           strokeWidth="0.8"
           aria-hidden="true"
         >
@@ -96,28 +96,48 @@ const Hero = () => {
           <circle cx="60" cy="60" r="30" />
         </svg>
 
+        {/* Floating Background Trust Seal on Mobile */}
+        <div className="absolute inset-0 pointer-events-none select-none overflow-hidden z-0 block lg:hidden">
+          {/* Premium Trust Seal: Verified Kitchens */}
+          <div 
+            className="absolute rounded-full py-1 px-3 flex items-center gap-1.5 pointer-events-none"
+            style={{
+              top: '20%',
+              right: '8%',
+              background: 'rgba(255, 248, 231, 0.9)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              border: '1px solid rgba(244, 210, 122, 0.6)',
+              boxShadow: '0 4px 12px rgba(138, 90, 0, 0.05)'
+            }}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-[#8A5A00] shrink-0" />
+            <span className="text-[10px] font-extrabold text-[#8A5A00] tracking-tight">Verified Kitchens</span>
+          </div>
+        </div>
+
         <div className="relative z-10 px-4">
           {/* Premium Value Proposition */}
           <div className="text-left mb-2 relative">
             
             {/* 2. Ambient Glow (Behind mobile heading) */}
             <div 
-              className="absolute -top-4 -right-12 w-[260px] h-[260px] rounded-full pointer-events-none z-0" 
+              className="absolute top-0 left-4 w-[220px] h-[220px] rounded-full pointer-events-none z-0" 
               style={{
                 background: 'rgba(12, 78, 45, 0.08)',
-                filter: 'blur(90px)'
+                filter: 'blur(80px)'
               }}
             />
 
             <h1 
-              className="relative z-10 text-[2.25rem] sm:text-5xl font-black tracking-[-0.05em] leading-[0.95]"
+              className="relative z-10 text-[2.25rem] sm:text-5xl font-black tracking-[-0.05em] leading-[0.92]"
               style={{
                 fontFamily: '"Plus Jakarta Sans", sans-serif'
               }}
             >
-              <span className="block text-[#0F172A]" style={{ textShadow: '0 1px 1px rgba(15, 23, 42, 0.08)' }}>Good food.</span>
+              <span className="block text-[#0F172A]" style={{ textShadow: '0 2px 8px rgba(12, 78, 45, 0.08)' }}>Good food.</span>
               <span 
-                className="block bg-gradient-to-r from-[#0C4E2D] to-[#198754] bg-clip-text text-transparent filter drop-shadow-[0_1px_1px_rgba(12,78,45,0.12)] pb-1"
+                className="block bg-gradient-to-r from-[#0C4E2D] to-[#198754] bg-clip-text text-transparent filter drop-shadow-[0_2px_8px_rgba(12,78,45,0.08)] pb-1"
               >
                 Made nearby.
               </span>
@@ -258,14 +278,14 @@ const Hero = () => {
               {/* Headline */}
               <motion.h1
                 variants={itemVariants}
-                className="text-center lg:text-left text-[3rem] sm:text-[4rem] lg:text-[4.75rem] font-black tracking-[-0.05em] leading-[0.95] mb-5"
+                className="text-center lg:text-left text-[3rem] sm:text-[4rem] lg:text-[4.75rem] font-black tracking-[-0.05em] leading-[0.92] mb-5"
                 style={{
                   fontFamily: '"Plus Jakarta Sans", sans-serif'
                 }}
               >
-                <span className="block text-[#0F172A]" style={{ textShadow: '0 1px 1px rgba(15, 23, 42, 0.08)' }}>Good food.</span>
+                <span className="block text-[#0F172A]" style={{ textShadow: '0 2px 8px rgba(12, 78, 45, 0.08)' }}>Good food.</span>
                 <span 
-                  className="block bg-gradient-to-r from-[#0C4E2D] to-[#198754] bg-clip-text text-transparent filter drop-shadow-[0_1px_1.5px_rgba(12,78,45,0.12)] pb-1.5"
+                  className="block bg-gradient-to-r from-[#0C4E2D] to-[#198754] bg-clip-text text-transparent filter drop-shadow-[0_2px_8px_rgba(12,78,45,0.08)] pb-1.5"
                 >
                   Made nearby.
                 </span>
