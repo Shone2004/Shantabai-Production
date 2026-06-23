@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { LocationContext } from '../../context/LocationContext';
 
 const NAV_LINKS = [
   { label: 'Home', to: '/' },
@@ -9,13 +10,17 @@ const NAV_LINKS = [
   { label: 'Find Cooks', to: '/search' },
 ];
 
-const LOCATIONS = ['Pune', 'Mumbai', 'Hyderabad'];
-
 const PublicNavbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState('Mumbai');
+  const { 
+    selectedLocation, 
+    setSelectedLocation, 
+    locationsList, 
+    loadingLocations, 
+    errorLocations 
+  } = useContext(LocationContext);
   const [locationMenuOpen, setLocationMenuOpen] = useState(false);
   
   const location = useLocation();
@@ -68,6 +73,15 @@ const PublicNavbar = () => {
 
   const userInitial = user?.name?.charAt(0)?.toUpperCase() || '?';
 
+  const groupedLocations = {};
+  locationsList.forEach(loc => {
+    const city = loc.city;
+    if (!groupedLocations[city]) {
+      groupedLocations[city] = [];
+    }
+    groupedLocations[city].push(loc);
+  });
+
   return (
     <>
       <motion.nav
@@ -99,6 +113,9 @@ const PublicNavbar = () => {
             {/* Center: Compact Location Selector */}
             <div className="flex-1 flex justify-center px-2" ref={locationRef}>
               <button 
+                type="button"
+                aria-expanded={locationMenuOpen}
+                aria-haspopup="listbox"
                 onClick={() => setLocationMenuOpen(v => !v)}
                 className="flex items-center gap-1.5 bg-gray-50/50 hover:bg-gray-50 border border-gray-200/80 px-3 py-1.5 rounded-full cursor-pointer transition-all active:scale-95 text-center shadow-sm"
               >
@@ -117,28 +134,56 @@ const PublicNavbar = () => {
               <AnimatePresence>
                 {locationMenuOpen && (
                   <motion.div
+                    role="listbox"
                     initial={{ opacity: 0, y: 8, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.96 }}
                     transition={{ duration: 0.15, ease: 'easeOut' }}
-                    className="absolute left-1/2 -translate-x-1/2 mt-10 w-44 bg-white border border-gray-100 rounded-xl shadow-xl shadow-black/8 overflow-hidden z-50 p-1"
+                    className="absolute left-1/2 -translate-x-1/2 mt-10 w-44 bg-white border border-gray-100 rounded-xl shadow-xl shadow-black/8 overflow-y-auto max-h-[280px] z-50 p-1"
+                    style={{
+                      WebkitOverflowScrolling: 'touch',
+                      touchAction: 'pan-y',
+                      overscrollBehavior: 'contain'
+                    }}
                   >
-                    {LOCATIONS.map((loc) => (
-                      <button
-                        key={loc}
-                        onClick={() => {
-                          setSelectedLocation(loc);
-                          setLocationMenuOpen(false);
-                        }}
-                        className={`w-full text-left px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-colors ${
-                          selectedLocation === loc
-                            ? 'text-brand-green bg-brand-light font-bold'
-                            : 'text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        {loc}
-                      </button>
-                    ))}
+                    {loadingLocations ? (
+                      <div className="px-3.5 py-2 text-xs font-semibold text-gray-400 text-center select-none">
+                        Loading...
+                      </div>
+                    ) : locationsList.length === 0 ? (
+                      <div className="px-3.5 py-2 text-xs font-semibold text-gray-400 text-center select-none" role="option" aria-selected="false">
+                        No locations
+                      </div>
+                    ) : (
+                      Object.entries(groupedLocations).map(([city, items]) => (
+                        <div key={city} className="mb-2 last:mb-0">
+                          <p className="text-[9px] uppercase tracking-wider text-gray-400 font-bold px-3 py-1">{city}</p>
+                          {items.map((item) => {
+                            const displayString = `${item.area}, ${item.city}`;
+                            const isSelected = selectedLocation === displayString;
+                            return (
+                              <button
+                                key={displayString}
+                                type="button"
+                                role="option"
+                                aria-selected={isSelected}
+                                onClick={() => {
+                                  setSelectedLocation(displayString);
+                                  setLocationMenuOpen(false);
+                                }}
+                                className={`w-full text-left px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors ${
+                                  isSelected
+                                    ? 'text-brand-green bg-brand-light font-bold'
+                                    : 'text-gray-700 hover:bg-gray-50'
+                                }`}
+                              >
+                                {item.area}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ))
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -287,6 +332,9 @@ const PublicNavbar = () => {
               {/* Location selector */}
               <div className="relative" ref={locationRef}>
                 <button 
+                  type="button"
+                  aria-expanded={locationMenuOpen}
+                  aria-haspopup="listbox"
                   onClick={() => setLocationMenuOpen(v => !v)}
                   className="flex items-center gap-2 bg-white hover:bg-gray-50 px-4 py-2 rounded-full cursor-pointer transition-all border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow active:scale-98 group"
                 >
@@ -303,28 +351,56 @@ const PublicNavbar = () => {
                 <AnimatePresence>
                   {locationMenuOpen && (
                     <motion.div
+                      role="listbox"
                       initial={{ opacity: 0, y: 8, scale: 0.96 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.96 }}
                       transition={{ duration: 0.15, ease: 'easeOut' }}
-                      className="absolute right-0 mt-2 w-40 bg-white border border-gray-100 rounded-xl shadow-xl shadow-black/8 overflow-hidden z-50 p-1"
+                      className="absolute right-0 mt-2 w-40 bg-white border border-gray-100 rounded-xl shadow-xl shadow-black/8 overflow-y-auto max-h-[280px] z-50 p-1"
+                      style={{
+                        WebkitOverflowScrolling: 'touch',
+                        touchAction: 'pan-y',
+                        overscrollBehavior: 'contain'
+                      }}
                     >
-                      {LOCATIONS.map((loc) => (
-                        <button
-                          key={loc}
-                          onClick={() => {
-                            setSelectedLocation(loc);
-                            setLocationMenuOpen(false);
-                          }}
-                          className={`w-full text-left px-3.5 py-2.5 text-sm font-semibold rounded-lg transition-colors ${
-                            selectedLocation === loc
-                              ? 'text-brand-green bg-brand-light font-bold'
-                              : 'text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          {loc}
-                        </button>
-                      ))}
+                      {loadingLocations ? (
+                        <div className="px-3.5 py-2 text-sm font-semibold text-gray-400 text-center select-none">
+                          Loading...
+                        </div>
+                      ) : locationsList.length === 0 ? (
+                        <div className="px-3.5 py-2 text-sm font-semibold text-gray-400 text-center select-none" role="option" aria-selected="false">
+                          No locations
+                        </div>
+                      ) : (
+                        Object.entries(groupedLocations).map(([city, items]) => (
+                          <div key={city} className="mb-2 last:mb-0">
+                            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold px-3 py-1">{city}</p>
+                            {items.map((item) => {
+                              const displayString = `${item.area}, ${item.city}`;
+                              const isSelected = selectedLocation === displayString;
+                              return (
+                                <button
+                                  key={displayString}
+                                  type="button"
+                                  role="option"
+                                  aria-selected={isSelected}
+                                  onClick={() => {
+                                    setSelectedLocation(displayString);
+                                    setLocationMenuOpen(false);
+                                  }}
+                                  className={`w-full text-left px-3.5 py-2.5 text-sm font-semibold rounded-lg transition-colors ${
+                                    isSelected
+                                      ? 'text-brand-green bg-brand-light font-bold'
+                                      : 'text-gray-700 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  {item.area}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ))
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>

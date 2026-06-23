@@ -7,6 +7,8 @@ const {
   updateMyProviderProfile,
   getAllApprovedProviders,
   getProviderById,
+  getUniqueLocations,
+  reverseGeocode,
 } = require("../controllers/provider.controller");
 
 const { authenticateUser } = require("../middleware/authMiddleware");
@@ -52,6 +54,12 @@ router.put(
   ]),
   updateMyProviderProfile
 );
+
+// Public locations list
+router.get("/locations", getUniqueLocations);
+
+// Reverse geocode lat/lng to city/area
+router.get("/reverse-geocode", reverseGeocode);
 
 // Public single profile fetch
 router.get("/:id", getProviderById);

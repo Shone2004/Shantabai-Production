@@ -1,22 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Leaf, ShieldCheck, Soup, ShoppingBag, ArrowRight, ChevronDown } from 'lucide-react';
-
-const LOCATIONS = [
-  'Andheri, Mumbai',
-  'Bandra, Mumbai',
-  'Baner, Pune',
-  'Kothrud, Pune',
-  'Deccan, Pune',
-];
+import { LocationContext } from '../../context/LocationContext';
 
 const Hero = () => {
   const [query, setQuery] = useState('');
-  const [location, setLocation] = useState('Andheri, Mumbai');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
+
+  const { 
+    selectedLocation: location, 
+    setSelectedLocation: setLocation, 
+    locationsList, 
+    loadingLocations, 
+    errorLocations 
+  } = useContext(LocationContext);
 
   // Close custom dropdown when clicking outside
   useEffect(() => {
@@ -32,7 +32,7 @@ const Hero = () => {
   const handleSearch = (e) => {
     if (e) e.preventDefault();
     const qParam  = query.trim() ? `q=${encodeURIComponent(query.trim())}` : '';
-    const locParam = location    ? `loc=${encodeURIComponent(location)}`    : '';
+    const locParam = (location && location !== 'Select your area') ? `loc=${encodeURIComponent(location)}` : '';
     const params   = [qParam, locParam].filter(Boolean).join('&');
     navigate(`/food${params ? `?${params}` : ''}`);
   };
@@ -46,6 +46,16 @@ const Hero = () => {
     hidden:  { opacity: 0, y: 15 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
   };
+
+  // Group locationsList by city
+  const groupedLocations = {};
+  locationsList.forEach(loc => {
+    const city = loc.city;
+    if (!groupedLocations[city]) {
+      groupedLocations[city] = [];
+    }
+    groupedLocations[city].push(loc);
+  });
 
   return (
     <>
@@ -332,6 +342,8 @@ const Hero = () => {
                   <div className="relative flex items-center w-full sm:w-48 shrink-0" ref={dropdownRef}>
                     <button
                       type="button"
+                      aria-expanded={dropdownOpen}
+                      aria-haspopup="listbox"
                       onClick={() => setDropdownOpen(!dropdownOpen)}
                       className="flex items-center justify-between w-full px-4 py-2 sm:border-r border-gray-100 text-left gap-2 cursor-pointer group"
                     >
@@ -350,57 +362,58 @@ const Hero = () => {
                     <AnimatePresence>
                       {dropdownOpen && (
                         <motion.div
+                          role="listbox"
                           initial={{ opacity: 0, y: 12, scale: 0.96 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 12, scale: 0.96 }}
                           transition={{ duration: 0.15, ease: 'easeOut' }}
-                          className="absolute left-0 top-full mt-2.5 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl shadow-black/8 overflow-hidden z-50 p-2.5"
+                          className="absolute left-0 top-full mt-2.5 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl shadow-black/8 overflow-y-auto max-h-[280px] z-50 p-2.5"
+                          style={{
+                            WebkitOverflowScrolling: 'touch',
+                            touchAction: 'pan-y',
+                            overscrollBehavior: 'contain'
+                          }}
                         >
-                          {/* Mumbai Subsection */}
-                          <div className="mb-2">
-                            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold px-3 py-1">Mumbai</p>
-                            {LOCATIONS.filter(loc => loc.includes('Mumbai')).map((loc) => (
-                              <button
-                                key={loc}
-                                type="button"
-                                onClick={() => {
-                                  setLocation(loc);
-                                  setDropdownOpen(false);
-                                }}
-                                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 ${
-                                  location === loc
-                                    ? 'text-brand-green bg-[#EBF3ED] font-bold'
-                                    : 'text-gray-700 hover:bg-gray-50'
-                                }`}
-                              >
-                                <span className={`w-1.5 h-1.5 rounded-full bg-brand-green shrink-0 ${location === loc ? 'opacity-100' : 'opacity-0'}`} />
-                                {loc.split(',')[0]}
-                              </button>
-                            ))}
-                          </div>
-
-                          {/* Pune Subsection */}
-                          <div>
-                            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold px-3 py-1">Pune</p>
-                            {LOCATIONS.filter(loc => loc.includes('Pune')).map((loc) => (
-                              <button
-                                key={loc}
-                                type="button"
-                                onClick={() => {
-                                  setLocation(loc);
-                                  setDropdownOpen(false);
-                                }}
-                                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 ${
-                                  location === loc
-                                    ? 'text-brand-green bg-[#EBF3ED] font-bold'
-                                    : 'text-gray-700 hover:bg-gray-50'
-                                }`}
-                              >
-                                <span className={`w-1.5 h-1.5 rounded-full bg-brand-green shrink-0 ${location === loc ? 'opacity-100' : 'opacity-0'}`} />
-                                {loc.split(',')[0]}
-                              </button>
-                            ))}
-                          </div>
+                          {loadingLocations ? (
+                            <div className="px-3 py-4 text-xs font-semibold text-gray-400 text-center select-none">
+                              Loading locations...
+                            </div>
+                          ) : locationsList.length === 0 ? (
+                            <div className="px-3 py-2 text-xs font-semibold text-gray-400 text-center select-none" role="option" aria-selected="false">
+                              No locations available
+                            </div>
+                          ) : (
+                            Object.entries(groupedLocations).map(([city, items]) => (
+                              <div key={city} className="mb-2 last:mb-0">
+                                <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold px-3 py-1">{city}</p>
+                                {items.map((item) => {
+                                  const displayString = `${item.area}, ${item.city}`;
+                                  const isSelected = location === displayString;
+                                  return (
+                                    <button
+                                      key={displayString}
+                                      type="button"
+                                      role="option"
+                                      aria-selected={isSelected}
+                                      onClick={() => {
+                                        setLocation(displayString);
+                                        localStorage.setItem('selectedLocation', displayString);
+                                        setDropdownOpen(false);
+                                      }}
+                                      className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 ${
+                                        isSelected
+                                          ? 'text-brand-green bg-[#EBF3ED] font-bold'
+                                          : 'text-gray-700 hover:bg-gray-50'
+                                      }`}
+                                    >
+                                      <span className={`w-1.5 h-1.5 rounded-full bg-brand-green shrink-0 ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
+                                      {item.area}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ))
+                          )}
                         </motion.div>
                       )}
                     </AnimatePresence>

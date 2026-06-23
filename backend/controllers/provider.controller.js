@@ -369,10 +369,99 @@ const getProviderById = async (req, res) => {
   }
 };
 
+// @desc    Get unique locations of approved providers
+// @route   GET /api/providers/locations
+// @access  Public
+const getUniqueLocations = async (req, res) => {
+  try {
+    const locations = await ProviderProfile.aggregate([
+      {
+        $match: {
+          verificationStatus: "APPROVED",
+          city: { $exists: true, $ne: "" },
+          area: { $exists: true, $ne: "" }
+        }
+      },
+      {
+        $group: {
+          _id: { city: "$city", area: "$area" }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          city: "$_id.city",
+          area: "$_id.area"
+        }
+      },
+      {
+        $sort: { city: 1, area: 1 }
+      }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      locations
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error fetching unique locations",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Reverse geocode coordinates using OpenStreetMap Nominatim
+// @route   GET /api/providers/reverse-geocode
+// @access  Public
+const reverseGeocode = async (req, res) => {
+  try {
+    const { lat, lng } = req.query;
+    if (!lat || !lng) {
+      return res.status(400).json({
+        success: false,
+        message: "Latitude and longitude are required",
+      });
+    }
+
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+    const response = await fetch(url, {
+      headers: {
+        'Accept-Language': 'en',
+        'User-Agent': 'Shantabai-SaaS-Backend'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Nominatim returned status ${response.status}`);
+    }
+
+    const data = await response.json();
+    const addr = data.address || {};
+    const city = addr.city || addr.town || addr.village || addr.municipality || '';
+    const area = addr.suburb || addr.neighbourhood || addr.residential || addr.city_district || '';
+
+    res.status(200).json({
+      success: true,
+      city,
+      area
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error during reverse geocoding",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   registerProvider,
   getMyProviderProfile,
   updateMyProviderProfile,
   getAllApprovedProviders,
   getProviderById,
+  getUniqueLocations,
+  reverseGeocode,
 };
