@@ -1,6 +1,7 @@
 import React from 'react';
 import { Menu, MenuItem, ListItemIcon, Divider, Box, Typography } from '@mui/material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { 
   Home, 
@@ -63,7 +64,7 @@ const MobileNav = () => {
 
   const customerTabs = [
     { label: 'Home', to: '/', icon: <Home className="w-5 h-5 shrink-0" /> },
-    { label: 'Search', to: '/search', icon: <Search className="w-5 h-5 shrink-0" /> },
+    { label: 'Search', to: '/food', icon: <Search className="w-5 h-5 shrink-0" /> },
     { label: 'Orders', to: '/customer/bookings', icon: <ShoppingBag className="w-5 h-5 shrink-0" /> },
     { label: 'Favorites', to: '/favorites', icon: <Heart className="w-5 h-5 shrink-0" /> },
     { label: 'Account', onClick: handleProfileClick, icon: <User className="w-5 h-5 shrink-0" /> }
@@ -82,25 +83,50 @@ const MobileNav = () => {
     <>
       {/* Floating Bottom Navigation Bar */}
       <div className="fixed bottom-[calc(20px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-50 mx-4 md:hidden select-none">
-        <div className="glass border border-white/40 rounded-[24px] shadow-[0_8px_32px_rgba(0,0,0,0.06)] px-2 py-2 flex items-center justify-around">
+        <div className="border border-slate-200/60 rounded-[28px] shadow-[0_12px_40px_rgba(15,23,42,0.09)] px-3 py-2.5 flex items-center justify-around bg-white/95 backdrop-blur-md">
           {tabs.map((tab, idx) => {
             const isActive = getValue() === idx;
             return (
               <button
                 key={tab.label}
                 onClick={tab.onClick || (() => navigate(tab.to))}
-                className={`flex items-center justify-center gap-2 py-2 px-3.5 transition-all duration-300 ease-in-out rounded-full cursor-pointer touch-target ${
-                  isActive 
-                    ? 'bg-brand-green text-white font-extrabold shadow-sm scale-105' 
-                    : 'text-slate-400 hover:text-slate-600 font-semibold'
-                }`}
+                className="relative flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-full cursor-pointer touch-target transition-all duration-300 ease-out select-none outline-none"
               >
-                {tab.icon}
+                {/* Framer Motion Sliding Active Background Pill */}
                 {isActive && (
-                  <span className="text-xs font-bold tracking-wide animate-fade-in">
-                    {tab.label}
-                  </span>
+                  <motion.span
+                    layoutId="mobile-nav-pill"
+                    className="absolute inset-0 bg-brand-green rounded-full shadow-[0_4px_12px_rgba(10,77,43,0.22)] -z-10"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
                 )}
+
+                {/* Icon with spring scale transition */}
+                <motion.div
+                  animate={{ 
+                    scale: isActive ? 1.12 : 1,
+                    color: isActive ? '#FFFFFF' : '#64748B' // Slate-500 for normal state, more visible
+                  }}
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                  className="flex items-center justify-center"
+                >
+                  {tab.icon}
+                </motion.div>
+
+                {/* Active label fade transition */}
+                <AnimatePresence mode="wait">
+                  {isActive && (
+                    <motion.span
+                      initial={{ opacity: 0, x: -4 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -4 }}
+                      transition={{ duration: 0.18, ease: 'easeOut' }}
+                      className="text-[10px] font-black tracking-wide text-white font-jakarta uppercase"
+                    >
+                      {tab.label}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </button>
             );
           })}

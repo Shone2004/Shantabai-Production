@@ -38,10 +38,10 @@ const FoodCard = ({ food }) => {
           {/* Veg/Non-Veg Marker Overlay (top-left) */}
           <div className="absolute top-2 left-2 z-10">
             <div className={`border p-[2px] w-4.5 h-4.5 flex items-center justify-center rounded-[4px] shadow-sm bg-white/95 ${
-              isVeg ? 'border-green-600' : 'border-red-600'
+              isVeg ? 'border-green-600' : 'border-red-650'
             }`}>
               <div className={`w-2 h-2 rounded-full ${
-                isVeg ? 'bg-green-600' : 'bg-red-600'
+                isVeg ? 'bg-green-600' : 'bg-red-605'
               }`} />
             </div>
           </div>
