@@ -14,6 +14,7 @@ const {
   getFoodReviews,
   deleteReview,
   getFoodHistory,
+  getSimilarFoods,
 } = require("../controllers/food.controller");
 
 const { authenticateUser } = require("../middleware/authMiddleware");
@@ -41,6 +42,9 @@ router.get(
   ...providerOnly,
   getFoodHistory
 );
+
+// Get similar foods
+router.get("/similar/:id", getSimilarFoods);
 
 // Get single food
 router.get("/:id", getFoodById);

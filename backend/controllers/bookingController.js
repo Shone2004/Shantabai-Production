@@ -19,10 +19,6 @@ exports.createOrder = async (req, res) => {
       return res.status(400).json({ success: false, message: "This listing has expired and cannot be reserved." });
     }
 
-    if (food.status !== "available" || food.quantity < quantity) {
-      return res.status(400).json({ success: false, message: "Not enough quantity available" });
-    }
-
     const provider = await ProviderProfile.findById(food.provider);
     if (!provider) {
       return res.status(400).json({ success: false, message: "Provider not found" });
@@ -31,38 +27,61 @@ exports.createOrder = async (req, res) => {
     const unitPrice = food.price;
     const totalPrice = unitPrice * quantity;
 
-    // Create Order
-    const order = new Order({
-      customer: customerId,
-      provider: provider._id,
-      foodItem: food._id,
-      quantity,
-      unitPrice,
-      totalPrice,
-      customerNote: customerNote || "",
-      pickupAddressSnapshot: provider.fullAddress || "Contact Provider",
-      pickupWindowSnapshot: food.timeWindow || "Contact Provider",
-      bringContainer: food.bringContainer,
-      status: "PENDING",
-      paymentMethod: "CASH_ON_PICKUP"
-    });
+    // 1. Atomically decrement quantity in the database if there is enough stock
+    const updatedFood = await FoodItem.findOneAndUpdate(
+      { _id: foodItemId, quantity: { $gte: quantity }, status: "available" },
+      { $inc: { quantity: -quantity, ordersToday: 1 } },
+      { new: true }
+    );
 
-    await order.save();
+    if (!updatedFood) {
+      const currentStock = await FoodItem.findById(foodItemId);
+      const stockMsg = currentStock && currentStock.quantity > 0 
+        ? `Only ${currentStock.quantity} portions remaining.` 
+        : "This dish is sold out.";
+      return res.status(400).json({ success: false, message: stockMsg });
+    }
 
-    // Update Food Quantity
-    const newQuantity = food.quantity - quantity;
-    const newStatus = newQuantity <= 0 ? "out" : food.status;
-    
-    await FoodItem.findByIdAndUpdate(food._id, {
-      $inc: { quantity: -quantity, ordersToday: 1 },
-      $set: { status: newStatus }
-    });
+    // 2. Set status to "out" if quantity drops to 0
+    if (updatedFood.quantity <= 0) {
+      await FoodItem.findByIdAndUpdate(foodItemId, { $set: { status: "out" } });
+    }
 
-    res.status(201).json({
-      success: true,
-      message: "Reservation created successfully",
-      order
-    });
+    // 3. Create and Save Order
+    try {
+      const order = new Order({
+        customer: customerId,
+        provider: provider._id,
+        foodItem: food._id,
+        quantity,
+        unitPrice,
+        totalPrice,
+        customerNote: customerNote || "",
+        pickupAddressSnapshot: provider.fullAddress || "Contact Provider",
+        pickupWindowSnapshot: food.timeWindow || "Contact Provider",
+        bringContainer: food.bringContainer,
+        status: "PENDING",
+        paymentMethod: "CASH_ON_PICKUP"
+      });
+
+      await order.save();
+
+      res.status(201).json({
+        success: true,
+        message: "Reservation created successfully",
+        order
+      });
+    } catch (orderError) {
+      // Rollback database decrement if order insertion fails
+      const rollbackQuantity = quantity;
+      const originalFood = await FoodItem.findById(foodItemId);
+      const originalStatus = (originalFood && originalFood.quantity + rollbackQuantity > 0) ? "available" : "out";
+      await FoodItem.findByIdAndUpdate(foodItemId, {
+        $inc: { quantity: rollbackQuantity, ordersToday: -1 },
+        $set: { status: originalStatus }
+      });
+      throw orderError;
+    }
   } catch (error) {
     console.error("Booking Error:", error);
     res.status(500).json({

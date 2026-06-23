@@ -30,8 +30,8 @@ const ReviewSection = ({ foodId, onReviewSubmit }) => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm mt-6">
-      <h3 className="font-bold text-gray-900 mb-4">Rate this Dish</h3>
+    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-[0_4px_20px_rgba(15,23,42,0.06)] hover:-translate-y-0.5 transition-all duration-300 mt-6">
+      <h3 className="font-bold text-slate-900 tracking-normal mb-4">Rate this Dish</h3>
       
       {/* Star Selection */}
       <div className="flex gap-2 mb-4">

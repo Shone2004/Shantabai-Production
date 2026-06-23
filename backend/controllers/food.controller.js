@@ -348,7 +348,7 @@ const getFoodById = async (req, res) => {
 
     const foodItem = await FoodItem.findById(id).populate({
       path: "provider",
-      select: "kitchenName tagline bio experience rating startingPrice city area fullAddress isSubscribed subscriptionPlan",
+      select: "kitchenName tagline bio experience rating startingPrice city area fullAddress isSubscribed subscriptionPlan avatar verificationStatus",
     });
 
     if (!foodItem) {
@@ -697,6 +697,69 @@ const getProviderStats = async (req, res) => {
     });
   }
 }
+
+// @desc    Get similar food items
+// @route   GET /api/foods/similar/:id
+// @access  Public
+const getSimilarFoods = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Find current food item to get its provider and category
+    const currentFood = await FoodItem.findById(id);
+    if (!currentFood) {
+      return res.status(404).json({
+        success: false,
+        message: "Food item not found",
+      });
+    }
+
+    const now = new Date();
+    
+    // Find similar items: same category OR same provider, not expired, not the current food
+    const query = {
+      _id: { $ne: id },
+      expiryAt: { $gt: now }
+    };
+
+    const similarItems = await FoodItem.find(query).populate({
+      path: "provider",
+      select: "kitchenName tagline city area startingPrice rating avatar verificationStatus",
+    });
+
+    // Sort: same provider first, then same category
+    similarItems.sort((a, b) => {
+      const aSameProvider = a.provider && a.provider._id.toString() === currentFood.provider.toString();
+      const bSameProvider = b.provider && b.provider._id.toString() === currentFood.provider.toString();
+      
+      if (aSameProvider && !bSameProvider) return -1;
+      if (!aSameProvider && bSameProvider) return 1;
+
+      const aSameCategory = a.category === currentFood.category;
+      const bSameCategory = b.category === currentFood.category;
+      
+      if (aSameCategory && !bSameCategory) return -1;
+      if (!aSameCategory && bSameCategory) return 1;
+
+      return 0;
+    });
+
+    // Limit to 6 items
+    const limitedItems = similarItems.slice(0, 6);
+
+    res.status(200).json({
+      success: true,
+      foodItems: limitedItems,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error fetching similar food items",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createFoodItem,
   getAllFoods,
@@ -710,4 +773,5 @@ module.exports = {
   getFoodReviews,
   deleteReview,
   getFoodHistory,
+  getSimilarFoods,
 }

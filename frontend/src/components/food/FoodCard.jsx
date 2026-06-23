@@ -78,7 +78,7 @@ const FoodCard = ({ food }) => {
 
             {/* Distance & Locality */}
             <div className="text-[10px] sm:text-xs text-gray-400 font-bold leading-none truncate tracking-wide">
-              {distance.replace(' away', '')} • {location.split(',')[0]}
+              {distance ? `${distance.replace(' away', '')} • ` : ''}{location.split(',')[0]}
             </div>
           </div>
 
