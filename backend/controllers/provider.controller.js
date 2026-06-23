@@ -5,6 +5,12 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { uploadToCloudinary } = require("../utils/cloudinaryHelper");
 const Counter = require("../models/Counter");
+
+const Order = require("../models/Order");
+const FoodItem = require("../models/FoodItem");
+const { creditWalletForOrder } = require("./wallet.controller");
+const { getIO } = require("../services/socketService"); // ⚡ Import your socket utility
+
 // Generate JWT for immediate login upon registration
 const generateToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, {
@@ -12,37 +18,27 @@ const generateToken = (id, role) => {
   });
 };
 
-// @desc    Register a new provider (User + ProviderProfile)
-// @route   POST /api/providers/register
-// @access  Public
+// ==========================================
+// PROVIDER / CHEF PROFILE CONTROLLERS
+// ==========================================
+
 const generateChefId = async (fullName, city) => {
   const names = fullName.trim().split(" ");
-
   const firstInitial = names[0]?.charAt(0).toUpperCase() || "X";
-
-  const secondInitial =
-    names.length > 1
-      ? names[names.length - 1].charAt(0).toUpperCase()
-      : "X";
+  const secondInitial = names.length > 1 ? names[names.length - 1].charAt(0).toUpperCase() : "X";
 
   const counter = await Counter.findOneAndUpdate(
     { name: "chef" },
     { $inc: { seq: 1 } },
-    {
-      new: true,
-      upsert: true,
-    }
+    { new: true, upsert: true }
   );
 
   const sequence = String(counter.seq).padStart(5, "0");
-
-  const cityCode = city
-    .substring(0, 3)
-    .toUpperCase()
-    .replace(/\s/g, "");
+  const cityCode = city.substring(0, 3).toUpperCase().replace(/\s/g, "");
 
   return `CHF-${cityCode}-${firstInitial}${secondInitial}-${sequence}`;
 };
+
 const registerProvider = async (req, res) => {
   try {
     const {
@@ -132,10 +128,9 @@ const registerProvider = async (req, res) => {
     try {
       const chefId = await generateChefId(name, city);
       const providerProfile = await ProviderProfile.create({
-         chefId,
+        chefId,
         user: user._id,
         kitchenName,
-       
         tagline,
         bio,
         experience,
@@ -182,21 +177,18 @@ const registerProvider = async (req, res) => {
       throw profileError;
     }
   } catch (error) {
-  console.error("========== REGISTER PROVIDER ERROR ==========");
-  console.error(error);
-  console.error("============================================");
+    console.error("========== REGISTER PROVIDER ERROR ==========");
+    console.error(error);
+    console.error("============================================");
 
-  res.status(500).json({
-    success: false,
-    message: "Server error during registration",
-    error: error.message,
-  });
-}
+    res.status(500).json({
+      success: false,
+      message: "Server error during registration",
+      error: error.message,
+    });
+  }
 };
 
-// @desc    Get current provider's profile
-// @route   GET /api/providers/me
-// @access  Private (Provider only)
 const getMyProviderProfile = async (req, res) => {
   try {
     const profile = await ProviderProfile.findOne({ user: req.user._id }).populate("user", "-password");
@@ -221,9 +213,6 @@ const getMyProviderProfile = async (req, res) => {
   }
 };
 
-// @desc    Update current provider's profile
-// @route   PUT /api/providers/me
-// @access  Private (Provider only)
 const updateMyProviderProfile = async (req, res) => {
   try {
     const {
@@ -322,9 +311,6 @@ const updateMyProviderProfile = async (req, res) => {
   }
 };
 
-// @desc    Get all approved providers
-// @route   GET /api/providers
-// @access  Public
 const getAllApprovedProviders = async (req, res) => {
   try {
     const providers = await ProviderProfile.find({ verificationStatus: "APPROVED" }).populate("user", "name email phone profileImage");
@@ -342,9 +328,6 @@ const getAllApprovedProviders = async (req, res) => {
   }
 };
 
-// @desc    Get all verified (APPROVED) providers
-// @route   GET /api/providers/verified
-// @access  Public
 const getAllVerifiedProviders = async (req, res) => {
   try {
     const providers = await ProviderProfile.find({
@@ -366,14 +349,10 @@ const getAllVerifiedProviders = async (req, res) => {
   }
 };
 
-// @desc    Get single provider profile by ID
-// @route   GET /api/providers/:id
-// @access  Public
 const getProviderById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Guard: reject non-ObjectId values immediately (e.g. "1", "5", "me")
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -403,9 +382,6 @@ const getProviderById = async (req, res) => {
   }
 };
 
-// @desc    Get unique locations of approved providers
-// @route   GET /api/providers/locations
-// @access  Public
 const getUniqueLocations = async (req, res) => {
   try {
     const locations = await ProviderProfile.aggregate([
@@ -446,9 +422,6 @@ const getUniqueLocations = async (req, res) => {
   }
 };
 
-// @desc    Reverse geocode coordinates using OpenStreetMap Nominatim
-// @route   GET /api/providers/reverse-geocode
-// @access  Public
 const reverseGeocode = async (req, res) => {
   try {
     const { lat, lng } = req.query;
@@ -490,6 +463,272 @@ const reverseGeocode = async (req, res) => {
   }
 };
 
+
+// ==========================================
+// RESERVATION / ORDER MANAGEMENT CONTROLLERS
+// ==========================================
+
+const createOrder = async (req, res) => {
+  try {
+    const { foodItemId, quantity, customerNote } = req.body;
+    const customerId = req.user.id;
+
+    const food = await FoodItem.findById(foodItemId);
+    if (!food) {
+      return res.status(400).json({ success: false, message: "Food item not found" });
+    }
+
+    const now = new Date();
+    if (food.expiryAt && food.expiryAt <= now) {
+      return res.status(400).json({ success: false, message: "This listing has expired and cannot be reserved." });
+    }
+
+    const provider = await ProviderProfile.findById(food.provider);
+    if (!provider) {
+      return res.status(400).json({ success: false, message: "Provider not found" });
+    }
+
+    const unitPrice = food.price;
+    const totalPrice = unitPrice * quantity;
+
+    // 1. Atomically decrement stock quantity
+    const updatedFood = await FoodItem.findOneAndUpdate(
+      { _id: foodItemId, quantity: { $gte: quantity }, status: "available" },
+      { $inc: { quantity: -quantity, ordersToday: 1 } },
+      { new: true }
+    );
+
+    if (!updatedFood) {
+      const currentStock = await FoodItem.findById(foodItemId);
+      const stockMsg = currentStock && currentStock.quantity > 0 
+        ? `Only ${currentStock.quantity} portions remaining.` 
+        : "This dish is sold out.";
+      return res.status(400).json({ success: false, message: stockMsg });
+    }
+
+    // 2. Mark item out of stock if quantity drops to 0
+    if (updatedFood.quantity <= 0) {
+      await FoodItem.findByIdAndUpdate(foodItemId, { $set: { status: "out" } });
+    }
+
+    // 3. Save reservation order record
+    try {
+      const order = new Order({
+        customer: customerId,
+        provider: provider._id,
+        foodItem: food._id,
+        quantity,
+        unitPrice,
+        totalPrice,
+        customerNote: customerNote || "",
+        pickupAddressSnapshot: provider.fullAddress || "Contact Provider",
+        pickupWindowSnapshot: food.timeWindow || "Contact Provider",
+        bringContainer: food.bringContainer,
+        status: "PENDING",
+        paymentMethod: "CASH_ON_PICKUP"
+      });
+
+      await order.save();
+
+      // Fetch freshly structured provider metadata for live update broadcasts
+      const fullyPopulatedFood = await FoodItem.findById(foodItemId).populate({
+        path: "provider",
+        select: "kitchenName tagline city area startingPrice rating isAvailable isSubscribed subscriptionPlan planType subscriptionStatus",
+      });
+
+      // 📡 Real-time Updates
+      const io = getIO();
+      if (io) {
+        // Broadcast marketplace variations
+        io.emit("food_listing_updated", {
+          action: fullyPopulatedFood.quantity <= 0 || fullyPopulatedFood.status === "out" ? "DELETE" : "UPDATE",
+          foodItem: fullyPopulatedFood,
+        });
+
+        // Notify specific provider screen
+        io.emit(`order_update_provider_${provider._id}`, {
+          action: "NEW_ORDER",
+          order,
+        });
+      }
+
+      res.status(201).json({
+        success: true,
+        message: "Reservation created successfully",
+        order
+      });
+    } catch (orderError) {
+      // Rollback database decrement changes on order errors
+      const rollbackQuantity = quantity;
+      const originalFood = await FoodItem.findById(foodItemId);
+      const originalStatus = (originalFood && originalFood.quantity + rollbackQuantity > 0) ? "available" : "out";
+      
+      const revertedFood = await FoodItem.findByIdAndUpdate(
+        foodItemId,
+        {
+          $inc: { quantity: rollbackQuantity, ordersToday: -1 },
+          $set: { status: originalStatus }
+        },
+        { new: true }
+      ).populate({
+        path: "provider",
+        select: "kitchenName tagline city area startingPrice rating isAvailable isSubscribed subscriptionPlan planType subscriptionStatus",
+      });
+
+      const io = getIO();
+      if (io && revertedFood) {
+        io.emit("food_listing_updated", {
+          action: "UPDATE",
+          foodItem: revertedFood,
+        });
+      }
+
+      throw orderError;
+    }
+  } catch (error) {
+    console.error("Booking Error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to create reservation"
+    });
+  }
+};
+
+const getCustomerOrders = async (req, res) => {
+  try {
+    const customerId = req.user.id;
+    const orders = await Order.find({ customer: customerId })
+      .populate("provider", "kitchenName fullAddress phone avatar user")
+      .populate("foodItem", "name images category bringContainer")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      orders
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+const getProviderOrders = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const provider = await ProviderProfile.findOne({ user: userId });
+    
+    if (!provider) {
+      return res.status(404).json({ success: false, message: "Provider profile not found" });
+    }
+
+    const orders = await Order.find({ provider: provider._id })
+      .populate("customer", "name phone profileImage")
+      .populate("foodItem", "name images category")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      orders
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+const updateOrderStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status } = req.body;
+    const userId = req.user.id;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    let isAuthorized = false;
+
+    if (order.customer.toString() === userId) {
+      isAuthorized = true;
+    } else {
+      const provider = await ProviderProfile.findOne({ user: userId });
+      if (provider && order.provider.toString() === provider._id.toString()) {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) {
+      return res.status(403).json({ success: false, message: "Not authorized to update this order" });
+    }
+
+    const validStatuses = ["PENDING", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "COMPLETED", "CANCELLED"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: "Invalid status" });
+    }
+
+    // Re-adjust stock limits dynamically if order status changes to CANCELLED
+    if (status === "CANCELLED" && order.status !== "CANCELLED") {
+      const food = await FoodItem.findById(order.foodItem);
+      if (food) {
+        food.quantity += order.quantity;
+        if (food.quantity > 0) {
+          food.status = "available";
+        }
+        await food.save();
+
+        const structuralFoodPayload = await FoodItem.findById(order.foodItem).populate({
+          path: "provider",
+          select: "kitchenName tagline city area startingPrice rating isAvailable isSubscribed subscriptionPlan planType subscriptionStatus",
+        });
+
+        const io = getIO();
+        if (io && structuralFoodPayload) {
+          io.emit("food_listing_updated", {
+            action: "UPDATE",
+            foodItem: structuralFoodPayload,
+          });
+        }
+      }
+    }
+
+    if (status === "COMPLETED" && order.status !== "COMPLETED") {
+      try {
+        await creditWalletForOrder(order.provider, order);
+        console.log(`💰 Wallet credited for order ${order._id}`);
+      } catch (walletErr) {
+        console.error("⚠️ Wallet credit failed for order", order._id, walletErr.message);
+      }
+    }
+
+    order.status = status;
+    await order.save();
+
+    // 📡 Live-broadcast status variations explicitly to active listening dashboards
+    const io = getIO();
+    if (io) {
+      const messagePayload = { action: "STATUS_UPDATE", order };
+      io.emit(`order_update_customer_${order.customer}`, messagePayload);
+      io.emit(`order_update_provider_${order.provider}`, messagePayload);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Order status updated to ${status}`,
+      order
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
   registerProvider,
   getMyProviderProfile,
@@ -499,4 +738,8 @@ module.exports = {
   getProviderById,
   getUniqueLocations,
   reverseGeocode,
+  createOrder,
+  getCustomerOrders,
+  getProviderOrders,
+  updateOrderStatus
 };

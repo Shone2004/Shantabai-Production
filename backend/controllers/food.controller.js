@@ -1,6 +1,14 @@
 const FoodItem = require("../models/FoodItem");
 const ProviderProfile = require("../models/ProviderProfile");
 const { uploadToCloudinary } = require("../utils/cloudinaryHelper");
+const { getIO } = require("../services/socketService"); // ⚡ Import your socket utility
+
+// 🔧 FIX: Added missing helper function to calculate average ratings safely
+const calculateAverageRating = (reviews) => {
+  if (!reviews || reviews.length === 0) return 0;
+  const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+  return totalRating / reviews.length;
+};
 
 // Helper to parse Date and Time String into a combined Date object
 const parseDateTime = (dateVal, timeStr) => {
@@ -54,8 +62,6 @@ const formatTime12h = (timeStr) => {
 // @access  Private (Provider only)
 const createFoodItem = async (req, res) => {
   console.log("=== CREATE FOOD HIT ===");
-  console.log("REQ USER:", req.user);
-  console.log("REQ BODY:", req.body);
   try {
     const {
       name,
@@ -128,7 +134,7 @@ const createFoodItem = async (req, res) => {
       }
     }
 
-    const foodItem = await FoodItem.create({
+    let foodItem = await FoodItem.create({
       provider: providerProfile._id,
       name,
       description,
@@ -154,6 +160,20 @@ const createFoodItem = async (req, res) => {
       isApproved: true,
     });
 
+    foodItem = await foodItem.populate({
+      path: "provider",
+      select: "kitchenName tagline city area startingPrice rating isAvailable isSubscribed subscriptionPlan planType subscriptionStatus avatar verificationStatus",
+    });
+
+    // 📡 Real-time broadcast: Create event
+    const io = getIO();
+    if (io) {
+      io.emit("food_listing_updated", {
+        action: "CREATE",
+        foodItem,
+      });
+    }
+
     res.status(201).json({
       success: true,
       message: "Food item created successfully.",
@@ -165,7 +185,6 @@ const createFoodItem = async (req, res) => {
       success: false,
       message: "Server error creating food item",
       error: error.message,
-      stack: error.stack,
     });
   }
 };
@@ -206,12 +225,9 @@ const getAllFoods = async (req, res) => {
   }
 };
 
-
-
 // @desc    Get reviews of a food item
 // @route   GET /api/foods/:id/reviews
 // @access  Public
-
 const getFoodReviews = async (req, res) => {
   try {
     const foodItem = await FoodItem.findById(req.params.id)
@@ -235,7 +251,6 @@ const getFoodReviews = async (req, res) => {
 
   } catch (error) {
     console.error(error);
-
     res.status(500).json({
       success: false,
       message: "Failed to fetch reviews",
@@ -247,7 +262,6 @@ const getFoodReviews = async (req, res) => {
 // @desc    Delete own review
 // @route   DELETE /api/foods/:foodId/review/:reviewId
 // @access  Private
-
 const deleteReview = async (req, res) => {
   try {
     const { foodId, reviewId } = req.params;
@@ -270,9 +284,7 @@ const deleteReview = async (req, res) => {
       });
     }
 
-    if (
-      review.user.toString() !== req.user._id.toString()
-    ) {
+    if (review.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: "Not authorized",
@@ -492,7 +504,19 @@ const updateFoodItem = async (req, res) => {
     foodItem = await FoodItem.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
+    }).populate({
+      path: "provider",
+      select: "kitchenName tagline city area startingPrice rating isAvailable isSubscribed subscriptionPlan planType subscriptionStatus",
     });
+
+    // 📡 Real-time broadcast: Update event
+    const io = getIO();
+    if (io) {
+      io.emit("food_listing_updated", {
+        action: foodItem.status === "out" || foodItem.quantity <= 0 ? "DELETE" : "UPDATE",
+        foodItem,
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -511,7 +535,6 @@ const updateFoodItem = async (req, res) => {
 // @desc Get food history of logged-in chef
 // @route GET /api/foods/provider/history
 // @access Private (Provider)
-
 const getFoodHistory = async (req, res) => {
   try {
     const providerProfile = await ProviderProfile.findOne({
@@ -575,6 +598,15 @@ const deleteFoodItem = async (req, res) => {
 
     await FoodItem.findByIdAndDelete(id);
 
+    // 📡 Real-time broadcast: Delete event
+    const io = getIO();
+    if (io) {
+      io.emit("food_listing_updated", {
+        action: "DELETE",
+        foodItem: { _id: id },
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: "Food item deleted successfully",
@@ -604,10 +636,7 @@ const addReviewToFood = async (req, res) => {
       });
     }
 
-    if (
-      foodItem.provider?.user?.toString() ===
-      req.user._id.toString()
-    ) {
+    if (foodItem.provider?.user?.toString() === req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: "Providers cannot review their own food items.",
@@ -637,16 +666,13 @@ const addReviewToFood = async (req, res) => {
       0
     );
 
-    foodItem.averageRating =
-      totalRating / foodItem.reviews.length;
+    foodItem.averageRating = totalRating / foodItem.reviews.length;
 
     await foodItem.save();
 
     res.status(200).json({
       success: true,
-      message: alreadyReviewed
-        ? "Review updated successfully"
-        : "Review added successfully",
+      message: alreadyReviewed ? "Review updated successfully" : "Review added successfully",
       averageRating: foodItem.averageRating,
       reviews: foodItem.reviews,
     });
@@ -696,7 +722,7 @@ const getProviderStats = async (req, res) => {
       error: error.message,
     });
   }
-}
+};
 
 // @desc    Get similar food items
 // @route   GET /api/foods/similar/:id
@@ -705,7 +731,6 @@ const getSimilarFoods = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Find current food item to get its provider and category
     const currentFood = await FoodItem.findById(id);
     if (!currentFood) {
       return res.status(404).json({
@@ -715,8 +740,6 @@ const getSimilarFoods = async (req, res) => {
     }
 
     const now = new Date();
-    
-    // Find similar items: same category OR same provider, not expired, not the current food
     const query = {
       _id: { $ne: id },
       expiryAt: { $gt: now }
@@ -727,7 +750,6 @@ const getSimilarFoods = async (req, res) => {
       select: "kitchenName tagline city area startingPrice rating avatar verificationStatus",
     });
 
-    // Sort: same provider first, then same category
     similarItems.sort((a, b) => {
       const aSameProvider = a.provider && a.provider._id.toString() === currentFood.provider.toString();
       const bSameProvider = b.provider && b.provider._id.toString() === currentFood.provider.toString();
@@ -744,7 +766,6 @@ const getSimilarFoods = async (req, res) => {
       return 0;
     });
 
-    // Limit to 6 items
     const limitedItems = similarItems.slice(0, 6);
 
     res.status(200).json({
@@ -774,4 +795,4 @@ module.exports = {
   deleteReview,
   getFoodHistory,
   getSimilarFoods,
-}
+};

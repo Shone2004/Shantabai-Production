@@ -21,7 +21,7 @@ export const initSocket = (currentUser) => {
     return null;
   }
 
-  // If socket is already connected, just update the user context reference and return it
+  // If socket is already connected, update the user context reference and return it
   if (socket && socket.connected) {
     return socket;
   }
@@ -42,7 +42,31 @@ export const initSocket = (currentUser) => {
     console.log("⚡ Socket.IO connected successfully");
   });
 
-  // Global background listener handles sound alerts and shifts out of the way for active chat boxes
+  // ==========================================
+  // 🍽️ LIVE CHEF & FOOD MARKETPLACE LISTENERS
+  // ==========================================
+  
+  // Listens for real-time menu items updating, selling out, or being added live
+  socket.on("food_listing_updated", (data) => {
+    console.log("🍲 [Marketplace Listener] Real-time food update received:", data);
+    
+    // Dispatches a global event for FindServices.jsx to instantly capture 
+    const foodUpdateEvent = new CustomEvent("socket_food_updated", { detail: data });
+    window.dispatchEvent(foodUpdateEvent);
+  });
+
+  // Listens for real-time chef changes (Chef going online, updating location, opening kitchen)
+  socket.on("chef_status_updated", (data) => {
+    console.log("👨‍🍳 [Marketplace Listener] Real-time chef status update received:", data);
+    
+    // Dispatches a global event for FindServices.jsx to update the chefs tab instantly
+    const chefUpdateEvent = new CustomEvent("socket_chef_updated", { detail: data });
+    window.dispatchEvent(chefUpdateEvent);
+  });
+
+  // ==========================================
+  // 📨 CHAT & MESSAGE LISTENERS
+  // ==========================================
   socket.on("receive_message", (message) => {
     const currentUserId = currentUserGlobal?._id || currentUserGlobal?.id;
     
@@ -53,7 +77,6 @@ export const initSocket = (currentUser) => {
       activeChatId: window.activeChatId,
     });
     
-    // Dispatches a native window system message event so your active UI component state can catch it instantly
     const messageEvent = new CustomEvent("socket_message_received", { detail: message });
     window.dispatchEvent(messageEvent);
 
