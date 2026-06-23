@@ -19,8 +19,8 @@ const bookingRoutes = require("./routes/booking.routes.js");
 const contactRoutes = require("./routes/contact.routes.js");
 const chatRoutes = require("./routes/chat.routes.js");
 const supportRoutes = require("./routes/support.routes.js");
-// Added subscription route import
 const subscriptionRoutes = require("./routes/subscription.routes.js");
+const walletRoutes = require("./routes/wallet.routes.js");
 
 const app = express();
 const server = http.createServer(app);
@@ -42,8 +42,8 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/support", supportRoutes);
-// Registered subscription endpoint route handler
 app.use("/api/subscription", subscriptionRoutes);
+app.use("/api/wallet", walletRoutes);
 
 app.get("/", (req, res) => {
   res.send("kp API Running");

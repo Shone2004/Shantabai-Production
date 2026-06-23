@@ -42,6 +42,7 @@ import {
 import ChefBookings from "./ChefBookings";
 import CustomerChats from "./CustomerChats";
 import AdminChat from "./AdminChat";
+import ChefWallet from "./ChefWallet";
 import { getSocket } from "../../services/socket";
 
 const getStatusBadge = (rawStatus) => {
@@ -88,6 +89,7 @@ const SIDEBAR_NAV = [
     icon: Crown,
     comingSoon: false
   },
+  { id: "wallet",         label: "Wallet",         icon: Wallet,          comingSoon: false },
   { id: "customer_chats", label: "Customer Chats", icon: MessageSquare,   comingSoon: false },
   { id: "admin_messages", label: "Admin Messages", icon: Shield,          comingSoon: false },
   { id: "earnings",       label: "Earnings",       icon: TrendingUp,      comingSoon: true  },
@@ -117,6 +119,7 @@ function getPageTitle(activePage, editingFoodId) {
     profile: "Profile",
     bookings: "Bookings",
     subscription: "Subscription",
+    wallet: "My Wallet",
     customer_chats: "Customer Chats",
     admin_messages: "Admin Messages",
     earnings: "Earnings",
@@ -1779,6 +1782,14 @@ export default function ProviderDashboard() {
               {activePage === "subscription" && (
   <Subscription />
 )}
+
+              {/* ══════════════════════════════
+                  PAGE: WALLET
+              ══════════════════════════════ */}
+              {activePage === "wallet" && (
+                <ChefWallet />
+              )}
+
               {activePage === "profile" && (
                 <div className="space-y-5 max-w-5xl animate-fade-in">
                   <div>

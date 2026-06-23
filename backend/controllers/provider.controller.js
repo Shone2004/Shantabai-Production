@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const User = require("../models/User");
 const ProviderProfile = require("../models/ProviderProfile");
 const bcrypt = require("bcryptjs");
@@ -341,12 +342,45 @@ const getAllApprovedProviders = async (req, res) => {
   }
 };
 
+// @desc    Get all verified (APPROVED) providers
+// @route   GET /api/providers/verified
+// @access  Public
+const getAllVerifiedProviders = async (req, res) => {
+  try {
+    const providers = await ProviderProfile.find({
+      verificationStatus: "APPROVED",
+      isAvailable: true,
+    }).populate("user", "name email phone profileImage");
+
+    res.status(200).json({
+      success: true,
+      count: providers.length,
+      providers,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error fetching verified providers",
+      error: error.message,
+    });
+  }
+};
+
 // @desc    Get single provider profile by ID
 // @route   GET /api/providers/:id
 // @access  Public
 const getProviderById = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Guard: reject non-ObjectId values immediately (e.g. "1", "5", "me")
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid provider ID format",
+      });
+    }
+
     const provider = await ProviderProfile.findById(id).populate("user", "name email phone profileImage");
 
     if (!provider) {
@@ -461,6 +495,7 @@ module.exports = {
   getMyProviderProfile,
   updateMyProviderProfile,
   getAllApprovedProviders,
+  getAllVerifiedProviders,
   getProviderById,
   getUniqueLocations,
   reverseGeocode,

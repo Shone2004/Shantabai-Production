@@ -6,6 +6,7 @@ const {
   getMyProviderProfile,
   updateMyProviderProfile,
   getAllApprovedProviders,
+  getAllVerifiedProviders,
   getProviderById,
   getUniqueLocations,
   reverseGeocode,
@@ -28,8 +29,12 @@ router.post(
   registerProvider
 );
 
-// Public listing
+// Public listing (all approved)
 router.get("/", getAllApprovedProviders);
+
+// Public listing (verified + available) — used by ChefSection & AIConsultant
+// IMPORTANT: must be declared before /:id to avoid route collision
+router.get("/verified", getAllVerifiedProviders);
 
 // @route   GET /api/providers/me
 // @desc    Get current provider's profile

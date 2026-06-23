@@ -2,6 +2,7 @@ const Order = require("../models/Order");
 const FoodItem = require("../models/FoodItem");
 const ProviderProfile = require("../models/ProviderProfile");
 const mongoose = require("mongoose");
+const { creditWalletForOrder } = require("./wallet.controller");
 
 // Create a new reservation/order (Customer)
 exports.createOrder = async (req, res) => {
@@ -97,7 +98,7 @@ exports.getCustomerOrders = async (req, res) => {
     const customerId = req.user.id;
     const orders = await Order.find({ customer: customerId })
       .populate("provider", "kitchenName fullAddress phone avatar user")
-      .populate("foodItem")
+      .populate("foodItem", "name images category bringContainer")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -184,6 +185,18 @@ exports.updateOrderStatus = async (req, res) => {
           food.status = "available";
         }
         await food.save();
+      }
+    }
+
+    // 4. Credit chef wallet when order becomes COMPLETED (COD pickup confirmed)
+    // Guard: only trigger once, not if already COMPLETED
+    if (status === "COMPLETED" && order.status !== "COMPLETED") {
+      try {
+        await creditWalletForOrder(order.provider, order);
+        console.log(`💰 Wallet credited for order ${order._id}`);
+      } catch (walletErr) {
+        // Don't block the status update if wallet credit fails — log and continue
+        console.error("⚠️ Wallet credit failed for order", order._id, walletErr.message);
       }
     }
 

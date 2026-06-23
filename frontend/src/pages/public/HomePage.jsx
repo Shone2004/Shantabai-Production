@@ -14,6 +14,7 @@ import AIConsultant from '../../components/ai/AIConsultant.jsx';
 import SubscribedFoodList from '../../components/home/SubscribedFoodList.jsx';
 import HeroCarousel from '../../components/home/HeroCarousel.jsx';
 import HowItWorks from '../../components/home/HowItWorks.jsx';
+import Chefsection from '../../components/chef/Chefsection.jsx';
 
 // ─── Backend Food Mapper ──────────────────────────────────────────────────────
 const mapBackendFoodToCard = (backendFood) => {
@@ -284,6 +285,14 @@ export default function HomePage() {
         {/* ── How Shantabai Works Section (Premium Journey Timeline) ── */}
         <HowItWorks />
 
+        {/* ── Chef Section ── */}
+        <div className="mt-14">
+          <Chefsection
+            onConsultAI={() => setShowAI(true)}
+            onViewProfile={(chefId) => navigate(`/provider/${chefId}`)}
+          />
+        </div>
+
         {/* ── Provider CTA ── */}
         <ProviderCTA />
 
@@ -309,7 +318,7 @@ export default function HomePage() {
           onClose={() => setShowAI(false)}
           onBookChef={(chef) => {
             setShowAI(false);
-            navigate(`/provider/${chef.id}`);
+            navigate(`/provider/${chef._id}`);
           }}
         />
       )}
