@@ -625,18 +625,22 @@ export default function ChefSignup() {
                   {errors.experience && <p className="text-xs font-bold text-red-500">{errors.experience}</p>}
                 </div>
 
-                {/* Bio */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-gray-700">Short Bio / About Me <span className="text-red-500">*</span></label>
-                  <p className="text-xs text-gray-500">Tell customers a bit about your cooking journey, secret recipes, or hygiene practices.</p>
-                  <textarea
-                    name="bio" value={formData.bio} onChange={handleInputChange}
-                    placeholder="I started cooking traditional Maharashtrian food 10 years ago..."
-                    rows={4}
-                    className={`w-full px-4 py-3 rounded-xl border bg-gray-50 focus:bg-white transition-all outline-none resize-none ${errors.bio ? 'border-red-300' : 'border-gray-200 focus:border-brand-green'}`}
-                  />
-                  {errors.bio && <p className="text-xs font-bold text-red-500">{errors.bio}</p>}
-                </div>
+                {/* Bio / Journey */}
+<div className="space-y-1.5">
+  <label className="text-sm font-bold text-gray-700">My Cooking Story & Journey <span className="text-red-500">*</span></label>
+  <p className="text-xs text-gray-500">
+    Share your culinary roots! Tell customers what inspired you to start cooking, your journey over the years, your signature style, and why you love sharing your food.
+  </p>
+  <textarea
+    name="bio" 
+    value={formData.bio} 
+    onChange={handleInputChange}
+    placeholder="e.g., Growing up, I watched my grandmother blend spices for Sunday family feasts. Ten years ago, I decided to turn that passion into a reality, specializing in traditional Maharashtrian cuisine with a focus on fresh, farm-to-table ingredients..."
+    rows={5}
+    className={`w-full px-4 py-3 rounded-xl border bg-gray-50 focus:bg-white transition-all outline-none resize-none ${errors.bio ? 'border-red-300' : 'border-gray-200 focus:border-brand-green'}`}
+  />
+  {errors.bio && <p className="text-xs font-bold text-red-500">{errors.bio}</p>}
+</div>
 
                 {/* Kitchen Photo */}
                 <div className="space-y-2">
