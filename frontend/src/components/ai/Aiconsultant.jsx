@@ -208,8 +208,8 @@ export default function AIConsultant({ onClose, onBookChef }) {
   const progress = Math.round((step / 5) * 100);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col">
+    <div className="fixed inset-0 z-50 bg-[#021F12]/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col ring-1 ring-white/10 sm:shadow-[0_0_60px_rgba(0,0,0,0.5)]">
 
         {/* Header */}
         <div className="bg-brand-green px-6 py-5 flex items-center justify-between flex-shrink-0 sm:rounded-t-3xl rounded-t-3xl">
