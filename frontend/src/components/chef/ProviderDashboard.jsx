@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 import api from "../../services/api";
 import Subscription from "../dashboard/Subscription.jsx";
+import ReviewSection from "../ReviewSection.jsx";
 import {
   LayoutDashboard,
   Utensils,
@@ -58,6 +59,7 @@ const getStatusBadge = (rawStatus) => {
     return `px-3 py-1 rounded-full text-xs font-bold border tracking-wide uppercase ${styles[status] || styles.PENDING}`;
   };
 
+ 
 // ─── Constants (unchanged) ──────────────────────────────────────────────────
 const CUISINE_TYPES = [
   "North Indian", "South Indian", "Maharashtrian", "Gujarati",
@@ -93,7 +95,7 @@ const SIDEBAR_NAV = [
   { id: "customer_chats", label: "Customer Chats", icon: MessageSquare,   comingSoon: false },
   { id: "admin_messages", label: "Admin Messages", icon: Shield,          comingSoon: false },
   { id: "earnings",       label: "Earnings",       icon: TrendingUp,      comingSoon: true  },
-  { id: "reviews",        label: "Reviews",        icon: Star,            comingSoon: true  },
+  { id: "reviews",        label: "Reviews",        icon: Star,            comingSoon: false  },
   { id: "availability",   label: "Availability",   icon: ToggleLeft,      comingSoon: true  },
   { id: "profile",        label: "Profile",        icon: User,            comingSoon: false },
   { id: "support",        label: "Support",        icon: LifeBuoy,        comingSoon: true  },
@@ -108,7 +110,7 @@ const BOTTOM_NAV = [
   { id: "profile",   label: "Profile",  icon: User,            isCenter: false },
 ];
 
-const COMING_SOON_PAGES = ["earnings", "reviews", "availability", "support"];
+const COMING_SOON_PAGES = ["earnings",  "availability", "support"];
 
 // ─── Page Title Helper ───────────────────────────────────────────────────────
 function getPageTitle(activePage, editingFoodId) {
@@ -186,22 +188,21 @@ export default function ProviderDashboard() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [activePage, setActivePage] = useState("dashboard");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
   const [unreadCounts, setUnreadCounts] = useState({
     customerChats: 0,
     adminMessages: 0
   });
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // ── Profile Data (unchanged) ──
+  // ── Unified Profile & Loading States ──
   const [profile, setProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState("");
 
-  // ── Foods Data (unchanged) ──
+  // ── Foods & Stats Data ──
   const [foods, setFoods] = useState([]);
   const [foodsLoading, setFoodsLoading] = useState(true);
-
-  // ── Dashboard Stats (unchanged) ──
   const [stats, setStats] = useState({
     totalFoods: 0,
     activeFoods: 0,
@@ -210,6 +211,26 @@ export default function ProviderDashboard() {
     totalEarnings: 0
   });
   const [statsLoading, setStatsLoading] = useState(true);
+
+  // ── Data Fetching Effect ──
+  useEffect(() => {
+    const fetchProviderData = async () => {
+      try {
+        setProfileLoading(true);
+        setProfileError("");
+        
+        const res = await api.get('/providers/me'); 
+        setProfile(res.data.profile);
+      } catch (err) {
+        console.error("Error loading dashboard data:", err);
+        setProfileError("Failed to load profile data.");
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+    
+    fetchProviderData();
+  }, []);
 
   // ── Food Form State (unchanged) ──
   const [editingFoodId, setEditingFoodId] = useState(null);
@@ -2063,6 +2084,18 @@ export default function ProviderDashboard() {
                 </div>
               )}
 
+
+              {/* ══════════════════════════════
+                  PAGE: Reviews
+              ══════════════════════════════ */}
+              {activePage === "reviews" && (
+  <div className="p-6 md:p-8 animate-fade-in">
+    <h2 className="text-2xl font-black text-slate-900 mb-6">Your Reviews</h2>
+    {/* profile.reviews contains the array of feedback from your database */}
+    <ReviewSection reviews={profile?.reviews || []} />
+  </div>
+)}
+
               {/* ══════════════════════════════
                   PAGE: COMING SOON
               ══════════════════════════════ */}
@@ -2071,7 +2104,7 @@ export default function ProviderDashboard() {
                   <div className="w-20 h-20 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center justify-center mb-5">
                     {activePage === "bookings"     && <CalendarDays className="w-9 h-9 text-slate-200" aria-hidden="true" />}
                     {activePage === "earnings"     && <TrendingUp   className="w-9 h-9 text-slate-200" aria-hidden="true" />}
-                    {activePage === "reviews"      && <Star         className="w-9 h-9 text-slate-200" aria-hidden="true" />}
+                    {/* {activePage === "reviews"      && <Star         className="w-9 h-9 text-slate-200" aria-hidden="true" />} */}
                     {activePage === "availability" && <ToggleLeft   className="w-9 h-9 text-slate-200" aria-hidden="true" />}
                     {activePage === "support"      && <LifeBuoy     className="w-9 h-9 text-slate-200" aria-hidden="true" />}
                   </div>

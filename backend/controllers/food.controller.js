@@ -396,12 +396,15 @@ const getFoodById = async (req, res) => {
 // @access  Private (Provider only)
 const getMyFoodItems = async (req, res) => {
   try {
+    // GUARD: Ensure req.user exists
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ success: false, message: "User not authenticated" });
+    }
+
     const providerProfile = await ProviderProfile.findOne({ user: req.user._id });
+    
     if (!providerProfile) {
-      return res.status(403).json({
-        success: false,
-        message: "Provider profile not found",
-      });
+      return res.status(404).json({ success: false, message: "Provider profile not found" });
     }
 
     const foodItems = await FoodItem.find({ provider: providerProfile._id });
@@ -412,11 +415,8 @@ const getMyFoodItems = async (req, res) => {
       foodItems,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Server error fetching food items",
-      error: error.message,
-    });
+    console.error("GET MY FOOD ERROR:", error);
+    res.status(500).json({ success: false, message: "Server error fetching food items", error: error.message });
   }
 };
 
@@ -689,21 +689,25 @@ const addReviewToFood = async (req, res) => {
 // @access  Private (Provider only)
 const getProviderStats = async (req, res) => {
   try {
+    // GUARD: Ensure req.user exists
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ success: false, message: "User not authenticated" });
+    }
+
     const providerProfile = await ProviderProfile.findOne({ user: req.user._id });
+    
     if (!providerProfile) {
-      return res.status(403).json({
-        success: false,
-        message: "Provider profile not found",
-      });
+      return res.status(404).json({ success: false, message: "Provider profile not found" });
     }
 
     const foodItems = await FoodItem.find({ provider: providerProfile._id });
 
+    // Ensure we handle cases where foodItems might be empty
     const totalFoods = foodItems.length;
     const activeFoods = foodItems.filter(item => item.status === "available" && item.quantity > 0).length;
     const ordersToday = foodItems.reduce((acc, item) => acc + (item.ordersToday || 0), 0);
-    const earningsToday = foodItems.reduce((acc, item) => acc + ((item.ordersToday || 0) * item.price), 0);
-    const historicalEarnings = foodItems.reduce((acc, item) => acc + (15 * item.price), 0);
+    const earningsToday = foodItems.reduce((acc, item) => acc + ((item.ordersToday || 0) * (item.price || 0)), 0);
+    const historicalEarnings = foodItems.reduce((acc, item) => acc + (15 * (item.price || 0)), 0);
 
     res.status(200).json({
       success: true,
@@ -716,11 +720,8 @@ const getProviderStats = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Server error fetching stats",
-      error: error.message,
-    });
+    console.error("GET STATS ERROR:", error);
+    res.status(500).json({ success: false, message: "Server error fetching stats", error: error.message });
   }
 };
 

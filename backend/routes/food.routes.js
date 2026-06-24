@@ -22,102 +22,53 @@ const { allowRoles } = require("../middleware/roleMiddleware");
 const { verifyProviderApproved } = require("../middleware/verifyProviderApproved");
 const upload = require("../middleware/uploadMiddleware");
 
+// Middleware stack for protected provider routes
 const providerOnly = [
   authenticateUser,
   allowRoles("PROVIDER"),
   verifyProviderApproved,
 ];
 
+// ==========================================
+// 1. PROVIDER-ONLY STATIC ROUTES
+// ==========================================
+// These must be defined before /:id routes to avoid collision
+router.get("/stats", ...providerOnly, getProviderStats);
+router.get("/me", ...providerOnly, getMyFoodItems);
+router.get("/provider/history", ...providerOnly, getFoodHistory);
 
 // ==========================================
-// PUBLIC ROUTES
+// 2. PUBLIC & DYNAMIC ROUTES
 // ==========================================
-
-// Get all foods
+// Matches "/" (all foods)
 router.get("/", getAllFoods);
 
-// Provider food history
-router.get(
-  "/provider/history",
-  ...providerOnly,
-  getFoodHistory
-);
-
-// Get similar foods
+// Matches "/similar/:id" - specific path before "/:id"
 router.get("/similar/:id", getSimilarFoods);
 
-// Get single food
-router.get("/:id", getFoodById);
-
-// Get food reviews
+// Matches "/:id/reviews" - specific path before "/:id"
 router.get("/:id/reviews", getFoodReviews);
 
+// Matches "/:id" - generic param, must be last in the get list
+router.get("/:id", getFoodById);
 
 // ==========================================
-// AUTHENTICATED USER ROUTES
+// 3. AUTHENTICATED USER ACTIONS
 // ==========================================
-
-// Add review to food
-router.post(
-  "/:id/review",
-  authenticateUser,
-  addReviewToFood
-);
-
-// Add review to provider
-router.post(
-  "/provider/:providerId/review",
-  authenticateUser,
-  addReviewToProvider
-);
-
-// Delete own review
-router.delete(
-  "/:foodId/review/:reviewId",
-  authenticateUser,
-  deleteReview
-);
-
+router.post("/:id/review", authenticateUser, addReviewToFood);
+router.post("/provider/:providerId/review", authenticateUser, addReviewToProvider);
+router.delete("/:foodId/review/:reviewId", authenticateUser, deleteReview);
 
 // ==========================================
-// PROVIDER ROUTES
+// 4. PROVIDER CRUD ACTIONS
 // ==========================================
+// Create food item
+router.post("/", ...providerOnly, upload.array("images", 5), createFoodItem);
 
-// Get provider's foods
-router.get(
-  "/me",
-  ...providerOnly,
-  getMyFoodItems
-);
+// Update food item
+router.put("/:id", ...providerOnly, upload.array("images", 5), updateFoodItem);
 
-// Provider stats
-router.get(
-  "/stats",
-  ...providerOnly,
-  getProviderStats
-);
-
-// Create food
-router.post(
-  "/",
-  ...providerOnly,
-  upload.array("images", 5),
-  createFoodItem
-);
-
-// Update food
-router.put(
-  "/:id",
-  ...providerOnly,
-  upload.array("images", 5),
-  updateFoodItem
-);
-
-// Delete food
-router.delete(
-  "/:id",
-  ...providerOnly,
-  deleteFoodItem
-);
+// Delete food item
+router.delete("/:id", ...providerOnly, deleteFoodItem);
 
 module.exports = router;

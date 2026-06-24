@@ -1,65 +1,90 @@
 import React, { useState } from 'react';
-import api from "../services/api"; // Adjust your import path as needed
+import api from "../services/api";
 
-const ReviewSection = ({ foodId, onReviewSubmit }) => {
+const ReviewSection = ({ reviews = [], foodId, onReviewSubmit }) => {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (rating === 0) return alert("Please select a rating");
+    if (rating === 0) return alert("Please select a star rating first.");
+    
     setLoading(true);
     try {
-      await api.post(`/foods/${foodId}/review`, { rating, comment });
-      onReviewSubmit(); // Trigger a callback to refresh the parent data
+      const token = localStorage.getItem("token");
+      await api.post(`/foods/${foodId}/review`, 
+        { rating, comment },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Reset form and refresh parent data
       setRating(0);
       setComment("");
+      if (onReviewSubmit) onReviewSubmit(); 
     } catch (err) {
-  console.log("Review Error:", err);
-  console.log("Response Data:", err.response?.data);
-
-  alert(
-    err.response?.data?.message ||
-    err.response?.data?.error ||
-    "Failed to submit review"
-  );
-}
- finally {
+      console.error("Review submission error:", err);
+      alert(err.response?.data?.message || "Failed to submit review. Please try again.");
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-[0_4px_20px_rgba(15,23,42,0.06)] hover:-translate-y-0.5 transition-all duration-300 mt-6">
-      <h3 className="font-bold text-slate-900 tracking-normal mb-4">Rate this Dish</h3>
-      
-      {/* Star Selection */}
-      <div className="flex gap-2 mb-4">
-        {[1, 2, 3, 4, 5].map((s) => (
-          <button 
-            key={s} 
-            onClick={() => setRating(s)}
-            className={`text-2xl ${rating >= s ? "text-amber-400" : "text-gray-200"}`}
-          >
-            ★
-          </button>
-        ))}
+    <div className="space-y-6">
+      {/* 1. DISPLAY LIST */}
+      <div className="space-y-4">
+        <h3 className="font-bold text-slate-900 mb-4">Customer Feedback</h3>
+        
+        {Array.isArray(reviews) && reviews.length > 0 ? (
+          reviews.map((review) => (
+            <div key={review._id} className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+              <div className="flex justify-between items-center mb-2">
+                <span className="font-bold text-sm text-slate-800">{review.userName || "Customer"}</span>
+                <div className="flex text-amber-400">
+                  {[...Array(5)].map((_, i) => (
+                    <span key={i} className={i < (review.rating || 0) ? "text-amber-400" : "text-gray-200"}>★</span>
+                  ))}
+                </div>
+              </div>
+              <p className="text-sm text-slate-600">{review.comment || "No comment provided."}</p>
+            </div>
+          ))
+        ) : (
+          <p className="text-sm text-gray-500 italic">No reviews yet. Be the first to rate this!</p>
+        )}
       </div>
 
-      <textarea 
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-        placeholder="Share your experience..."
-        className="w-full p-3 border border-gray-200 rounded-xl mb-3 focus:border-brand-green outline-none"
-      />
-
-      <button 
-        onClick={handleSubmit}
-        disabled={loading}
-        className="px-6 py-2 bg-brand-green text-white rounded-xl font-bold text-sm"
-      >
-        {loading ? "Submitting..." : "Submit Review"}
-      </button>
+      {/* 2. INPUT FORM (Only show if foodId is provided) */}
+      {foodId && (
+        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+          <h3 className="font-bold text-slate-900 mb-4">Rate this Dish</h3>
+          <div className="flex gap-2 mb-4">
+            {[1, 2, 3, 4, 5].map((s) => (
+              <button 
+                key={s} 
+                type="button"
+                onClick={() => setRating(s)} 
+                className={`text-2xl transition-colors ${rating >= s ? "text-amber-400" : "text-gray-200"}`}
+              >
+                ★
+              </button>
+            ))}
+          </div>
+          <textarea 
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Share your experience..."
+            className="w-full p-3 border border-gray-200 rounded-xl mb-3 outline-none focus:border-brand-green"
+          />
+          <button 
+            onClick={handleSubmit}
+            disabled={loading}
+            className="w-full py-2 bg-brand-green text-white rounded-xl font-bold hover:opacity-90 disabled:opacity-50 transition-all"
+          >
+            {loading ? "Submitting..." : "Submit Review"}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

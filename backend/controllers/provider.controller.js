@@ -191,25 +191,16 @@ const registerProvider = async (req, res) => {
 
 const getMyProviderProfile = async (req, res) => {
   try {
-    const profile = await ProviderProfile.findOne({ user: req.user._id }).populate("user", "-password");
+    const profile = await ProviderProfile.findOne({ user: req.user._id })
+      .populate("user", "-password"); // Removed the .populate("reviews") chain
 
     if (!profile) {
-      return res.status(404).json({
-        success: false,
-        message: "Provider profile not found",
-      });
+      return res.status(404).json({ success: false, message: "Profile not found" });
     }
 
-    res.status(200).json({
-      success: true,
-      profile,
-    });
+    res.status(200).json({ success: true, profile });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Server error fetching profile",
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

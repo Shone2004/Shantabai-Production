@@ -18,9 +18,9 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import ReviewSection from '../../components/ReviewSection';
 import FoodCard from '../../components/food/FoodCard';
 import { LocationContext } from '../../context/LocationContext';
+import ReviewSection from '../../components/ReviewSection';
 
 const FoodDetail = () => {
   const { id } = useParams();
@@ -492,55 +492,13 @@ const FoodDetail = () => {
             </div>
 
             {/* Section 4: Pickup Details Card */}
-            <div className="mx-4 sm:mx-0 bg-white border border-gray-200 rounded-2xl shadow-[0_4px_20px_rgba(15,23,42,0.06)] hover:-translate-y-0.5 transition-all duration-300 p-4 sm:p-5 space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-normal font-jakarta">Pickup Details</h2>
-              </div>
-              
-              <div className="flex flex-col gap-3.5 pt-0.5 text-xs font-semibold text-gray-600 font-jakarta">
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-brand-green shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-slate-900 font-bold text-sm sm:text-base leading-snug">
-                      {food.provider.area && food.provider.city ? `${food.provider.area}, ${food.provider.city}` : food.provider.area || food.provider.city || 'Contact Cook'}
-                    </p>
-                    <p className="text-slate-400 font-medium text-[11px] mt-0.5">Exact address shared post-reservation</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-brand-green shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-slate-900 font-bold text-sm sm:text-base leading-snug">{food.timeWindow}</p>
-                    <p className="text-slate-400 font-medium text-[11px] mt-0.5">Pickup window</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="shrink-0 mt-0.5">
-                    {food.bringContainer ? (
-                      <AlertCircle className="w-5 h-5 text-amber-500" />
-                    ) : (
-                      <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    )}
-                  </div>
-                  <div>
-                    <p className={`font-bold text-sm sm:text-base leading-snug ${food.bringContainer ? 'text-amber-600' : 'text-green-600'}`}>
-                      {food.bringContainer ? 'Please bring your own container' : 'Container included in purchase'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <span className="text-base shrink-0 mt-0.5">🌶️</span>
-                  <div>
-                    <p className="text-slate-900 font-bold text-sm sm:text-base leading-snug">
-                      {renderChilis(food.spicyLevel)} • Serves 1 adult
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Rates Submission Form - only shown to logged-in non-providers */}
+{user && food?.provider && user._id !== food.provider.id && (
+  <ReviewSection
+    foodId={food.id}
+    onReviewSubmit={fetchFoodDetail}
+  />
+)}
 
             {/* Section 6: About This Dish */}
             <div className="mx-4 sm:mx-0 bg-white border border-gray-200 rounded-2xl shadow-[0_4px_20px_rgba(15,23,42,0.06)] hover:-translate-y-0.5 transition-all duration-300 p-4 sm:p-5 space-y-2.5">
@@ -555,7 +513,7 @@ const FoodDetail = () => {
             </div>
 
             {/* Section 7: Customer Reviews */}
-            <div className="mx-4 sm:mx-0 space-y-2.5">
+            {/* <div className="mx-4 sm:mx-0 space-y-2.5">
               <h3 className="text-lg sm:text-xl font-bold text-slate-900 tracking-normal font-jakarta pl-2">Customer Reviews</h3>
 
               {food.reviews.length === 0 ? (
@@ -579,7 +537,6 @@ const FoodDetail = () => {
                             </div>
                           </div>
                           
-                          {/* Stars */}
                           <div className="flex gap-0.5">
                             {[1, 2, 3, 4, 5].map((s) => (
                               <Star 
@@ -600,14 +557,13 @@ const FoodDetail = () => {
                 </div>
               )}
 
-              {/* Rates Submission Form - only shown to logged-in non-providers */}
               {user && food?.provider && user._id !== food.provider.id && (
                 <ReviewSection
                   foodId={food.id}
                   onReviewSubmit={fetchFoodDetail}
                 />
               )}
-            </div>
+            </div> */}
 
             {/* Section 8: Meet Your Home Chef */}
             <div className="mx-4 sm:mx-0 bg-white border border-gray-200 rounded-2xl shadow-[0_4px_20px_rgba(15,23,42,0.06)] hover:-translate-y-0.5 transition-all duration-300 p-4 sm:p-5 space-y-4">
