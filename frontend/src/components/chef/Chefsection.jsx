@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Sparkles } from 'lucide-react';
-import api from '../../services/api';
+import { useState, useEffect } from "react";
+import api from "../../services/api";
 
 const spiceMap = {
   Mild:   { label: "Mild",   emoji: "🌿", color: "#16A34A" },
@@ -13,8 +12,6 @@ const oilMap = {
   Normal:    { label: "Med Oil", color: "#D97706" },
   Extra:     { label: "Rich",    color: "#DC2626" },
 };
-
-export const ALL_CHEFS = [];
 
 export default function ChefSection({ onConsultAI, onViewProfile }) {
   const [chefs, setChefs] = useState([]);
@@ -52,110 +49,118 @@ export default function ChefSection({ onConsultAI, onViewProfile }) {
     });
 
   return (
-    <section className="mx-4 sm:mx-6 lg:mx-8 my-10">
-
-      {/* ── AI Consultant Banner ── */}
-      <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm mb-8">
-        <div className="flex gap-4">
-          <div className="w-12 h-12 rounded-xl bg-brand-green/10 flex items-center justify-center shrink-0 text-brand-green">
-            <Sparkles className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="text-base font-extrabold text-gray-900 flex items-center gap-1.5">
-              Looking for tailored meal options?
-            </h3>
-            <p className="text-gray-500 text-xs sm:text-sm font-semibold mt-1 max-w-xl leading-relaxed">
-              Our AI Assistant helps you find local cooks preparing meals matching your specific health needs—less oil, mild spice, low sodium, or diet plans.
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={onConsultAI}
-          className="w-full md:w-auto flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 hover:border-gray-300 font-bold text-xs uppercase tracking-wider px-5 py-3.5 rounded-xl transition-all shadow-sm active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
-        >
-          <span>Consult AI Assistant</span>
-        </button>
-      </div>
+    <section className="py-10">
 
       {/* ── Header ── */}
-      <div className="px-4 sm:px-6 lg:px-8 mb-8">
-  <div className="inline-flex items-center gap-1.5 bg-brand-green/10 text-brand-green px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-2">
-    <span>🍳</span> Our Chefs
-  </div>
-  <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight leading-tight">
-    Top Rated <span className="text-brand-green">Home Chefs</span>
-  </h2>
-  <p className="text-sm text-gray-500 mt-1.5">
-    Verified home chefs, ready to cook for you
-  </p>
-</div>
+      <div className="px-4 sm:px-6 lg:px-8 mb-6">
+        <p className="text-xs font-bold uppercase tracking-widest text-brand-green mb-1">
+          🍳 Our Chefs
+        </p>
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight">
+          Top Rated Home Chefs
+        </h2>
+        <p className="text-sm text-gray-500 mt-1">
+          Verified home chefs, ready to cook for you
+        </p>
+      </div>
 
-{/* ── Loading ── */}
-{loading && (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4 sm:px-6 lg:px-8">
-    {[...Array(6)].map((_, i) => (
-      <div key={i} className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden animate-pulse">
-        <div className="h-40 bg-gray-200" />
-        <div className="p-5 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gray-200 flex-shrink-0" />
-            <div className="flex-1 space-y-2">
-              <div className="h-3 bg-gray-200 rounded w-3/4" />
-              <div className="h-2.5 bg-gray-100 rounded w-1/2" />
+      {/* ── AI Banner ── */}
+      <div className="mx-4 sm:mx-6 lg:mx-8 mb-8 rounded-3xl overflow-hidden relative border border-brand-green/20"
+        style={{ background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #f0fdf4 100%)" }}
+      >
+        {/* Subtle green accent blob */}
+        <div className="absolute -top-8 -right-8 w-48 h-48 bg-brand-green/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 px-6 py-7 sm:px-10 sm:py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+          <div className="flex-1">
+            <span className="inline-flex items-center gap-1.5 bg-brand-green/10 border border-brand-green/20 text-brand-green text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-3">
+              ✨ AI Powered
+            </span>
+            <h3 className="text-gray-900 font-extrabold text-xl sm:text-2xl leading-tight">
+              Not sure which chef to pick?
+            </h3>
+            <p className="text-gray-500 text-sm mt-2 max-w-md leading-relaxed">
+              Tell our AI your preferences — oil level, spice, diet needs — and get a personalised recommendation instantly.
+            </p>
+            <div className="flex flex-wrap gap-2 mt-4">
+              {["🫙 Oil Level", "🌶️ Spice", "🥗 Diet Type", "💰 Budget"].map((chip) => (
+                <span key={chip} className="text-[11px] font-semibold text-brand-green bg-white border border-brand-green/20 px-3 py-1 rounded-full shadow-sm">
+                  {chip}
+                </span>
+              ))}
             </div>
           </div>
-          <div className="h-2.5 bg-gray-100 rounded w-full" />
-          <div className="h-2.5 bg-gray-100 rounded w-4/5" />
-          <div className="h-10 bg-gray-100 rounded-xl mt-2" />
+
+          <div className="flex flex-col items-start sm:items-center gap-2 flex-shrink-0">
+            <button
+              onClick={onConsultAI}
+              className="flex items-center gap-2 bg-brand-green hover:bg-green-700 text-white font-bold text-sm px-6 py-3.5 rounded-2xl transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 active:scale-95 whitespace-nowrap"
+            >
+              🤖 Ask AI Consultant →
+            </button>
+          </div>
         </div>
       </div>
-    ))}
-  </div>
-)}
 
-{/* ── Error ── */}
-{!loading && error && (
-  <div className="mx-4 sm:mx-6 lg:mx-8 bg-red-50/50 border border-red-100 rounded-3xl p-8 text-center max-w-xl sm:mx-auto">
-    <div className="w-10 h-10 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-3 font-bold text-sm">!</div>
-    <p className="text-gray-800 font-semibold text-sm">{error}</p>
-    <button
-      onClick={() => window.location.reload()}
-      className="mt-4 px-4 py-2 bg-white border border-red-200 hover:bg-red-50 text-xs font-bold text-red-600 rounded-xl shadow-sm transition-all"
-    >
-      Try again
-    </button>
-  </div>
-)}
+      {/* ── States ── */}
+      {loading && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 px-4 sm:px-6 lg:px-8">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-pulse">
+              <div className="h-36 bg-gray-100" />
+              <div className="p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-gray-200 flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 bg-gray-200 rounded w-3/4" />
+                    <div className="h-2.5 bg-gray-100 rounded w-1/2" />
+                  </div>
+                </div>
+                <div className="h-2.5 bg-gray-100 rounded w-full" />
+                <div className="h-2.5 bg-gray-100 rounded w-4/5" />
+                <div className="h-9 bg-gray-100 rounded-xl mt-2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-{/* ── Empty ── */}
-{!loading && !error && chefs.length === 0 && (
-  <div className="mx-4 sm:mx-6 lg:mx-8 bg-white border border-gray-100 rounded-3xl p-14 text-center shadow-sm max-w-xl sm:mx-auto">
-    <div className="w-16 h-16 bg-brand-green/10 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
-      🍳
-    </div>
-    <h3 className="text-lg font-bold text-gray-800">No Chefs Available Yet</h3>
-    <p className="text-sm text-gray-400 mt-1 max-w-xs mx-auto">
-      Our verified chefs will appear here soon.
-    </p>
-  </div>
-)}
+      {!loading && error && (
+        <div className="mx-4 sm:mx-6 lg:mx-8 bg-red-50 border border-red-100 rounded-2xl p-8 text-center">
+          <p className="text-red-500 font-semibold text-sm">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-3 text-xs font-bold text-brand-green underline"
+          >
+            Try again
+          </button>
+        </div>
+      )}
 
-{/* ── Grid ── */}
-{!loading && !error && chefs.length > 0 && (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4 sm:px-6 lg:px-8">
-    {chefs.map((chef) => (
-      <ChefCard
-        key={chef._id}
-        chef={chef}
-        saved={saved.has(chef._id)}
-        onToggleSave={() => toggle(chef._id)}
-        onViewProfile={() => onViewProfile?.(chef._id, chef)}
-      />
-    ))}
-  </div>
-)}
+      {!loading && !error && chefs.length === 0 && (
+        <div className="mx-4 sm:mx-6 lg:mx-8 bg-white border border-gray-100 rounded-2xl p-12 text-center shadow-sm">
+          <p className="text-4xl mb-3">🍳</p>
+          <h3 className="text-lg font-bold text-gray-700">No Chefs Available Yet</h3>
+          <p className="text-sm text-gray-400 mt-1">
+            Our verified chefs will appear here soon.
+          </p>
+        </div>
+      )}
 
+      {/* ── Grid ── */}
+      {!loading && !error && chefs.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 px-4 sm:px-6 lg:px-8">
+          {chefs.map((chef) => (
+            <ChefCard
+              key={chef._id}
+              chef={chef}
+              saved={saved.has(chef._id)}
+              onToggleSave={() => toggle(chef._id)}
+              onViewProfile={() => onViewProfile?.(chef._id, chef)}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
