@@ -351,7 +351,7 @@ export default function FoodPage() {
             <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory">
               {freshTodayFoods.map((food) => (
                 <Link to={`/food/${food.id}`} key={`fresh-${food.id}`} className="min-w-[280px] sm:min-w-[320px] max-w-[320px] shrink-0 snap-start block">
-                  <div className="bg-white border border-slate-150 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col h-full group">
+                  <div className="bg-white  rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col h-full group">
                     
                     {/* IMAGE SECTION */}
                     <div className="relative aspect-[16/10] w-full overflow-hidden shrink-0 bg-slate-50">

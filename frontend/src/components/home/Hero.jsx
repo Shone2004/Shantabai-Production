@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useEffect, useRef, useContext, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Leaf, ShieldCheck, Soup, ShoppingBag, ArrowRight, ChevronDown } from 'lucide-react';
+import { Search, MapPin, Leaf, ShieldCheck, Soup, ShoppingBag, ArrowRight, ChevronDown, X, AlertCircle } from 'lucide-react';
 import { LocationContext } from '../../context/LocationContext';
 
 const Hero = () => {
   const [query, setQuery] = useState('');
+  const [locationSearch, setLocationSearch] = useState(''); // New state for filtering locations inside the dropdown
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
@@ -13,10 +14,20 @@ const Hero = () => {
   const { 
     selectedLocation: location, 
     setSelectedLocation: setLocation, 
-    locationsList, 
+    locationsList = [], // Safely fallback to empty array to prevent .forEach crashes
     loadingLocations, 
     errorLocations 
   } = useContext(LocationContext);
+
+  // MOCK DATA: Replace this list or connect it to your Menu/Food context if you want to validate queries in real-time
+  const availableMockDishes = ['thali', 'biryani', 'cake', 'roti', 'paneer', 'tiffin', 'chicken', 'dal', 'paratha', 'rice'];
+
+  // Determine if the user has typed something that doesn't match any available options
+  const isQueryInvalid = useMemo(() => {
+    if (!query.trim()) return false;
+    const cleanQuery = query.toLowerCase().trim();
+    return !availableMockDishes.some(dish => dish.includes(cleanQuery));
+  }, [query]);
 
   // Close custom dropdown when clicking outside
   useEffect(() => {
@@ -28,6 +39,13 @@ const Hero = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Reset location search input text whenever the dropdown closes
+  useEffect(() => {
+    if (!dropdownOpen) {
+      setLocationSearch('');
+    }
+  }, [dropdownOpen]);
 
   const handleSearch = (e) => {
     if (e) e.preventDefault();
@@ -47,15 +65,26 @@ const Hero = () => {
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
   };
 
-  // Group locationsList by city
-  const groupedLocations = {};
-  locationsList.forEach(loc => {
-    const city = loc.city;
-    if (!groupedLocations[city]) {
-      groupedLocations[city] = [];
-    }
-    groupedLocations[city].push(loc);
-  });
+  // Dynamically filter and group locationsList based on locationSearch input state
+  const groupedLocations = useMemo(() => {
+    const groups = {};
+    const list = Array.isArray(locationsList) ? locationsList : [];
+    
+    list.forEach(loc => {
+      const matchesSearch = 
+        loc.area.toLowerCase().includes(locationSearch.toLowerCase()) ||
+        loc.city.toLowerCase().includes(locationSearch.toLowerCase());
+
+      if (matchesSearch) {
+        const city = loc.city;
+        if (!groups[city]) {
+          groups[city] = [];
+        }
+        groups[city].push(loc);
+      }
+    });
+    return groups;
+  }, [locationsList, locationSearch]);
 
   return (
     <>
@@ -160,9 +189,11 @@ const Hero = () => {
           {/* Simple Mobile Search Bar */}
           <form
             onSubmit={handleSearch}
-            className="bg-white rounded-xl border border-gray-200 shadow-sm p-1 flex items-center gap-2 focus-within:border-brand-green/30 transition-all duration-300"
+            className={`bg-white rounded-xl border p-1 flex items-center gap-2 transition-all duration-300 relative ${
+              isQueryInvalid ? 'border-red-300 focus-within:border-red-400' : 'border-gray-200 focus-within:border-brand-green/30 shadow-sm'
+            }`}
           >
-            <Search className="w-4.5 h-4.5 text-gray-400 ml-2.5 shrink-0" />
+            <Search className={`w-4.5 h-4.5 ml-2.5 shrink-0 ${isQueryInvalid ? 'text-red-400' : 'text-gray-400'}`} />
             <input
               type="text"
               placeholder="Search meals, kitchens, tiffins..."
@@ -172,12 +203,29 @@ const Hero = () => {
             />
             <button
               type="submit"
-              className="bg-[#0A4D2B] text-white p-2 rounded-lg flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform"
+              className={`p-2 rounded-lg flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all ${
+                isQueryInvalid ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-[#0A4D2B] text-white'
+              }`}
               aria-label="Search"
             >
               <Search className="w-3.5 h-3.5" />
             </button>
           </form>
+
+          {/* Mobile Empty Option Notification */}
+          <AnimatePresence>
+            {isQueryInvalid && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                className="mt-1.5 bg-red-50 border border-red-100 rounded-lg p-2 flex items-center gap-2 text-red-700 text-[11px] font-semibold"
+              >
+                <AlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                <span>No options available for "{query}". Try thalis or biryani!</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </section>
 
@@ -317,7 +365,7 @@ const Hero = () => {
                 {[
                   { icon: Leaf,        title: '100% Homemade',    sub: 'Small batches'  },
                   { icon: ShieldCheck, title: 'Verified Kitchens', sub: 'Hygiene checked' },
-                  { icon: Soup,        title: 'Fresh Daily',     sub: 'Cooked today'   },
+                  { icon: Soup,        title: 'Fresh Daily',      sub: 'Cooked today'   },
                   { icon: ShoppingBag, title: 'Easy Self-Pickup', sub: 'From neighbours' },
                 ].map(({ icon: Icon, title, sub }) => (
                   <div key={title} className="flex items-center gap-2 bg-white py-1.5 px-3 rounded-xl border border-gray-100 shadow-sm shrink-0">
@@ -333,10 +381,14 @@ const Hero = () => {
               </motion.div>
 
               {/* Airbnb-style Search bar */}
-              <motion.div variants={itemVariants} className="w-full max-w-2xl mb-8">
+              <motion.div variants={itemVariants} className="w-full max-w-2xl mb-8 relative">
                 <form
                   onSubmit={handleSearch}
-                  className="bg-white rounded-2xl sm:rounded-full border border-gray-200 shadow-[0_12px_42px_rgba(0,0,0,0.06)] p-1.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 focus-within:border-brand-green/30 focus-within:shadow-[0_12px_48px_rgba(10,77,43,0.08)] transition-all duration-300"
+                  className={`bg-white rounded-2xl sm:rounded-full border p-1.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 transition-all duration-300 relative ${
+                    isQueryInvalid 
+                      ? 'border-red-300 shadow-[0_12px_42px_rgba(239,68,68,0.06)] focus-within:border-red-400 focus-within:shadow-[0_12px_48px_rgba(239,68,68,0.1)]' 
+                      : 'border-gray-200 shadow-[0_12px_42px_rgba(0,0,0,0.06)] focus-within:border-brand-green/30 focus-within:shadow-[0_12px_48px_rgba(10,77,43,0.08)]'
+                  }`}
                 >
                   {/* Location Selector */}
                   <div className="relative flex items-center w-full sm:w-48 shrink-0" ref={dropdownRef}>
@@ -352,7 +404,7 @@ const Hero = () => {
                         <div className="min-w-0">
                           <p className="text-[9px] uppercase font-black text-gray-400 leading-none mb-0.5 tracking-wider">Location</p>
                           <p className="text-xs font-bold text-gray-800 truncate">
-                            {location}
+                            {location || 'Select your area'}
                           </p>
                         </div>
                       </div>
@@ -367,61 +419,82 @@ const Hero = () => {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 12, scale: 0.96 }}
                           transition={{ duration: 0.15, ease: 'easeOut' }}
-                          className="absolute left-0 top-full mt-2.5 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl shadow-black/8 overflow-y-auto max-h-[280px] z-50 p-2.5"
-                          style={{
-                            WebkitOverflowScrolling: 'touch',
-                            touchAction: 'pan-y',
-                            overscrollBehavior: 'contain'
-                          }}
+                          className="absolute left-0 top-full mt-2.5 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl shadow-black/8 z-50 p-2.5"
                         >
-                          {loadingLocations ? (
-                            <div className="px-3 py-4 text-xs font-semibold text-gray-400 text-center select-none">
-                              Loading locations...
-                            </div>
-                          ) : locationsList.length === 0 ? (
-                            <div className="px-3 py-2 text-xs font-semibold text-gray-400 text-center select-none" role="option" aria-selected="false">
-                              No locations available
-                            </div>
-                          ) : (
-                            Object.entries(groupedLocations).map(([city, items]) => (
-                              <div key={city} className="mb-2 last:mb-0">
-                                <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold px-3 py-1">{city}</p>
-                                {items.map((item) => {
-                                  const displayString = `${item.area}, ${item.city}`;
-                                  const isSelected = location === displayString;
-                                  return (
-                                    <button
-                                      key={displayString}
-                                      type="button"
-                                      role="option"
-                                      aria-selected={isSelected}
-                                      onClick={() => {
-                                        setLocation(displayString);
-                                        localStorage.setItem('selectedLocation', displayString);
-                                        setDropdownOpen(false);
-                                      }}
-                                      className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 ${
-                                        isSelected
-                                          ? 'text-brand-green bg-[#EBF3ED] font-bold'
-                                          : 'text-gray-700 hover:bg-gray-50'
-                                      }`}
-                                    >
-                                      <span className={`w-1.5 h-1.5 rounded-full bg-brand-green shrink-0 ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
-                                      {item.area}
-                                    </button>
-                                  );
-                                })}
+                          {/* ── INTERNAL LOCATION SEARCH INPUT ── */}
+                          <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-2.5 py-1.5 mb-2 bg-gray-50 focus-within:border-brand-green/40 focus-within:bg-white transition-colors">
+                            <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                            <input 
+                              type="text"
+                              placeholder="Search your area..."
+                              value={locationSearch}
+                              onChange={(e) => setLocationSearch(e.target.value)}
+                              className="w-full bg-transparent text-xs font-semibold focus:outline-none text-gray-800 placeholder-gray-400"
+                            />
+                            {locationSearch && (
+                              <button type="button" onClick={() => setLocationSearch('')} className="cursor-pointer">
+                                <X className="w-3 h-3 text-gray-400 hover:text-gray-600" />
+                              </button>
+                            )}
+                          </div>
+
+                          <div 
+                            className="overflow-y-auto max-h-[200px] pr-1"
+                            style={{
+                              WebkitOverflowScrolling: 'touch',
+                              touchAction: 'pan-y',
+                              overscrollBehavior: 'contain'
+                            }}
+                          >
+                            {loadingLocations ? (
+                              <div className="px-3 py-4 text-xs font-semibold text-gray-400 text-center select-none">
+                                Loading locations...
                               </div>
-                            ))
-                          )}
+                            ) : Object.keys(groupedLocations).length === 0 ? (
+                              <div className="px-3 py-4 text-xs font-semibold text-gray-400 text-center select-none">
+                                No matching areas found
+                              </div>
+                            ) : (
+                              Object.entries(groupedLocations).map(([city, items]) => (
+                                <div key={city} className="mb-2 last:mb-0">
+                                  <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold px-3 py-1 bg-gray-50/70 rounded-md mb-1">{city}</p>
+                                  {items.map((item) => {
+                                    const displayString = `${item.area}, ${item.city}`;
+                                    const isSelected = location === displayString;
+                                    return (
+                                      <button
+                                        key={displayString}
+                                        type="button"
+                                        role="option"
+                                        aria-selected={isSelected}
+                                        onClick={() => {
+                                          setLocation(displayString);
+                                          localStorage.setItem('selectedLocation', displayString);
+                                          setDropdownOpen(false);
+                                        }}
+                                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 mt-0.5 cursor-pointer ${
+                                          isSelected
+                                            ? 'text-brand-green bg-[#EBF3ED] font-bold'
+                                            : 'text-gray-700 hover:bg-gray-50'
+                                        }`}
+                                      >
+                                        <span className={`w-1.5 h-1.5 rounded-full bg-brand-green shrink-0 ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
+                                        {item.area}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              ))
+                            )}
+                          </div>
                         </motion.div>
                       )}
                     </AnimatePresence>
                   </div>
 
-                  {/* Query */}
+                  {/* Query Input */}
                   <div className="flex-1 flex items-center px-4 gap-2 py-3 sm:py-0 min-w-0">
-                    <Search className="w-4 h-4 text-gray-400 shrink-0" />
+                    <Search className={`w-4 h-4 shrink-0 ${isQueryInvalid ? 'text-red-400' : 'text-gray-400'}`} />
                     <div className="w-full">
                       <p className="text-[9px] uppercase font-black text-gray-400 leading-none mb-0.5 tracking-wider hidden sm:block">Search Dishes</p>
                       <input
@@ -434,15 +507,36 @@ const Hero = () => {
                     </div>
                   </div>
 
-                  {/* Submit */}
+                  {/* Submit Button */}
                   <button
                     type="submit"
-                    className="bg-brand-green text-white px-6 py-3 rounded-full font-bold text-xs hover:bg-[#083a21] hover:shadow-lg hover:shadow-brand-green/20 active:scale-95 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                    className={`px-6 py-3 rounded-full font-bold text-xs active:scale-95 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer ${
+                      isQueryInvalid 
+                        ? 'bg-red-500 text-white hover:bg-red-600 hover:shadow-lg hover:shadow-red-500/20' 
+                        : 'bg-brand-green text-white hover:bg-[#083a21] hover:shadow-lg hover:shadow-brand-green/20'
+                    }`}
                   >
                     <Search className="w-4 h-4" />
                     <span className="hidden sm:inline">Search</span>
                   </button>
                 </form>
+
+                {/* Desktop Alert Backdrop Banner for unmatched queries */}
+                <AnimatePresence>
+                  {isQueryInvalid && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 18 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute left-4 right-4 top-full bg-red-50 border border-red-100 rounded-xl p-3 shadow-lg shadow-red-900/5 z-40 flex items-center gap-2.5 text-red-700 text-xs font-semibold"
+                    >
+                      <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                      <div>
+                        We couldn't find matches for <span className="font-extrabold text-red-800">"{query}"</span> active in this zone. Try matching keywords like <span className="underline">thali</span> or <span className="underline">biryani</span>.
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
 
               {/* CTAs */}
