@@ -2,6 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const ProviderProfile = require("../models/ProviderProfile");
+const Review = require("../models/Review");
 
 // Register User
 const registerUser = async (req, res) => {
@@ -110,13 +111,17 @@ const loginUser = async (req, res) => {
 };
 
 // Get current user
+// Get current user
 const getMe = async (req, res) => {
   try {
-    // req.user is set in authenticateUser middleware
     let userObj = req.user.toObject();
 
+    // Provider details
     if (req.user.role === "PROVIDER") {
-      const profile = await ProviderProfile.findOne({ user: req.user._id });
+      const profile = await ProviderProfile.findOne({
+        user: req.user._id,
+      });
+
       if (profile) {
         userObj.verificationStatus = profile.verificationStatus;
         userObj.isVerified = profile.isVerified;
@@ -127,10 +132,23 @@ const getMe = async (req, res) => {
       }
     }
 
+    // -------------------------------
+    // Load customer's review history
+    // -------------------------------
+
+    const reviews = await Review.find({
+      user: req.user._id,
+    })
+      .populate("food", "title image price")
+      .sort({ createdAt: -1 });
+
+    userObj.reviews = reviews;
+
     res.status(200).json({
       success: true,
       user: userObj,
     });
+
   } catch (error) {
     res.status(500).json({
       success: false,

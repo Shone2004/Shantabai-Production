@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 import api from "../../services/api";
 import Subscription from "../dashboard/Subscription.jsx";
-import ReviewSection from "../ReviewSection.jsx";
+import ReviewList from "../ReviewList.jsx";
+
 import {
   LayoutDashboard,
   Utensils,
@@ -106,7 +107,7 @@ const BOTTOM_NAV = [
   { id: "bookings",  label: "Bookings", icon: CalendarDays,    isCenter: false },
   { id: "addfood",   label: "Add",      icon: PlusCircle,      isCenter: true  },
   { id: "myfoods",   label: "Foods",    icon: Utensils,        isCenter: false },
-  
+  { id: "reviews",   label: "Reviews",  icon: Star,        isCenter: false },
   { id: "profile",   label: "Profile",  icon: User,            isCenter: false },
 ];
 
@@ -189,48 +190,102 @@ export default function ProviderDashboard() {
   const { user, logout } = useAuth();
   const [activePage, setActivePage] = useState("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  const [unreadCounts, setUnreadCounts] = useState({
-    customerChats: 0,
-    adminMessages: 0
-  });
-
-  // ── Unified Profile & Loading States ──
   const [profile, setProfile] = useState(null);
-  const [profileLoading, setProfileLoading] = useState(true);
-  const [profileError, setProfileError] = useState("");
+const [unreadCounts, setUnreadCounts] = useState({
+  customerChats: 0,
+  adminMessages: 0,
+});
 
-  // ── Foods & Stats Data ──
-  const [foods, setFoods] = useState([]);
-  const [foodsLoading, setFoodsLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalFoods: 0,
-    activeFoods: 0,
-    ordersToday: 0,
-    earningsToday: 0,
-    totalEarnings: 0
-  });
-  const [statsLoading, setStatsLoading] = useState(true);
+const [profileLoading, setProfileLoading] = useState(true);
+const [profileError, setProfileError] = useState("");
 
-  // ── Data Fetching Effect ──
-  useEffect(() => {
-    const fetchProviderData = async () => {
-      try {
-        setProfileLoading(true);
-        setProfileError("");
-        
-        const res = await api.get('/providers/me'); 
-        setProfile(res.data.profile);
-      } catch (err) {
-        console.error("Error loading dashboard data:", err);
-        setProfileError("Failed to load profile data.");
-      } finally {
-        setProfileLoading(false);
-      }
-    };
+const [foods, setFoods] = useState([]);
+const [foodsLoading, setFoodsLoading] = useState(true);
+
+const [stats, setStats] = useState({
+  totalFoods: 0,
+  activeFoods: 0,
+  ordersToday: 0,
+  earningsToday: 0,
+  totalEarnings: 0,
+});
+
+const [statsLoading, setStatsLoading] = useState(true);
+
+  // const [myReviews, setMyReviews] = useState([]);
+  // const [loading, setLoading] = useState(true);
+
+// Change your fetch function slightly to test
+// const fetchMyReviews = async () => {
+//   setLoading(true);
+//   try {
+//     const token = localStorage.getItem("token");
+//     const res = await api.get("/reviews/my-reviews", {
+//       headers: { Authorization: `Bearer ${token}` },
+//     });
+
+//     console.log("DASHBOARD REVIEWS DATA:", res.data); 
+
+//     // Look at the console. 
+//     // If res.data is [ {...}, {...} ], use setMyReviews(res.data)
+//     // If res.data is { reviews: [ {...} ] }, use setMyReviews(res.data.reviews)
+//     setMyReviews(res.data.reviews || res.data || []); 
     
-    fetchProviderData();
-  }, []);
+//   } catch (err) {
+//     console.error("Fetch Error:", err);
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
+// // 4. Trigger the fetch
+// useEffect(() => {
+//   if (activePage === "reviews") {
+//     fetchMyReviews();
+//   }
+// }, [activePage]);
+
+//   const [unreadCounts, setUnreadCounts] = useState({
+//     customerChats: 0,
+//     adminMessages: 0
+//   });
+
+//   // ── Unified Profile & Loading States ──
+//   const [profile, setProfile] = useState(null);
+//   const [profileLoading, setProfileLoading] = useState(true);
+//   const [profileError, setProfileError] = useState("");
+
+//   // ── Foods & Stats Data ──
+//   const [foods, setFoods] = useState([]);
+//   const [foodsLoading, setFoodsLoading] = useState(true);
+//   const [stats, setStats] = useState({
+//     totalFoods: 0,
+//     activeFoods: 0,
+//     ordersToday: 0,
+//     earningsToday: 0,
+//     totalEarnings: 0
+//   });
+//   const [statsLoading, setStatsLoading] = useState(true);
+
+//   // ── Data Fetching Effect ──
+//   useEffect(() => {
+//     const fetchProviderData = async () => {
+//       try {
+//         setProfileLoading(true);
+//         setProfileError("");
+        
+//         const res = await api.get('/providers/me'); 
+//         setProfile(res.data.profile);
+//       } catch (err) {
+//         console.error("Error loading dashboard data:", err);
+//         setProfileError("Failed to load profile data.");
+//       } finally {
+//         setProfileLoading(false);
+//       }
+//     };
+    
+//     fetchProviderData();
+//   }, []);
 
   // ── Food Form State (unchanged) ──
   const [editingFoodId, setEditingFoodId] = useState(null);
@@ -2088,14 +2143,15 @@ export default function ProviderDashboard() {
               {/* ══════════════════════════════
                   PAGE: Reviews
               ══════════════════════════════ */}
-              {activePage === "reviews" && (
+            {activePage === "reviews" && (
   <div className="p-6 md:p-8 animate-fade-in">
-    <h2 className="text-2xl font-black text-slate-900 mb-6">Your Reviews</h2>
-    {/* profile.reviews contains the array of feedback from your database */}
-    <ReviewSection reviews={profile?.reviews || []} />
+    <h2 className="text-2xl font-black text-slate-900 mb-6">
+      Your Reviews
+    </h2>
+
+    <ReviewList />
   </div>
 )}
-
               {/* ══════════════════════════════
                   PAGE: COMING SOON
               ══════════════════════════════ */}

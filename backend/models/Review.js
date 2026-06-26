@@ -5,10 +5,10 @@ const mongoose = require("mongoose");
 const reviewSchema = new mongoose.Schema(
 {
     food: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Food",
-        required: true,
-    },
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "FoodItem",
+    required: true,
+},
 
     user: {
         type: mongoose.Schema.Types.ObjectId,
@@ -31,6 +31,16 @@ const reviewSchema = new mongoose.Schema(
 {
     timestamps: true,
 }
+);
+
+reviewSchema.index(
+  {
+    user: 1,
+    food: 1,
+  },
+  {
+    unique: true,
+  }
 );
 
 module.exports = mongoose.model("Review", reviewSchema);

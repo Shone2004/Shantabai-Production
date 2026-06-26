@@ -2,6 +2,7 @@ const FoodItem = require("../models/FoodItem");
 const ProviderProfile = require("../models/ProviderProfile");
 const { uploadToCloudinary } = require("../utils/cloudinaryHelper");
 const { getIO } = require("../services/socketService"); // ⚡ Import your socket utility
+const Review = require("../models/Review");
 
 // 🔧 FIX: Added missing helper function to calculate average ratings safely
 const calculateAverageRating = (reviews) => {
@@ -323,31 +324,19 @@ const deleteReview = async (req, res) => {
 // @access  Private (Registered users)
 const addReviewToProvider = async (req, res) => {
   try {
-    const { rating, comment } = req.body;
-    const { id } = req.params;
-
-    const profile = await ProviderProfile.findById(id);
-    if (!profile) return res.status(404).json({ success: false, message: "Provider not found" });
-
-    const newReview = {
+    const { rating, comment, foodId } = req.body; // You need to know WHICH food was reviewed
+    
+    // Save to the SEPARATE Review collection
+    const newReview = await Review.create({
+      food: foodId, // Linking to the specific food item
       user: req.user._id,
-      userName: req.user.name,
       rating: Number(rating),
-      comment,
-      date: new Date(),
-    };
-
-    profile.reviews.push(newReview);
-    profile.rating = calculateAverageRating(profile.reviews);
-    await profile.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Review added successfully",
-      rating: profile.rating,
+      comment: comment
     });
+
+    res.status(200).json({ success: true, message: "Review added!" });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Error adding review", error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -646,6 +635,11 @@ const addReviewToFood = async (req, res) => {
     const alreadyReviewed = foodItem.reviews.find(
       (r) => r.user.toString() === req.user._id.toString()
     );
+    // Check Review collection
+let existingReview = await Review.findOne({
+  food: foodItem._id,
+  user: req.user._id,
+});
 
     if (alreadyReviewed) {
       alreadyReviewed.rating = Number(rating);
@@ -668,9 +662,32 @@ const addReviewToFood = async (req, res) => {
 
     foodItem.averageRating = totalRating / foodItem.reviews.length;
 
-    await foodItem.save();
+// ===============================
+// Save review in Review collection
+// ===============================
+if (existingReview) {
+  existingReview.rating = Number(rating);
+  existingReview.comment = comment;
+  await existingReview.save();
+} else {
+  try {
+    const newReview = await Review.create({
+      food: foodItem._id,
+      user: req.user._id,
+      rating: Number(rating),
+      comment,
+    });
 
-    res.status(200).json({
+    console.log("✅ Review saved:", newReview);
+  } catch (err) {
+    console.log("❌ Review create failed:", err);
+  }
+}
+
+// Save Food document
+await foodItem.save();
+
+res.status(200).json({
       success: true,
       message: alreadyReviewed ? "Review updated successfully" : "Review added successfully",
       averageRating: foodItem.averageRating,

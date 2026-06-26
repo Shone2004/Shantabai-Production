@@ -6,18 +6,16 @@ import { LocationContext } from '../../context/LocationContext';
 
 const Hero = () => {
   const [query, setQuery] = useState('');
-  const [locationSearch, setLocationSearch] = useState(''); // New state for filtering locations inside the dropdown
+const [locationSearch, setLocationSearch] = useState("");
+const [locationResults, setLocationResults] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
 
-  const { 
-    selectedLocation: location, 
-    setSelectedLocation: setLocation, 
-    locationsList = [], // Safely fallback to empty array to prevent .forEach crashes
-    loadingLocations, 
-    errorLocations 
-  } = useContext(LocationContext);
+  const {
+  selectedLocation: location,
+  setSelectedLocation: setLocation,
+} = useContext(LocationContext);
 
   // MOCK DATA: Replace this list or connect it to your Menu/Food context if you want to validate queries in real-time
   const availableMockDishes = ['thali', 'biryani', 'cake', 'roti', 'paneer', 'tiffin', 'chicken', 'dal', 'paratha', 'rice'];
@@ -47,6 +45,14 @@ const Hero = () => {
     }
   }, [dropdownOpen]);
 
+  useEffect(() => {
+  const timer = setTimeout(() => {
+    searchLocation(locationSearch);
+  }, 400);
+
+  return () => clearTimeout(timer);
+}, [locationSearch]);
+
   const handleSearch = (e) => {
     if (e) e.preventDefault();
     const qParam  = query.trim() ? `q=${encodeURIComponent(query.trim())}` : '';
@@ -54,6 +60,35 @@ const Hero = () => {
     const params   = [qParam, locParam].filter(Boolean).join('&');
     navigate(`/food${params ? `?${params}` : ''}`);
   };
+
+  const searchLocation = async (query) => {
+  if (query.trim().length < 3) {
+    setLocationResults([]);
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?${new URLSearchParams({
+        q: query,
+        format: "jsonv2",
+        countrycodes: "in",
+        limit: "10",
+      })}`,
+      {
+        headers: {
+          "Accept-Language": "en",
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    setLocationResults(data);
+  } catch (error) {
+    console.error("Location search failed:", error);
+  }
+};
 
   const containerVariants = {
     hidden:  { opacity: 0 },
@@ -64,27 +99,6 @@ const Hero = () => {
     hidden:  { opacity: 0, y: 15 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
   };
-
-  // Dynamically filter and group locationsList based on locationSearch input state
-  const groupedLocations = useMemo(() => {
-    const groups = {};
-    const list = Array.isArray(locationsList) ? locationsList : [];
-    
-    list.forEach(loc => {
-      const matchesSearch = 
-        loc.area.toLowerCase().includes(locationSearch.toLowerCase()) ||
-        loc.city.toLowerCase().includes(locationSearch.toLowerCase());
-
-      if (matchesSearch) {
-        const city = loc.city;
-        if (!groups[city]) {
-          groups[city] = [];
-        }
-        groups[city].push(loc);
-      }
-    });
-    return groups;
-  }, [locationsList, locationSearch]);
 
   return (
     <>
@@ -424,13 +438,14 @@ const Hero = () => {
                           {/* ── INTERNAL LOCATION SEARCH INPUT ── */}
                           <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-2.5 py-1.5 mb-2 bg-gray-50 focus-within:border-brand-green/40 focus-within:bg-white transition-colors">
                             <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                            <input 
-                              type="text"
-                              placeholder="Search your area..."
-                              value={locationSearch}
-                              onChange={(e) => setLocationSearch(e.target.value)}
-                              className="w-full bg-transparent text-xs font-semibold focus:outline-none text-gray-800 placeholder-gray-400"
-                            />
+                            <input
+  type="text"
+  placeholder="Search your area..."
+  value={locationSearch}
+  onChange={(e) => setLocationSearch(e.target.value)}
+  className="w-full bg-transparent text-xs font-semibold focus:outline-none text-gray-800 placeholder-gray-400"
+/>
+
                             {locationSearch && (
                               <button type="button" onClick={() => setLocationSearch('')} className="cursor-pointer">
                                 <X className="w-3 h-3 text-gray-400 hover:text-gray-600" />
@@ -446,46 +461,38 @@ const Hero = () => {
                               overscrollBehavior: 'contain'
                             }}
                           >
-                            {loadingLocations ? (
-                              <div className="px-3 py-4 text-xs font-semibold text-gray-400 text-center select-none">
-                                Loading locations...
-                              </div>
-                            ) : Object.keys(groupedLocations).length === 0 ? (
-                              <div className="px-3 py-4 text-xs font-semibold text-gray-400 text-center select-none">
-                                No matching areas found
-                              </div>
-                            ) : (
-                              Object.entries(groupedLocations).map(([city, items]) => (
-                                <div key={city} className="mb-2 last:mb-0">
-                                  <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold px-3 py-1 bg-gray-50/70 rounded-md mb-1">{city}</p>
-                                  {items.map((item) => {
-                                    const displayString = `${item.area}, ${item.city}`;
-                                    const isSelected = location === displayString;
-                                    return (
-                                      <button
-                                        key={displayString}
-                                        type="button"
-                                        role="option"
-                                        aria-selected={isSelected}
-                                        onClick={() => {
-                                          setLocation(displayString);
-                                          localStorage.setItem('selectedLocation', displayString);
-                                          setDropdownOpen(false);
-                                        }}
-                                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 mt-0.5 cursor-pointer ${
-                                          isSelected
-                                            ? 'text-brand-green bg-[#EBF3ED] font-bold'
-                                            : 'text-gray-700 hover:bg-gray-50'
-                                        }`}
-                                      >
-                                        <span className={`w-1.5 h-1.5 rounded-full bg-brand-green shrink-0 ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
-                                        {item.area}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              ))
-                            )}
+                            {locationSearch.length < 3 ? (
+  <div className="px-3 py-4 text-xs font-semibold text-gray-400 text-center">
+    Type at least 3 characters...
+  </div>
+) : locationResults.length === 0 ? (
+  <div className="px-3 py-4 text-xs font-semibold text-gray-400 text-center">
+    No locations found
+  </div>
+) : (
+  locationResults.map((place) => (
+    <button
+      key={place.place_id}
+      type="button"
+      onClick={() => {
+        setLocation(place.display_name);
+        localStorage.setItem(
+          "selectedLocation",
+          place.display_name
+        );
+        setDropdownOpen(false);
+        setLocationSearch("");
+      }}
+      className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-colors hover:bg-gray-50 cursor-pointer ${
+        location === place.display_name
+          ? "bg-[#EBF3ED] text-brand-green font-bold"
+          : "text-gray-700"
+      }`}
+    >
+      {place.display_name}
+    </button>
+  ))
+)}
                           </div>
                         </motion.div>
                       )}
