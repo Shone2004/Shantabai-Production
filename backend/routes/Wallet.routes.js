@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { getMyWallet, requestWithdrawal } = require("../controllers/wallet.controller");
+const { getMyWallet, requestWithdrawal } = require("../controllers/Wallet.controller");
 const { authenticateUser } = require("../middleware/authMiddleware");
 const { allowRoles } = require("../middleware/roleMiddleware");
 
