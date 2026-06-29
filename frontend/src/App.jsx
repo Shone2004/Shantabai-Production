@@ -4,7 +4,7 @@ import { AuthProvider } from "./context/AuthContext.jsx";
 
 import PrivateRoute from "./components/PrivateRoute.jsx";
 import ProviderDashboard from "./components/chef/ProviderDashboard.jsx";
-import AddFood from "./components/AddFood/AddFood.jsx";
+import AddFood from "./components/AddFood/Addfood.jsx";
 
 import HomePage from "./pages/public/HomePage.jsx";
 import SearchProviders from "./pages/public/SearchProviders.jsx";
