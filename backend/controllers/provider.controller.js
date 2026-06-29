@@ -8,7 +8,7 @@ const Counter = require("../models/Counter");
 
 const Order = require("../models/Order");
 const FoodItem = require("../models/FoodItem");
-const { creditWalletForOrder } = require("./wallet.controller");
+const { creditWalletForOrder } = require("./Wallet.controller");
 const { getIO } = require("../services/socketService"); // ⚡ Import your socket utility
 
 // Generate JWT for immediate login upon registration
