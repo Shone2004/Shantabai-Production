@@ -2,7 +2,7 @@ const Order = require("../models/Order");
 const FoodItem = require("../models/FoodItem");
 const ProviderProfile = require("../models/ProviderProfile");
 const mongoose = require("mongoose");
-const { creditWalletForOrder } = require("./wallet.controller");
+const { creditWalletForOrder } = require("./Wallet.controller");
 
 // Create a new reservation/order (Customer)
 exports.createOrder = async (req, res) => {
