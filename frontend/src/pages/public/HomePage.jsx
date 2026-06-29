@@ -10,7 +10,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import useGeoLocation from "../../hooks/useGeoLocation";
 // ─── New components ───────────────────────────────────────────────────────────
-import AIConsultant from '../../components/ai/AIConsultant.jsx';
+import AIConsultant from '../../components/ai/Aiconsultant.jsx';
 import SubscribedFoodList from '../../components/home/SubscribedFoodList.jsx';
 import HeroCarousel from '../../components/home/HeroCarousel.jsx';
 import HowItWorks from '../../components/home/HowItWorks.jsx';
