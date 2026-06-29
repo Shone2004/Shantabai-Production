@@ -21,7 +21,7 @@ const contactRoutes = require("./routes/contact.routes.js");
 const chatRoutes = require("./routes/chat.routes.js");
 const supportRoutes = require("./routes/support.routes.js");
 const subscriptionRoutes = require("./routes/subscription.routes.js");
-const walletRoutes = require("./routes/wallet.routes.js");
+const walletRoutes = require("./routes/Wallet.routes.js");
 
 // ⭐ ADD THIS
 const reviewRoutes = require("./routes/review.routes.js");
