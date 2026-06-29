@@ -44,7 +44,7 @@ import {
 import ChefBookings from "./ChefBookings";
 import CustomerChats from "./CustomerChats";
 import AdminChat from "./AdminChat";
-import ChefWallet from "./ChefWallet";
+import ChefWallet from "../../components/chef/Chefwallet.jsx";
 import { getSocket } from "../../services/socket";
 
 const getStatusBadge = (rawStatus) => {
